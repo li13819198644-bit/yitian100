@@ -72,12 +72,9 @@ export function defaultStats(): AppStats {
 
 export async function ensureSeedData() {
   const db = await dbPromise
-  const count = await db.count('words')
-  if (count === 0) {
-    const tx = db.transaction('words', 'readwrite')
-    await Promise.all(seedWords.map((word) => tx.store.put(word)))
-    await tx.done
-  }
+  const tx = db.transaction('words', 'readwrite')
+  await Promise.all(seedWords.map((word) => tx.store.put(word)))
+  await tx.done
   if (!(await db.get('meta', 'settings'))) {
     await db.put('meta', defaultSettings, 'settings')
   }

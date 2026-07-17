@@ -36,6 +36,7 @@ function App() {
   const [settings, setSettings] = useState<AppSettings>(defaultSettings)
   const [stats, setStats] = useState<AppStats>(blankStats)
   const [activeIndex, setActiveIndex] = useState(0)
+  const [sessionWordIds, setSessionWordIds] = useState<string[]>([])
   const [quizMode, setQuizMode] = useState<QuizMode>('en-zh')
   const [feedback, setFeedback] = useState<string>('')
   const [importMessage, setImportMessage] = useState('')
@@ -58,9 +59,14 @@ function App() {
   }, [])
 
   const progressMap = useMemo(() => new Map(progress.map((item) => [item.wordId, item])), [progress])
+  const wordMap = useMemo(() => new Map(words.map((item) => [item.id, item])), [words])
   const dailyWords = useMemo(
     () => chooseDailyWords(words, progress, settings.dailyTarget),
     [words, progress, settings.dailyTarget],
+  )
+  const sessionWords = useMemo(
+    () => sessionWordIds.map((id) => wordMap.get(id)).filter((word): word is VocabWord => Boolean(word)),
+    [sessionWordIds, wordMap],
   )
   const reviewWords = useMemo(
     () => words.filter((word) => (progressMap.get(word.id)?.nextReviewAt ?? Number.POSITIVE_INFINITY) <= Date.now()),
@@ -74,7 +80,14 @@ function App() {
   const progressStudiedToday = progress.filter((item) => todayKey(new Date(item.updatedAt)) === todayKey()).length
   const todayProgress = Math.max(stats.todayDate === todayKey() ? stats.todaySeen.length : 0, progressStudiedToday)
   const todayAccuracy = accuracy(progress)
-  const activeWord = dailyWords[activeIndex % Math.max(dailyWords.length, 1)]
+  const activeWord = sessionWords[activeIndex] ?? dailyWords[0]
+
+  function startSession(nextScreen: Screen) {
+    const nextWords = chooseDailyWords(words, progress, settings.dailyTarget)
+    setSessionWordIds(nextWords.map((word) => word.id))
+    setActiveIndex(0)
+    setScreen(nextScreen)
+  }
 
   async function rateWord(word: VocabWord, rating: Rating) {
     const existing = progressMap.get(word.id) ?? createProgress(word.id)
@@ -94,6 +107,13 @@ function App() {
       lastStudyDate: todayKey(),
     }
     await saveStats(nextStats)
+    if (rating !== 'known') {
+      setSessionWordIds((ids) => {
+        const remainingIds = ids.slice(activeIndex + 1)
+        if (remainingIds.includes(word.id)) return ids
+        return [...ids, word.id]
+      })
+    }
     setFeedback(`${word.word}: ${actionMap[rating].label}`)
     setActiveIndex((index) => index + 1)
     await refresh()
@@ -173,14 +193,14 @@ function App() {
             </div>
 
             <div className="grid gap-3">
-              <PrimaryButton onClick={() => { setActiveIndex(0); setScreen('learn') }} icon={<BookOpen size={20} />} label="开始今日学习" />
-              <SecondaryButton onClick={() => { setActiveIndex(0); setScreen('quiz') }} icon={<BarChart3 size={20} />} label="进入测验" />
+              <PrimaryButton onClick={() => startSession('learn')} icon={<BookOpen size={20} />} label="开始今日学习" />
+              <SecondaryButton onClick={() => startSession('quiz')} icon={<BarChart3 size={20} />} label="进入测验" />
             </div>
           </section>
         )}
 
-        {screen === 'learn' && activeWord && (
-          <WordCard title={`第 ${Math.floor(activeIndex / 5) + 1} 组 / 20`} word={activeWord} progress={progressMap.get(activeWord.id)}>
+        {screen === 'learn' && activeWord && activeIndex < sessionWords.length && (
+          <WordCard title={`第 ${Math.floor(activeIndex / 5) + 1} 组 / ${Math.max(1, Math.ceil(sessionWords.length / 5))}`} word={activeWord} progress={progressMap.get(activeWord.id)}>
             <div className="grid grid-cols-3 gap-2">
               {(Object.keys(actionMap) as Rating[]).map((rating) => (
                 <button key={rating} className={clsx('tap-button', actionMap[rating].className)} onClick={() => rateWord(activeWord, rating)}>
@@ -191,7 +211,11 @@ function App() {
           </WordCard>
         )}
 
-        {screen === 'quiz' && activeWord && (
+        {screen === 'learn' && sessionWords.length > 0 && activeIndex >= sessionWords.length && (
+          <DoneCard title="今日学习完成" subtitle="这组卡片已经顺完了。错词已进入复习队列，下一轮会更温柔一点。" onRestart={() => startSession('learn')} />
+        )}
+
+        {screen === 'quiz' && activeWord && activeIndex < sessionWords.length && (
           <QuizCard
             mode={quizMode}
             setMode={setQuizMode}
@@ -200,6 +224,10 @@ function App() {
             choices={choices(activeWord)}
             onAnswer={(correct) => rateWord(activeWord, correct ? 'known' : 'unknown')}
           />
+        )}
+
+        {screen === 'quiz' && sessionWords.length > 0 && activeIndex >= sessionWords.length && (
+          <DoneCard title="测验完成" subtitle="本轮测验结束。可以去弱词本看刚才踩过的小坑。" onRestart={() => startSession('quiz')} />
         )}
 
         {screen === 'review' && <WordList title="复习队列" words={reviewWords} progressMap={progressMap} empty="现在没有到期复习词。" />}
@@ -237,7 +265,7 @@ function App() {
         <nav className="fixed inset-x-0 bottom-0 z-10 border-t border-stone-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur">
           <div className="mx-auto grid max-w-md grid-cols-5 px-2 py-2">
             <NavButton active={screen === 'home'} onClick={() => setScreen('home')} icon={<Home size={20} />} label="首页" />
-            <NavButton active={screen === 'learn'} onClick={() => setScreen('learn')} icon={<BookOpen size={20} />} label="学习" />
+            <NavButton active={screen === 'learn'} onClick={() => startSession('learn')} icon={<BookOpen size={20} />} label="学习" />
             <NavButton active={screen === 'review'} onClick={() => setScreen('review')} icon={<RotateCcw size={20} />} label="复习" />
             <NavButton active={screen === 'weak'} onClick={() => setScreen('weak')} icon={<X size={20} />} label="弱词" />
             <NavButton active={screen === 'settings'} onClick={() => setScreen('settings')} icon={<Settings size={20} />} label="设置" />
@@ -284,6 +312,18 @@ function WordCard({ title, word, progress, children }: { title: string; word: Vo
         <p className="mt-4 text-sm text-stone-500">复习 {progress?.repetitions ?? 0} 次 · lapses {progress?.lapses ?? 0}</p>
       </div>
       {children}
+    </section>
+  )
+}
+
+function DoneCard({ title, subtitle, onRestart }: { title: string; subtitle: string; onRestart: () => void }) {
+  return (
+    <section className="rounded-lg bg-white p-5 text-center shadow-sm ring-1 ring-stone-200">
+      <p className="text-3xl font-semibold">{title}</p>
+      <p className="mt-3 leading-7 text-stone-600">{subtitle}</p>
+      <button className="mt-6 flex min-h-14 w-full items-center justify-center rounded-lg bg-stone-950 px-5 text-lg font-semibold text-white" onClick={onRestart}>
+        再来一轮
+      </button>
     </section>
   )
 }
