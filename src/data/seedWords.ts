@@ -1,0 +1,33 @@
+import type { VocabWord } from '../types'
+
+export const seedWords: VocabWord[] = [
+  ['facilitate', '/fəˈsɪlɪteɪt/', '促进；使便利', 'facilitate communication', 'Clear visuals facilitate communication across teams.', 3, 'B2'],
+  ['constrain', '/kənˈstreɪn/', '限制；约束', 'constrain growth', 'Limited funding can constrain growth in early projects.', 3, 'B2'],
+  ['derive', '/dɪˈraɪv/', '获得；源于', 'derive value from', 'Users derive value from fast and reliable feedback.', 2, 'B2'],
+  ['coherent', '/koʊˈhɪrənt/', '连贯的；一致的', 'coherent argument', 'The report presents a coherent argument for reform.', 3, 'B2'],
+  ['substantial', '/səbˈstænʃəl/', '大量的；实质性的', 'substantial evidence', 'There is substantial evidence supporting the decision.', 3, 'B2'],
+  ['subsequent', '/ˈsʌbsɪkwənt/', '随后的；后来的', 'subsequent changes', 'Subsequent changes improved the product experience.', 2, 'B2'],
+  ['allocate', '/ˈæləkeɪt/', '分配；拨出', 'allocate resources', 'Managers allocate resources based on priority.', 2, 'B2'],
+  ['reinforce', '/ˌriːɪnˈfɔːrs/', '加强；强化', 'reinforce learning', 'Short reviews reinforce learning after each session.', 2, 'B2'],
+  ['undergo', '/ˌʌndərˈɡoʊ/', '经历；接受', 'undergo training', 'New employees undergo training before joining projects.', 3, 'B2'],
+  ['attribute', '/əˈtrɪbjuːt/', '把...归因于；属性', 'attribute success to', 'They attribute success to careful planning.', 3, 'B2'],
+  ['encompass', '/ɪnˈkʌmpəs/', '包含；涵盖', 'encompass multiple areas', 'The course encompasses multiple areas of academic English.', 4, 'C1'],
+  ['sustain', '/səˈsteɪn/', '维持；支撑', 'sustain progress', 'Daily practice helps sustain progress over time.', 3, 'B2'],
+  ['eliminate', '/ɪˈlɪmɪneɪt/', '消除；淘汰', 'eliminate errors', 'The checklist helps eliminate errors before release.', 2, 'B2'],
+  ['assess', '/əˈses/', '评估；评价', 'assess risk', 'The team will assess risk before deployment.', 2, 'B2'],
+  ['comply', '/kəmˈplaɪ/', '遵守；服从', 'comply with rules', 'All suppliers must comply with safety rules.', 3, 'B2'],
+  ['anticipate', '/ænˈtɪsɪpeɪt/', '预期；预料', 'anticipate demand', 'Retailers anticipate demand before the holiday season.', 3, 'B2'],
+  ['explicit', '/ɪkˈsplɪsɪt/', '明确的；清楚的', 'explicit instruction', 'The task needs explicit instruction to avoid confusion.', 2, 'B2'],
+  ['reluctant', '/rɪˈlʌktənt/', '不情愿的；勉强的', 'reluctant to agree', 'She was reluctant to agree without more evidence.', 2, 'B2'],
+  ['inherent', '/ɪnˈhɪrənt/', '固有的；内在的', 'inherent risk', 'Every investment carries inherent risk.', 4, 'C1'],
+  ['viable', '/ˈvaɪəbəl/', '可行的；能存活的', 'viable option', 'Remote work became a viable option for the company.', 3, 'B2'],
+].map(([word, phonetic, meaning, collocation, example, difficulty, level]) => ({
+  id: String(word),
+  word: String(word),
+  phonetic: String(phonetic),
+  meaning: String(meaning),
+  collocation: String(collocation),
+  example: String(example),
+  difficulty: difficulty as VocabWord['difficulty'],
+  level: level as VocabWord['level'],
+}))
