@@ -71,7 +71,8 @@ function App() {
     return item ? isWeak(item) : false
   }), [words, progressMap])
   const mastered = progress.filter((item) => item.mastered).length
-  const todayProgress = stats.todayDate === todayKey() ? stats.todaySeen.length : 0
+  const progressStudiedToday = progress.filter((item) => todayKey(new Date(item.updatedAt)) === todayKey()).length
+  const todayProgress = Math.max(stats.todayDate === todayKey() ? stats.todaySeen.length : 0, progressStudiedToday)
   const todayAccuracy = accuracy(progress)
   const activeWord = dailyWords[activeIndex % Math.max(dailyWords.length, 1)]
 

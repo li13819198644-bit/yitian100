@@ -25,13 +25,39 @@ const dbPromise = openDB<WordsDb>('yitian-100-words', 1, {
   },
 })
 
+const progressBackupKey = 'yitian100:progress'
+const settingsBackupKey = 'yitian100:settings'
+const statsBackupKey = 'yitian100:stats'
+
+function readBackup<T>(key: string, fallback: T): T {
+  if (typeof window === 'undefined') return fallback
+  try {
+    const raw = window.localStorage.getItem(key)
+    return raw ? (JSON.parse(raw) as T) : fallback
+  } catch {
+    return fallback
+  }
+}
+
+function writeBackup<T>(key: string, value: T) {
+  if (typeof window === 'undefined') return
+  try {
+    window.localStorage.setItem(key, JSON.stringify(value))
+  } catch {
+    // IndexedDB remains the primary store; localStorage is a best-effort backup.
+  }
+}
+
 export const defaultSettings: AppSettings = {
   dailyTarget: 100,
   currentLevel: 'B2',
 }
 
 export function todayKey(date = new Date()): string {
-  return date.toISOString().slice(0, 10)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
 export function defaultStats(): AppStats {
@@ -75,42 +101,76 @@ export async function saveWords(words: VocabWord[]) {
 
 export async function getProgress() {
   const db = await dbPromise
-  return db.getAll('progress')
+  const stored = await db.getAll('progress')
+  const backup = readBackup<WordProgress[]>(progressBackupKey, [])
+  const merged = new Map<string, WordProgress>()
+
+  for (const item of backup) merged.set(item.wordId, item)
+  for (const item of stored) {
+    const existing = merged.get(item.wordId)
+    if (!existing || item.updatedAt >= existing.updatedAt) {
+      merged.set(item.wordId, item)
+    }
+  }
+
+  const progress = Array.from(merged.values())
+  if (stored.length < progress.length) {
+    const tx = db.transaction('progress', 'readwrite')
+    await Promise.all(progress.map((item) => tx.store.put(item)))
+    await tx.done
+  }
+  if (progress.length) writeBackup(progressBackupKey, progress)
+  return progress
 }
 
 export async function saveProgress(progress: WordProgress) {
   const db = await dbPromise
   await db.put('progress', progress)
+  const backup = readBackup<WordProgress[]>(progressBackupKey, [])
+  const byId = new Map(backup.map((item) => [item.wordId, item]))
+  byId.set(progress.wordId, progress)
+  writeBackup(progressBackupKey, Array.from(byId.values()))
 }
 
 export async function getSettings() {
   await ensureSeedData()
   const db = await dbPromise
-  return ((await db.get('meta', 'settings')) as AppSettings | undefined) ?? defaultSettings
+  const backup = readBackup<AppSettings | undefined>(settingsBackupKey, undefined)
+  const settings = ((await db.get('meta', 'settings')) as AppSettings | undefined) ?? backup ?? defaultSettings
+  writeBackup(settingsBackupKey, settings)
+  return settings
 }
 
 export async function saveSettings(settings: AppSettings) {
   const db = await dbPromise
   await db.put('meta', settings, 'settings')
+  writeBackup(settingsBackupKey, settings)
 }
 
 export async function getStats() {
   await ensureSeedData()
   const db = await dbPromise
-  const stats = ((await db.get('meta', 'stats')) as AppStats | undefined) ?? defaultStats()
+  const backup = readBackup<AppStats | undefined>(statsBackupKey, undefined)
+  const stats = ((await db.get('meta', 'stats')) as AppStats | undefined) ?? backup ?? defaultStats()
   if (stats.todayDate !== todayKey()) {
-    return { ...stats, todayDate: todayKey(), todaySeen: [], combo: 0 }
+    const nextStats = { ...stats, todayDate: todayKey(), todaySeen: [], combo: 0 }
+    writeBackup(statsBackupKey, nextStats)
+    return nextStats
   }
+  writeBackup(statsBackupKey, stats)
   return stats
 }
 
 export async function saveStats(stats: AppStats) {
   const db = await dbPromise
   await db.put('meta', stats, 'stats')
+  writeBackup(statsBackupKey, stats)
 }
 
 export async function resetProgress() {
   const db = await dbPromise
   await db.clear('progress')
   await db.put('meta', defaultStats(), 'stats')
+  writeBackup(progressBackupKey, [])
+  writeBackup(statsBackupKey, defaultStats())
 }
