@@ -5,10 +5,13 @@ import {
   chooseReviewSession,
   createProgress,
   chooseDailyWords,
+  forecastReviewLoad,
+  recommendNewWordCountWithForecast,
   getDueReviewWords,
   insertDelayedRetry,
   isWeak,
   recommendNewWordCount,
+  scheduleQuizResult,
   scheduleReview,
 } from './srs'
 import type { VocabWord } from '../types'
@@ -52,6 +55,16 @@ describe('spaced repetition', () => {
     expect(isWeak(unknown)).toBe(true)
   })
 
+  it('treats correct quiz answers as light reinforcement instead of known mastery', () => {
+    const base = createProgress('quiz-word', now)
+    const selfRatedKnown = scheduleReview(base, 'known', now)
+    const quizCorrect = scheduleQuizResult(base, true, now)
+
+    expect(quizCorrect.lastRating).toBe('fuzzy')
+    expect(quizCorrect.nextReviewAt).toBeLessThan(selfRatedKnown.nextReviewAt)
+    expect(quizCorrect.correct).toBe(1)
+  })
+
   it('prioritizes overdue review words before new words', () => {
     const words = [word('new'), word('overdue'), word('future')]
     const overdue = { ...createProgress('overdue', now), nextReviewAt: now - 1000 }
@@ -87,6 +100,22 @@ describe('spaced repetition', () => {
     expect(recommendNewWordCount(80, 100, 160)).toBe(80)
     expect(recommendNewWordCount(160, 100, 160)).toBe(0)
     expect(recommendNewWordCount(220, 100, 160)).toBe(0)
+  })
+
+  it('forecasts future review load by day', () => {
+    const progress = [
+      { ...createProgress('today', now), nextReviewAt: now + 60 * 1000 },
+      { ...createProgress('tomorrow', now), nextReviewAt: now + day + 60 * 1000 },
+      { ...createProgress('tomorrow-2', now), nextReviewAt: now + day + 120 * 1000 },
+    ]
+
+    expect(forecastReviewLoad(progress, 3, now)).toEqual([1, 2, 0])
+  })
+
+  it('reduces new words when the seven-day forecast is overloaded', () => {
+    const overloadedForecast = [0, 220, 210, 180, 170, 0, 0]
+
+    expect(recommendNewWordCountWithForecast(0, 100, 160, overloadedForecast)).toBeLessThan(100)
   })
 
   it('keeps learn sessions to unseen new words only', () => {

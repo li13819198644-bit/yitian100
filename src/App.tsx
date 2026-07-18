@@ -10,6 +10,7 @@ import {
   chooseReviewSession,
   insertDelayedRetry,
   isWeak,
+  scheduleQuizResult,
   scheduleReview,
 } from './lib/srs'
 import {
@@ -157,6 +158,29 @@ function App() {
     await refresh()
   }
 
+  async function rateQuizAnswer(word: VocabWord, correct: boolean) {
+    const existing = progressMap.get(word.id) ?? createProgress(word.id)
+    const updated = scheduleQuizResult(existing, correct)
+    await saveProgress(updated)
+
+    const seen = new Set(stats.todayDate === todayKey() ? stats.todaySeen : [])
+    seen.add(word.id)
+    const nextStats: AppStats = {
+      ...stats,
+      todayDate: todayKey(),
+      todaySeen: Array.from(seen),
+      combo: correct ? stats.combo + 1 : 0,
+      bestCombo: Math.max(stats.bestCombo, correct ? stats.combo + 1 : stats.combo),
+      streak: stats.lastStudyDate === todayKey() ? stats.streak : Math.max(1, stats.streak),
+      lastStudyDate: todayKey(),
+    }
+    await saveStats(nextStats)
+    setSessionWordIds((ids) => insertDelayedRetry(ids, activeIndex, word.id, correct ? 'fuzzy' : 'unknown'))
+    setFeedback(`${word.word}: ${correct ? '测验答对' : '测验答错'}`)
+    setActiveIndex((index) => index + 1)
+    await refresh()
+  }
+
   function quizPrompt(word: VocabWord) {
     if (quizMode === 'en-zh') return { question: word.word, answer: word.meaning }
     if (quizMode === 'zh-en') return { question: word.meaning, answer: word.word }
@@ -225,6 +249,8 @@ function App() {
             <div className="grid grid-cols-2 gap-3">
               <Metric label="今日该复习" value={dailyPlan.reviewDebt} />
               <Metric label="建议新词" value={dailyPlan.recommendedNewCount} />
+              <Metric label="明日复习" value={dailyPlan.forecastReviewLoad[1] ?? 0} />
+              <Metric label="7日峰值" value={Math.max(0, ...dailyPlan.forecastReviewLoad)} />
               <Metric label="正确率" value={`${todayAccuracy}%`} />
               <Metric label="Combo" value={stats.combo} />
               <Metric label="连续学习" value={`${stats.streak} 天`} />
@@ -262,7 +288,7 @@ function App() {
             word={activeWord}
             prompt={quizPrompt(activeWord)}
             choices={choices(activeWord)}
-            onAnswer={(correct) => rateWord(activeWord, correct ? 'known' : 'unknown')}
+            onAnswer={(correct) => rateQuizAnswer(activeWord, correct)}
           />
         )}
 

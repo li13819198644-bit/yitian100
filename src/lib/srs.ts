@@ -15,6 +15,8 @@ export interface DailyPlan {
   dueReviewWords: VocabWord[]
   newWords: VocabWord[]
   weakPracticeWords: VocabWord[]
+  forecastReviewLoad: number[]
+  forecastPressure: number
   reviewDebt: number
   recommendedNewCount: number
   dailyCapacity: number
@@ -106,6 +108,10 @@ export function scheduleReview(progress: WordProgress, rating: Rating, now = Dat
   }
 }
 
+export function scheduleQuizResult(progress: WordProgress, correct: boolean, now = Date.now()): WordProgress {
+  return scheduleReview(progress, correct ? 'fuzzy' : 'unknown', now)
+}
+
 export function accuracy(progress: WordProgress[]): number {
   const attempts = progress.reduce((sum, item) => sum + item.correct + item.incorrect, 0)
   if (!attempts) return 0
@@ -155,18 +161,47 @@ export function recommendNewWordCount(dueReviewCount: number, baseNewWordsPerDay
   return Math.max(0, Math.min(baseNewWordsPerDay, dailyCapacity - dueReviewCount))
 }
 
+export function forecastReviewLoad(progress: WordProgress[], days = 7, now = Date.now()): number[] {
+  return Array.from({ length: days }, (_, dayIndex) => {
+    const start = now + dayIndex * DAY
+    const end = start + DAY
+    return progress.filter((item) => item.nextReviewAt >= start && item.nextReviewAt < end).length
+  })
+}
+
+export function forecastPressure(load: number[], dailyCapacity = 160): number {
+  const overload = load.reduce((sum, count) => sum + Math.max(0, count - dailyCapacity), 0)
+  const peak = Math.max(0, ...load)
+  return overload + Math.max(0, peak - dailyCapacity * 0.8)
+}
+
+export function recommendNewWordCountWithForecast(
+  dueReviewCount: number,
+  baseNewWordsPerDay: number,
+  dailyCapacity = 160,
+  forecastLoad: number[] = [],
+): number {
+  const pressure = forecastPressure(forecastLoad, dailyCapacity)
+  const forecastPenalty = Math.ceil(pressure / 2)
+  return recommendNewWordCount(dueReviewCount + forecastPenalty, baseNewWordsPerDay, dailyCapacity)
+}
+
 export function buildDailyPlan(words: VocabWord[], progress: WordProgress[], options: DailyPlanOptions): DailyPlan {
   const now = options.now ?? Date.now()
   const dailyCapacity = options.dailyCapacity ?? 160
   const dueReviewWords = getDueReviewWords(words, progress, now)
   const reviewDebt = dueReviewWords.length
-  const recommendedNewCount = recommendNewWordCount(reviewDebt, options.baseNewWordsPerDay, dailyCapacity)
+  const load = forecastReviewLoad(progress, 7, now)
+  const pressure = forecastPressure(load, dailyCapacity)
+  const recommendedNewCount = recommendNewWordCountWithForecast(reviewDebt, options.baseNewWordsPerDay, dailyCapacity, load)
   const reviewLimit = options.reviewCap ?? reviewDebt
 
   return {
     dueReviewWords: dueReviewWords.slice(0, Math.max(0, reviewLimit)),
     newWords: getNewWords(words, progress, recommendedNewCount),
     weakPracticeWords: getWeakPracticeWords(words, progress, options.weakPracticeLimit ?? 20, now),
+    forecastReviewLoad: load,
+    forecastPressure: pressure,
     reviewDebt,
     recommendedNewCount,
     dailyCapacity,
