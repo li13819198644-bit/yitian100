@@ -1,45 +1,149 @@
 import type { VocabWord } from '../types'
 
 const specialHooks: Record<string, NonNullable<VocabWord['memoryHook']>> = {
+  facilitate: {
+    core: '不是“促进”这么空，是“让别人做起来更容易”。',
+    image: '你把复杂流程改成三步，别人立刻能开始做。',
+    breakdown: '别和 promote 混：promote 偏推动发展，facilitate 偏降低阻力。',
+    cue: 'facilitate communication / learning / growth',
+    personalPrompt: '造句：A good app facilitates ___.',
+  },
+  constrain: {
+    core: '外部条件把选择变少。',
+    image: '预算只有 100 块，本来想买 5 样东西，现在只能买 1 样。',
+    breakdown: '别只记“限制”。constrain 常指预算、规则、时间让你没法自由做。',
+    cue: 'constrain growth / choices / budget',
+    personalPrompt: '造句：Limited time constrains my ___.',
+  },
+  derive: {
+    core: '从某个来源得到。',
+    image: '你从一本书里提取出一个观点，那个观点是从书里来的。',
+    breakdown: '别和 receive 混：receive 是收到，derive 强调“来源”。',
+    cue: 'derive value / meaning / benefit from',
+    personalPrompt: '造句：I derive value from ___.',
+  },
+  coherent: {
+    core: '每句话都接得上，整体说得通。',
+    image: '一篇文章从原因到结果一路顺下来，你不用倒回去猜作者想说什么。',
+    breakdown: '别只记“连贯”。coherent 常形容 argument / explanation / plan。',
+    cue: 'coherent argument / explanation / plan',
+    personalPrompt: '造句：This explanation is coherent because ___.',
+  },
+  substantial: {
+    core: '数量或影响够大，不是小打小闹。',
+    image: '不是加 1 分，而是成绩明显提高一截。',
+    breakdown: '别和 important 完全等同：substantial 更强调“分量足”。',
+    cue: 'substantial evidence / increase / progress',
+    personalPrompt: '造句：I made substantial progress in ___.',
+  },
+  subsequent: {
+    core: '某事之后发生的。',
+    image: '先发布版本，后面的修复、更新、反馈都叫 subsequent changes。',
+    breakdown: '别和 following 混得太松：subsequent 更正式，强调时间顺序。',
+    cue: 'subsequent changes / events / studies',
+    personalPrompt: '造句：Subsequent changes made ___ better.',
+  },
+  allocate: {
+    core: '把有限资源分给不同地方。',
+    image: '一天只有 3 小时学习，你决定英语 1 小时、健身 1 小时、工作 1 小时。',
+    breakdown: '别只记“分配”。allocate 常跟 time / money / resources。',
+    cue: 'allocate time / money / resources',
+    personalPrompt: '造句：I allocate ___ minutes to English.',
+  },
+  reinforce: {
+    core: '把已经有的东西再加固。',
+    image: '学过一个词，第二天再用一次，记忆像螺丝被拧紧。',
+    breakdown: '不是第一次学习，是让原来的印象更强。',
+    cue: 'reinforce memory / learning / belief',
+    personalPrompt: '造句：Reviewing examples reinforces ___.',
+  },
+  undergo: {
+    core: '经历一个过程，通常有点正式或不轻松。',
+    image: '病人 undergo treatment；员工 undergo training。',
+    breakdown: '别和 experience 随便替换：undergo 常接 treatment / training / change。',
+    cue: 'undergo training / treatment / change',
+    personalPrompt: '造句：I underwent ___ when I started ___.',
+  },
+  attribute: {
+    core: '把原因归到某件事上。',
+    image: '成绩提高了，你说原因是每天复习，而不是运气。',
+    breakdown: '常用结构：attribute A to B，把 A 归因于 B。',
+    cue: 'attribute success to effort',
+    personalPrompt: '造句：I attribute my progress to ___.',
+  },
+  encompass: {
+    core: '范围大到把很多东西都包括进去。',
+    image: '一个课程不只教单词，还包括听力、阅读、写作。',
+    breakdown: '比 include 更正式、更有“覆盖范围”的感觉。',
+    cue: 'encompass areas / topics / skills',
+    personalPrompt: '造句：English learning encompasses ___.',
+  },
+  sustain: {
+    core: '让某种状态继续下去。',
+    image: '不是冲刺一天，而是把每天学习维持三个月。',
+    breakdown: '别只记“支持”。sustain progress / momentum 强调持续。',
+    cue: 'sustain progress / growth / effort',
+    personalPrompt: '造句：To sustain progress, I need ___.',
+  },
+  eliminate: {
+    core: '彻底拿掉，不只是减少。',
+    image: '错题本不是让错误少一点，而是把某类错误清零。',
+    breakdown: 'reduce 是减少，eliminate 是消除。',
+    cue: 'eliminate errors / risk / waste',
+    personalPrompt: '造句：I want to eliminate ___ from my routine.',
+  },
+  assess: {
+    core: '看清情况后做判断。',
+    image: '医生先检查，再判断严重不严重。',
+    breakdown: '比 think 更正式；assess 常指评估风险、水平、影响。',
+    cue: 'assess risk / level / impact',
+    personalPrompt: '造句：I need to assess my ___.',
+  },
+  comply: {
+    core: '按规则做，不一定是自愿喜欢。',
+    image: '公司要求填表，你照做，因为规则就是这样。',
+    breakdown: '常用结构：comply with rules / law / requirements。',
+    cue: 'comply with rules / law / requirements',
+    personalPrompt: '造句：I have to comply with ___.',
+  },
   anticipate: {
-    core: '还没发生，先想到，并提前准备。',
-    image: '明天要堵车，你今晚就把出门时间提前。事情还没来，你脑子已经先演了一遍。',
-    breakdown: 'anti/ante 有“前面、提前”的感觉；anticipate 就抓“提前想到”。',
+    core: '提前预判可能发生什么，并做准备。',
+    image: '你看天气预报说下雨，所以提前带伞。这不是“希望下雨”，是提前预判。',
+    breakdown: '别和 expect 混：expect 偏“觉得会发生”，anticipate 更常带“提前准备/应对”。',
     cue: 'anticipate problems / demand / changes',
     personalPrompt: '造句：I anticipate ___, so I ___.',
   },
-  facilitate: {
-    core: '让一件事更容易发生。',
-    image: '你把复杂说明画成图，大家一下就懂了，沟通被你“铺平”。',
-    breakdown: 'facile 有“容易”的感觉；facilitate = make it easier。',
-    cue: 'facilitate communication / learning / growth',
-    personalPrompt: '想一件你能让它变容易的事：I can facilitate ___.',
-  },
-  constrain: {
-    core: '被边界卡住，不能自由发展。',
-    image: '植物想长大，但花盆太小，根被限制住。',
-    breakdown: 'strain 有拉紧的感觉；constrain = 被规则、资源或条件拉住。',
-    cue: 'constrain growth / options / freedom',
-    personalPrompt: '最近什么限制了你？___ constrains my ___.',
-  },
-  coherent: {
-    core: '前后连得上，逻辑顺。',
-    image: '一串珠子被线穿起来，每颗想法都接得上。',
-    breakdown: 'co- 一起；here/hes 有黏住的感觉；coherent = 黏成整体。',
-    cue: 'coherent argument / plan / explanation',
-    personalPrompt: '描述一个清楚的计划：The plan is coherent because ___.',
+  explicit: {
+    core: '话说清楚，不让别人猜。',
+    image: '不是“你自己看着办”，而是写明几点、做什么、交给谁。',
+    breakdown: 'explicit = 明说；implicit = 暗含。',
+    cue: 'explicit instruction / rule / statement',
+    personalPrompt: '造句：The instruction should be explicit about ___.',
   },
   reluctant: {
-    core: '心里不太愿意，勉强做。',
-    image: '朋友叫你出门，你一边穿鞋一边叹气。',
-    breakdown: '记情绪，不记翻译：想象“脚往前走，心往后退”。',
+    core: '心里不愿意，但可能还是会做。',
+    image: '别人让你发言，你站起来了，但心里很抗拒。',
+    breakdown: '常用 reluctant to do：不太愿意做某事。',
     cue: 'reluctant to agree / admit / leave',
-    personalPrompt: 'I am reluctant to ___ because ___.',
+    personalPrompt: '造句：I am reluctant to ___ because ___.',
+  },
+  inherent: {
+    core: '东西本身自带的，不是后来加的。',
+    image: '开车本身就有风险，不是因为某一次开得差才有风险。',
+    breakdown: 'inherent risk = 内在风险；重点是“自带”。',
+    cue: 'inherent risk / value / weakness',
+    personalPrompt: '造句：There is inherent risk in ___.',
+  },
+  viable: {
+    core: '现实中能行得通。',
+    image: '一个计划听起来漂亮，但有钱、有人、时间够，才算 viable。',
+    breakdown: 'possible 是可能，viable 是可实行、撑得住。',
+    cue: 'viable option / solution / plan',
+    personalPrompt: '造句：___ is a viable option for me.',
   },
 }
 
 const actionWords: Record<string, string> = {
-  assess: '看清情况，再做判断。',
   evaluate: '按标准打分、判断好坏。',
   interpret: '把信息翻译成你能理解的意思。',
   establish: '把一件事立起来，变成稳定存在。',
@@ -65,12 +169,12 @@ export function buildMemoryHook(word: VocabWord): NonNullable<VocabWord['memoryH
   const exact = specialHooks[word.word.toLowerCase()]
   if (exact) return exact
 
-  const core = actionWords[word.word.toLowerCase()] ?? `抓住动作：${word.meaning.split('；')[0]}。`
+  const core = actionWords[word.word.toLowerCase()] ?? `先抓它的使用场景：${word.meaning.split('；')[0]}。`
   return {
     core,
-    image: `想一个真实场景：你正在 ${word.collocation}，这个词就是那一瞬间的动作。`,
-    breakdown: `不要孤立背中文。把它和搭配绑定：${word.collocation}。`,
+    image: `真实例句：${word.example}`,
+    breakdown: `先绑定搭配，不瞎拆词：${word.collocation}。`,
     cue: word.collocation,
-    personalPrompt: `用自己的生活造句：I ${word.word} ___ because ___.`,
+    personalPrompt: `自己造句：用 ${word.word} 写一句和你生活有关的话。`,
   }
 }
