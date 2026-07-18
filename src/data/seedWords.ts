@@ -1,4 +1,5 @@
 import type { VocabWord } from '../types'
+import { buildMemoryHook } from '../lib/memoryHooks'
 
 const rawWords = [
   ['facilitate', '/fəˈsɪlɪteɪt/', '促进；使便利', 'facilitate communication', 'Clear visuals facilitate communication across teams.', 3, 'B2'],
@@ -114,6 +115,7 @@ export const seedWords: VocabWord[] = rawWords.map(([word, phonetic, meaning, co
   meaning,
   collocation,
   example,
+  memoryHook: buildMemoryHook({ id: word, word, phonetic, meaning, collocation, example, difficulty, level }),
   difficulty,
   level,
 }))

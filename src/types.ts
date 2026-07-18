@@ -11,6 +11,13 @@ export interface VocabWord {
   meaning: string
   collocation: string
   example: string
+  memoryHook?: {
+    core: string
+    image: string
+    breakdown: string
+    cue: string
+    personalPrompt: string
+  }
   difficulty: 1 | 2 | 3 | 4 | 5
   level: 'B2' | 'C1'
 }
