@@ -3,6 +3,23 @@ import type { Rating, VocabWord, WordProgress } from '../types'
 const DAY = 24 * 60 * 60 * 1000
 const MINUTE = 60 * 1000
 
+export interface DailyPlanOptions {
+  baseNewWordsPerDay: number
+  dailyCapacity?: number
+  reviewCap?: number
+  weakPracticeLimit?: number
+  now?: number
+}
+
+export interface DailyPlan {
+  dueReviewWords: VocabWord[]
+  newWords: VocabWord[]
+  weakPracticeWords: VocabWord[]
+  reviewDebt: number
+  recommendedNewCount: number
+  dailyCapacity: number
+}
+
 export function createProgress(wordId: string, now = Date.now()): WordProgress {
   return {
     wordId,
@@ -98,6 +115,70 @@ export function accuracy(progress: WordProgress[]): number {
 
 export function isWeak(progress: WordProgress): boolean {
   return progress.lapses > 0 || progress.lastRating === 'unknown' || progress.easeFactor < 2
+}
+
+function progressMap(progress: WordProgress[]): Map<string, WordProgress> {
+  return new Map(progress.map((item) => [item.wordId, item]))
+}
+
+export function getDueReviewWords(words: VocabWord[], progress: WordProgress[], now = Date.now()): VocabWord[] {
+  const byId = progressMap(progress)
+  return words
+    .filter((word) => {
+      const item = byId.get(word.id)
+      return item ? item.nextReviewAt <= now : false
+    })
+    .sort((a, b) => (byId.get(a.id)?.nextReviewAt ?? 0) - (byId.get(b.id)?.nextReviewAt ?? 0))
+}
+
+export function getNewWords(words: VocabWord[], progress: WordProgress[], limit = Number.POSITIVE_INFINITY): VocabWord[] {
+  const byId = progressMap(progress)
+  return words.filter((word) => !byId.has(word.id)).slice(0, Math.max(0, limit))
+}
+
+export function getWeakPracticeWords(words: VocabWord[], progress: WordProgress[], limit = 20, now = Date.now()): VocabWord[] {
+  const byId = progressMap(progress)
+  return words
+    .filter((word) => {
+      const item = byId.get(word.id)
+      return item ? item.nextReviewAt > now && isWeak(item) : false
+    })
+    .sort((a, b) => {
+      const left = byId.get(a.id)
+      const right = byId.get(b.id)
+      return (right?.lapses ?? 0) - (left?.lapses ?? 0) || (left?.easeFactor ?? 2.5) - (right?.easeFactor ?? 2.5)
+    })
+    .slice(0, Math.max(0, limit))
+}
+
+export function recommendNewWordCount(dueReviewCount: number, baseNewWordsPerDay: number, dailyCapacity = 160): number {
+  return Math.max(0, Math.min(baseNewWordsPerDay, dailyCapacity - dueReviewCount))
+}
+
+export function buildDailyPlan(words: VocabWord[], progress: WordProgress[], options: DailyPlanOptions): DailyPlan {
+  const now = options.now ?? Date.now()
+  const dailyCapacity = options.dailyCapacity ?? 160
+  const dueReviewWords = getDueReviewWords(words, progress, now)
+  const reviewDebt = dueReviewWords.length
+  const recommendedNewCount = recommendNewWordCount(reviewDebt, options.baseNewWordsPerDay, dailyCapacity)
+  const reviewLimit = options.reviewCap ?? reviewDebt
+
+  return {
+    dueReviewWords: dueReviewWords.slice(0, Math.max(0, reviewLimit)),
+    newWords: getNewWords(words, progress, recommendedNewCount),
+    weakPracticeWords: getWeakPracticeWords(words, progress, options.weakPracticeLimit ?? 20, now),
+    reviewDebt,
+    recommendedNewCount,
+    dailyCapacity,
+  }
+}
+
+export function chooseReviewSession(words: VocabWord[], progress: WordProgress[], options: DailyPlanOptions): VocabWord[] {
+  return buildDailyPlan(words, progress, options).dueReviewWords
+}
+
+export function chooseLearnSession(words: VocabWord[], progress: WordProgress[], options: DailyPlanOptions): VocabWord[] {
+  return buildDailyPlan(words, progress, options).newWords
 }
 
 export function chooseDailyWords(words: VocabWord[], progress: WordProgress[], target = 100, now = Date.now()): VocabWord[] {

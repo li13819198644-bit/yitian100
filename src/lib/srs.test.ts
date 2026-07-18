@@ -1,8 +1,20 @@
 import { describe, expect, it } from 'vitest'
-import { createProgress, chooseDailyWords, insertDelayedRetry, isWeak, scheduleReview } from './srs'
+import {
+  buildDailyPlan,
+  chooseLearnSession,
+  chooseReviewSession,
+  createProgress,
+  chooseDailyWords,
+  getDueReviewWords,
+  insertDelayedRetry,
+  isWeak,
+  recommendNewWordCount,
+  scheduleReview,
+} from './srs'
 import type { VocabWord } from '../types'
 
 const now = new Date('2026-07-17T00:00:00Z').getTime()
+const day = 24 * 60 * 60 * 1000
 
 function word(id: string): VocabWord {
   return {
@@ -48,6 +60,74 @@ describe('spaced repetition', () => {
     const chosen = chooseDailyWords(words, [future, overdue], 3, now)
 
     expect(chosen.map((item) => item.id)).toEqual(['overdue', 'new', 'future'])
+  })
+
+  it('keeps review sessions limited to due words', () => {
+    const words = [word('due-old'), word('due-newer'), word('new'), word('future-weak')]
+    const dueOld = { ...createProgress('due-old', now), nextReviewAt: now - 5000 }
+    const dueNewer = { ...createProgress('due-newer', now), nextReviewAt: now - 1000 }
+    const futureWeak = {
+      ...createProgress('future-weak', now),
+      nextReviewAt: now + day,
+      lastRating: 'unknown' as const,
+      lapses: 1,
+    }
+
+    const review = chooseReviewSession(words, [futureWeak, dueNewer, dueOld], {
+      baseNewWordsPerDay: 100,
+      dailyCapacity: 160,
+      now,
+    })
+
+    expect(review.map((item) => item.id)).toEqual(['due-old', 'due-newer'])
+  })
+
+  it('reduces new words as review debt consumes daily capacity', () => {
+    expect(recommendNewWordCount(0, 100, 160)).toBe(100)
+    expect(recommendNewWordCount(80, 100, 160)).toBe(80)
+    expect(recommendNewWordCount(160, 100, 160)).toBe(0)
+    expect(recommendNewWordCount(220, 100, 160)).toBe(0)
+  })
+
+  it('keeps learn sessions to unseen new words only', () => {
+    const words = [word('seen-due'), word('seen-future'), word('new-a'), word('new-b')]
+    const seenDue = { ...createProgress('seen-due', now), nextReviewAt: now - 1000 }
+    const seenFuture = { ...createProgress('seen-future', now), nextReviewAt: now + day }
+
+    const learn = chooseLearnSession(words, [seenDue, seenFuture], {
+      baseNewWordsPerDay: 100,
+      dailyCapacity: 160,
+      now,
+    })
+
+    expect(learn.map((item) => item.id)).toEqual(['new-a', 'new-b'])
+  })
+
+  it('builds a daily plan with review debt and capped new words', () => {
+    const words = Array.from({ length: 200 }, (_, index) => word(`word-${index}`))
+    const dueProgress = words.slice(0, 90).map((item, index) => ({
+      ...createProgress(item.id, now),
+      nextReviewAt: now - index,
+    }))
+
+    const plan = buildDailyPlan(words, dueProgress, {
+      baseNewWordsPerDay: 100,
+      dailyCapacity: 160,
+      now,
+    })
+
+    expect(plan.reviewDebt).toBe(90)
+    expect(plan.recommendedNewCount).toBe(70)
+    expect(plan.dueReviewWords).toHaveLength(90)
+    expect(plan.newWords).toHaveLength(70)
+  })
+
+  it('sorts due review words by oldest nextReviewAt first', () => {
+    const words = [word('later'), word('earlier')]
+    const later = { ...createProgress('later', now), nextReviewAt: now - 1000 }
+    const earlier = { ...createProgress('earlier', now), nextReviewAt: now - 5000 }
+
+    expect(getDueReviewWords(words, [later, earlier], now).map((item) => item.id)).toEqual(['earlier', 'later'])
   })
 
   it('does not retry known words inside the same session', () => {

@@ -50,7 +50,16 @@ function writeBackup<T>(key: string, value: T) {
 
 export const defaultSettings: AppSettings = {
   dailyTarget: 100,
+  dailyCapacity: 160,
   currentLevel: 'B2',
+}
+
+function normalizeSettings(settings: Partial<AppSettings>): AppSettings {
+  return {
+    ...defaultSettings,
+    ...settings,
+    dailyCapacity: settings.dailyCapacity ?? Math.max(160, settings.dailyTarget ?? defaultSettings.dailyTarget),
+  }
 }
 
 export function todayKey(date = new Date()): string {
@@ -133,15 +142,16 @@ export async function getSettings() {
   await ensureSeedData()
   const db = await dbPromise
   const backup = readBackup<AppSettings | undefined>(settingsBackupKey, undefined)
-  const settings = ((await db.get('meta', 'settings')) as AppSettings | undefined) ?? backup ?? defaultSettings
+  const settings = normalizeSettings(((await db.get('meta', 'settings')) as AppSettings | undefined) ?? backup ?? defaultSettings)
   writeBackup(settingsBackupKey, settings)
   return settings
 }
 
 export async function saveSettings(settings: AppSettings) {
   const db = await dbPromise
-  await db.put('meta', settings, 'settings')
-  writeBackup(settingsBackupKey, settings)
+  const normalized = normalizeSettings(settings)
+  await db.put('meta', normalized, 'settings')
+  writeBackup(settingsBackupKey, normalized)
 }
 
 export async function getStats() {

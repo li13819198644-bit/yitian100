@@ -1,8 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
 import { BarChart3, BookOpen, Check, ChevronRight, Download, Home, RotateCcw, Settings, Upload, X } from 'lucide-react'
 import clsx from 'clsx'
-import type { AppSettings, AppStats, QuizMode, Rating, Screen, VocabWord, WordProgress } from './types'
-import { createProgress, accuracy, chooseDailyWords, insertDelayedRetry, isWeak, scheduleReview } from './lib/srs'
+import type { AppSettings, AppStats, QuizMode, Rating, Screen, SessionKind, VocabWord, WordProgress } from './types'
+import {
+  createProgress,
+  accuracy,
+  buildDailyPlan,
+  chooseLearnSession,
+  chooseReviewSession,
+  insertDelayedRetry,
+  isWeak,
+  scheduleReview,
+} from './lib/srs'
 import {
   defaultSettings,
   defaultStats,
@@ -37,6 +46,7 @@ function App() {
   const [stats, setStats] = useState<AppStats>(blankStats)
   const [activeIndex, setActiveIndex] = useState(0)
   const [sessionWordIds, setSessionWordIds] = useState<string[]>([])
+  const [sessionKind, setSessionKind] = useState<SessionKind>('learn')
   const [quizMode, setQuizMode] = useState<QuizMode>('en-zh')
   const [feedback, setFeedback] = useState<string>('')
   const [importMessage, setImportMessage] = useState('')
@@ -60,18 +70,18 @@ function App() {
 
   const progressMap = useMemo(() => new Map(progress.map((item) => [item.wordId, item])), [progress])
   const wordMap = useMemo(() => new Map(words.map((item) => [item.id, item])), [words])
-  const dailyWords = useMemo(
-    () => chooseDailyWords(words, progress, settings.dailyTarget),
-    [words, progress, settings.dailyTarget],
+  const dailyPlan = useMemo(
+    () => buildDailyPlan(words, progress, {
+      baseNewWordsPerDay: settings.dailyTarget,
+      dailyCapacity: settings.dailyCapacity,
+    }),
+    [words, progress, settings.dailyTarget, settings.dailyCapacity],
   )
   const sessionWords = useMemo(
     () => sessionWordIds.map((id) => wordMap.get(id)).filter((word): word is VocabWord => Boolean(word)),
     [sessionWordIds, wordMap],
   )
-  const reviewWords = useMemo(
-    () => words.filter((word) => (progressMap.get(word.id)?.nextReviewAt ?? Number.POSITIVE_INFINITY) <= Date.now()),
-    [words, progressMap],
-  )
+  const reviewWords = dailyPlan.dueReviewWords
   const weakWords = useMemo(() => words.filter((word) => {
     const item = progressMap.get(word.id)
     return item ? isWeak(item) : false
@@ -80,13 +90,47 @@ function App() {
   const progressStudiedToday = progress.filter((item) => todayKey(new Date(item.updatedAt)) === todayKey()).length
   const todayProgress = Math.max(stats.todayDate === todayKey() ? stats.todaySeen.length : 0, progressStudiedToday)
   const todayAccuracy = accuracy(progress)
-  const activeWord = sessionWords[activeIndex] ?? dailyWords[0]
+  const activeWord = sessionWords[activeIndex]
 
-  function startSession(nextScreen: Screen) {
-    const nextWords = chooseDailyWords(words, progress, settings.dailyTarget)
+  function startLearnSession() {
+    const nextWords = chooseLearnSession(words, progress, {
+      baseNewWordsPerDay: settings.dailyTarget,
+      dailyCapacity: settings.dailyCapacity,
+    })
     setSessionWordIds(nextWords.map((word) => word.id))
     setActiveIndex(0)
+    setSessionKind('learn')
+    setScreen('learn')
+  }
+
+  function startReviewSession(nextScreen: Screen = 'learn') {
+    const nextWords = chooseReviewSession(words, progress, {
+      baseNewWordsPerDay: settings.dailyTarget,
+      dailyCapacity: settings.dailyCapacity,
+    })
+    if (!nextWords.length) {
+      setScreen('review')
+      return
+    }
+    setSessionWordIds(nextWords.map((word) => word.id))
+    setActiveIndex(0)
+    setSessionKind('review')
     setScreen(nextScreen)
+  }
+
+  function startQuizSession() {
+    const reviewQueue = chooseReviewSession(words, progress, {
+      baseNewWordsPerDay: settings.dailyTarget,
+      dailyCapacity: settings.dailyCapacity,
+    })
+    const nextWords = reviewQueue.length ? reviewQueue : chooseLearnSession(words, progress, {
+      baseNewWordsPerDay: settings.dailyTarget,
+      dailyCapacity: settings.dailyCapacity,
+    })
+    setSessionWordIds(nextWords.map((word) => word.id))
+    setActiveIndex(0)
+    setSessionKind(reviewQueue.length ? 'review' : 'quiz')
+    setScreen('quiz')
   }
 
   async function rateWord(word: VocabWord, rating: Rating) {
@@ -144,7 +188,8 @@ function App() {
   }
 
   async function updateDailyTarget(value: number) {
-    const next = { ...settings, dailyTarget: Math.max(5, Math.min(200, value)) }
+    const dailyTarget = Math.max(5, Math.min(200, value))
+    const next = { ...settings, dailyTarget, dailyCapacity: Math.max(settings.dailyCapacity, dailyTarget) }
     setSettings(next)
     await saveSettings(next)
   }
@@ -167,34 +212,35 @@ function App() {
             <div className="rounded-lg bg-white p-5 shadow-sm ring-1 ring-stone-200">
               <div className="flex items-end justify-between">
                 <div>
-                  <p className="text-sm text-stone-500">今日进度</p>
-                  <p className="mt-1 text-4xl font-semibold">{Math.min(todayProgress, settings.dailyTarget)}/{settings.dailyTarget}</p>
+                  <p className="text-sm text-stone-500">今日练习量</p>
+                  <p className="mt-1 text-4xl font-semibold">{todayProgress}</p>
                 </div>
                 <span className="rounded-full bg-sky-100 px-3 py-1 text-sm font-medium text-sky-800">B2 → C1</span>
               </div>
               <div className="mt-4 h-3 rounded-full bg-stone-100">
-                <div className="h-3 rounded-full bg-emerald-600" style={{ width: `${Math.min(100, (todayProgress / settings.dailyTarget) * 100)}%` }} />
+                <div className="h-3 rounded-full bg-emerald-600" style={{ width: `${Math.min(100, (todayProgress / settings.dailyCapacity) * 100)}%` }} />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
+              <Metric label="今日该复习" value={dailyPlan.reviewDebt} />
+              <Metric label="建议新词" value={dailyPlan.recommendedNewCount} />
               <Metric label="正确率" value={`${todayAccuracy}%`} />
               <Metric label="Combo" value={stats.combo} />
               <Metric label="连续学习" value={`${stats.streak} 天`} />
               <Metric label="已掌握" value={mastered} />
               <Metric label="弱词" value={weakWords.length} />
-              <Metric label="复习队列" value={reviewWords.length} />
             </div>
 
             <div className="grid gap-3">
-              <PrimaryButton onClick={() => startSession('learn')} icon={<BookOpen size={20} />} label="开始今日学习" />
-              <SecondaryButton onClick={() => startSession('quiz')} icon={<BarChart3 size={20} />} label="进入测验" />
+              <PrimaryButton onClick={dailyPlan.reviewDebt ? () => startReviewSession('learn') : startLearnSession} icon={<BookOpen size={20} />} label={dailyPlan.reviewDebt ? '先清复习' : '学习新词'} />
+              <SecondaryButton onClick={startQuizSession} icon={<BarChart3 size={20} />} label="进入测验" />
             </div>
           </section>
         )}
 
         {screen === 'learn' && activeWord && activeIndex < sessionWords.length && (
-          <WordCard title={`第 ${Math.floor(activeIndex / 5) + 1} 组 / ${Math.max(1, Math.ceil(sessionWords.length / 5))}`} word={activeWord} progress={progressMap.get(activeWord.id)}>
+          <WordCard title={`${sessionKind === 'review' ? '到期复习' : '新词学习'} · 第 ${Math.floor(activeIndex / 5) + 1} 组 / ${Math.max(1, Math.ceil(sessionWords.length / 5))}`} word={activeWord} progress={progressMap.get(activeWord.id)}>
             <div className="grid grid-cols-3 gap-2">
               {(Object.keys(actionMap) as Rating[]).map((rating) => (
                 <button key={rating} className={clsx('tap-button', actionMap[rating].className)} onClick={() => rateWord(activeWord, rating)}>
@@ -206,7 +252,7 @@ function App() {
         )}
 
         {screen === 'learn' && sessionWords.length > 0 && activeIndex >= sessionWords.length && (
-          <DoneCard title="今日学习完成" subtitle="这组卡片已经顺完了。错词已进入复习队列，下一轮会更温柔一点。" onRestart={() => startSession('learn')} />
+          <DoneCard title={sessionKind === 'review' ? '复习完成' : '今日新词完成'} subtitle={sessionKind === 'review' ? '到期复习已经清完。现在可以开一点新词。' : '这组新词已经学完。模糊和不认识的词会按间隔回来。'} onRestart={sessionKind === 'review' ? startLearnSession : startLearnSession} />
         )}
 
         {screen === 'quiz' && activeWord && activeIndex < sessionWords.length && (
@@ -221,18 +267,23 @@ function App() {
         )}
 
         {screen === 'quiz' && sessionWords.length > 0 && activeIndex >= sessionWords.length && (
-          <DoneCard title="测验完成" subtitle="本轮测验结束。可以去弱词本看刚才踩过的小坑。" onRestart={() => startSession('quiz')} />
+          <DoneCard title="测验完成" subtitle="本轮测验结束。可以去弱词本看刚才不稳的词。" onRestart={startQuizSession} />
         )}
 
-        {screen === 'review' && <WordList title="复习队列" words={reviewWords} progressMap={progressMap} empty="现在没有到期复习词。" />}
+        {screen === 'review' && (
+          <section className="space-y-3">
+            <PrimaryButton onClick={() => startReviewSession('learn')} icon={<RotateCcw size={20} />} label={reviewWords.length ? `开始复习 ${reviewWords.length} 个` : '暂无到期复习'} />
+            <WordList title="复习队列" words={reviewWords} progressMap={progressMap} empty="现在没有到期复习词。" />
+          </section>
+        )}
         {screen === 'weak' && <WordList title="弱词本" words={weakWords} progressMap={progressMap} empty="还没有弱词。" />}
 
         {screen === 'settings' && (
           <section className="space-y-4">
             <Panel title="设置">
-              <label className="block text-sm font-medium text-stone-700">每日目标</label>
+              <label className="block text-sm font-medium text-stone-700">每日新词目标</label>
               <input className="mt-2 w-full accent-emerald-700" type="range" min="20" max="200" step="5" value={settings.dailyTarget} onChange={(event) => updateDailyTarget(Number(event.target.value))} />
-              <div className="mt-1 text-sm text-stone-500">{settings.dailyTarget} 词 / 天</div>
+              <div className="mt-1 text-sm text-stone-500">{settings.dailyTarget} 新词 / 天 · 总容量 {settings.dailyCapacity} 张卡</div>
               <button className="mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-stone-900 px-4 font-medium text-white" onClick={() => setScreen('import')}>
                 <Upload size={18} /> 导入词库
               </button>
@@ -259,7 +310,7 @@ function App() {
         <nav className="fixed inset-x-0 bottom-0 z-10 border-t border-stone-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur">
           <div className="mx-auto grid max-w-md grid-cols-5 px-2 py-1">
             <NavButton active={screen === 'home'} onClick={() => setScreen('home')} icon={<Home size={20} />} label="首页" />
-            <NavButton active={screen === 'learn'} onClick={() => startSession('learn')} icon={<BookOpen size={20} />} label="学习" />
+            <NavButton active={screen === 'learn'} onClick={startLearnSession} icon={<BookOpen size={20} />} label="学习" />
             <NavButton active={screen === 'review'} onClick={() => setScreen('review')} icon={<RotateCcw size={20} />} label="复习" />
             <NavButton active={screen === 'weak'} onClick={() => setScreen('weak')} icon={<X size={20} />} label="弱词" />
             <NavButton active={screen === 'settings'} onClick={() => setScreen('settings')} icon={<Settings size={20} />} label="设置" />
