@@ -289,6 +289,12 @@ function Panel({ title, children }: { title: string; children: React.ReactNode }
 }
 
 function WordCard({ title, word, progress, children }: { title: string; word: VocabWord; progress?: WordProgress; children: React.ReactNode }) {
+  const [revealed, setRevealed] = useState(false)
+
+  useEffect(() => {
+    setRevealed(false)
+  }, [word.id])
+
   return (
     <section className="space-y-4">
       <div className="flex items-center justify-between text-sm text-stone-500">
@@ -298,29 +304,51 @@ function WordCard({ title, word, progress, children }: { title: string; word: Vo
       <div className="rounded-lg bg-white p-5 shadow-sm ring-1 ring-stone-200">
         <p className="text-4xl font-semibold">{word.word}</p>
         <p className="mt-2 text-stone-500">{word.phonetic}</p>
-        <p className="mt-5 text-2xl font-medium">{word.meaning}</p>
-        <div className="mt-5 space-y-3 rounded-lg bg-stone-50 p-4 text-left">
-          <p className="font-medium">{word.collocation}</p>
-          <p className="leading-7 text-stone-600">{word.example}</p>
-        </div>
-        {word.memoryHook && (
-          <div className="mt-4 space-y-3 rounded-lg bg-emerald-50 p-4 text-left ring-1 ring-emerald-100">
-            <p className="text-sm font-semibold text-emerald-900">先会用这个词</p>
-            <p className="text-lg font-semibold leading-7 text-emerald-950">{word.memoryHook.core}</p>
-            <div className="rounded-lg bg-white p-3">
-              <p className="text-xs font-medium text-stone-500">闭眼先说这个搭配</p>
-              <p className="mt-1 font-semibold">{word.memoryHook.cue}</p>
+        {!revealed ? (
+          <div className="mt-6 space-y-4 rounded-lg bg-amber-50 p-4 text-left ring-1 ring-amber-100">
+            <p className="text-sm font-semibold text-amber-900">先主动回忆，别急着看答案</p>
+            <div className="space-y-3 text-stone-800">
+              <p>1. 说出中文核心意思。</p>
+              <p>2. 说一个常见搭配。</p>
+              <p>3. 口头造一个很短的句子。</p>
             </div>
-            <p className="leading-7 text-stone-700">{word.memoryHook.image}</p>
-            <p className="text-sm leading-6 text-stone-600">用法审核：{word.memoryHook.breakdown}</p>
-            <p className="rounded-lg bg-emerald-100 p-3 text-sm font-medium leading-6 text-emerald-950">马上造句：{word.memoryHook.personalPrompt}</p>
+            <p className="text-sm leading-6 text-stone-600">这是 retrieval practice：先提取，再反馈，比反复看解释更能形成长期记忆。</p>
           </div>
+        ) : (
+          <>
+            <p className="mt-5 text-2xl font-medium">{word.meaning}</p>
+            <div className="mt-5 space-y-3 rounded-lg bg-stone-50 p-4 text-left">
+              <p className="font-medium">{word.collocation}</p>
+              <p className="leading-7 text-stone-600">{word.example}</p>
+            </div>
+            {word.memoryHook && (
+              <div className="mt-4 space-y-3 rounded-lg bg-emerald-50 p-4 text-left ring-1 ring-emerald-100">
+                <p className="text-sm font-semibold text-emerald-900">反馈校正</p>
+                <p className="text-lg font-semibold leading-7 text-emerald-950">{word.memoryHook.core}</p>
+                <div className="rounded-lg bg-white p-3">
+                  <p className="text-xs font-medium text-stone-500">你刚才应该想起这个搭配</p>
+                  <p className="mt-1 font-semibold">{word.memoryHook.cue}</p>
+                </div>
+                <p className="leading-7 text-stone-700">{word.memoryHook.image}</p>
+                <p className="text-sm leading-6 text-stone-600">用法审核：{word.memoryHook.breakdown}</p>
+                <p className="rounded-lg bg-emerald-100 p-3 text-sm font-medium leading-6 text-emerald-950">现在补一句：{word.memoryHook.personalPrompt}</p>
+              </div>
+            )}
+            <p className="mt-4 text-sm text-stone-500">
+              复习 {progress?.repetitions ?? 0} 次 · 稳定度 {(progress?.stability ?? 0).toFixed(1)} 天 · 错误 {progress?.lapses ?? 0}
+            </p>
+          </>
         )}
-        <p className="mt-4 text-sm text-stone-500">
-          复习 {progress?.repetitions ?? 0} 次 · 稳定度 {(progress?.stability ?? 0).toFixed(1)} 天 · 错误 {progress?.lapses ?? 0}
-        </p>
       </div>
-      {children && (
+      {!revealed ? (
+        <div className="fixed inset-x-0 bottom-[calc(52px+env(safe-area-inset-bottom))] z-20 border-t border-stone-200 bg-[#f7f4ef]/95 py-2 backdrop-blur">
+          <div className="mx-auto w-full max-w-md px-4">
+            <button className="tap-button w-full bg-stone-950 text-white" onClick={() => setRevealed(true)}>
+              显示答案
+            </button>
+          </div>
+        </div>
+      ) : children && (
         <div className="fixed inset-x-0 bottom-[calc(52px+env(safe-area-inset-bottom))] z-20 border-t border-stone-200 bg-[#f7f4ef]/95 py-2 backdrop-blur">
           <div className="mx-auto w-full max-w-md px-4">{children}</div>
         </div>
