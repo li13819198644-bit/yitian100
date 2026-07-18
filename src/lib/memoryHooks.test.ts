@@ -1,4 +1,8 @@
 import { describe, expect, it } from 'vitest'
+import { generatedBatch3 } from '../data/generatedBatch3'
+import { generatedBatch4 } from '../data/generatedBatch4'
+import { generatedBatch5 } from '../data/generatedBatch5'
+import { generatedBatch6 } from '../data/generatedBatch6'
 import { nextBatchDraft } from '../data/nextBatchDraft'
 import { nextBatchDraft2 } from '../data/nextBatchDraft2'
 import { seedWords } from '../data/seedWords'
@@ -6,6 +10,15 @@ import { antigravityHooks } from './antigravityHooks'
 import { auditMemoryHook } from './memoryHookAudit'
 import { originNebula } from './originNebula'
 import { auditDraftWords } from './vocabQuality'
+
+const supervisedBatches = [
+  { name: 'nextBatchDraft', words: nextBatchDraft, expectedCount: 10 },
+  { name: 'nextBatchDraft2', words: nextBatchDraft2, expectedCount: 10 },
+  { name: 'generatedBatch3', words: generatedBatch3, expectedCount: 20 },
+  { name: 'generatedBatch4', words: generatedBatch4, expectedCount: 21 },
+  { name: 'generatedBatch5', words: generatedBatch5, expectedCount: 20 },
+  { name: 'generatedBatch6', words: generatedBatch6, expectedCount: 20 },
+]
 
 describe('memory hooks', () => {
   it('gives every seed word a memory hook', () => {
@@ -48,17 +61,24 @@ describe('memory hooks', () => {
     expect(auditDraftWords(seedWords.map((word) => word.word), [], 10)).toContain('draft must contain exactly 10 words, got 0')
   })
 
-  it('accepts the supervised next batch before release', () => {
-    const nextBatchWords = new Set(nextBatchDraft.map((word) => word.word))
-    const existingWords = seedWords.map((word) => word.word).filter((word) => !nextBatchWords.has(word))
+  it('accepts each supervised batch before release', () => {
+    for (const batch of supervisedBatches) {
+      const draftWords = new Set(batch.words.map((word) => word.word))
+      const existingWords = seedWords.map((word) => word.word).filter((word) => !draftWords.has(word))
 
-    expect(auditDraftWords(existingWords, nextBatchDraft, 10)).toEqual([])
+      expect(auditDraftWords(existingWords, batch.words, batch.expectedCount), batch.name).toEqual([])
+    }
   })
 
-  it('accepts the second supervised batch before release', () => {
-    const draftWords = new Set(nextBatchDraft2.map((word) => word.word))
-    const existingWords = seedWords.map((word) => word.word).filter((word) => !draftWords.has(word))
+  it('keeps all published words globally unique', () => {
+    const seen = new Set<string>()
+    const duplicates: string[] = []
 
-    expect(auditDraftWords(existingWords, nextBatchDraft2, 10)).toEqual([])
+    for (const word of seedWords.map((item) => item.word.toLowerCase())) {
+      if (seen.has(word)) duplicates.push(word)
+      seen.add(word)
+    }
+
+    expect(duplicates).toEqual([])
   })
 })

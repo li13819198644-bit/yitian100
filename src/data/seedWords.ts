@@ -1,5 +1,10 @@
 import type { VocabWord } from '../types'
 import { buildMemoryHook } from '../lib/memoryHooks'
+import type { DraftWord } from '../lib/vocabQuality'
+import { generatedBatch3 } from './generatedBatch3'
+import { generatedBatch4 } from './generatedBatch4'
+import { generatedBatch5 } from './generatedBatch5'
+import { generatedBatch6 } from './generatedBatch6'
 import { nextBatchDraft } from './nextBatchDraft'
 import { nextBatchDraft2 } from './nextBatchDraft2'
 
@@ -122,20 +127,22 @@ const baseWords: VocabWord[] = rawWords.map(([word, phonetic, meaning, collocati
   level,
 }))
 
-const nextBatchWords: VocabWord[] = nextBatchDraft.map(({ wordOrigin, nebula, memoryHook, ...word }) => ({
-  ...word,
-  memoryHook: {
-    ...memoryHook,
-    breakdown: nebula ? `${wordOrigin} ${nebula}` : wordOrigin,
-  },
-}))
+function publishDraftWords(draft: DraftWord[]): VocabWord[] {
+  return draft.map(({ wordOrigin, nebula, memoryHook, ...word }) => ({
+    ...word,
+    memoryHook: {
+      ...memoryHook,
+      breakdown: nebula ? `${wordOrigin} ${nebula}` : wordOrigin,
+    },
+  }))
+}
 
-const nextBatchWords2: VocabWord[] = nextBatchDraft2.map(({ wordOrigin, nebula, memoryHook, ...word }) => ({
-  ...word,
-  memoryHook: {
-    ...memoryHook,
-    breakdown: nebula ? `${wordOrigin} ${nebula}` : wordOrigin,
-  },
-}))
-
-export const seedWords: VocabWord[] = [...baseWords, ...nextBatchWords, ...nextBatchWords2]
+export const seedWords: VocabWord[] = [
+  ...baseWords,
+  ...publishDraftWords(nextBatchDraft),
+  ...publishDraftWords(nextBatchDraft2),
+  ...publishDraftWords(generatedBatch3),
+  ...publishDraftWords(generatedBatch4),
+  ...publishDraftWords(generatedBatch5),
+  ...publishDraftWords(generatedBatch6),
+]
