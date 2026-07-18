@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { seedWords } from '../data/seedWords'
 import { antigravityHooks } from './antigravityHooks'
 import { auditMemoryHook } from './memoryHookAudit'
+import { wordOrigins } from './wordOrigins'
 
 describe('memory hooks', () => {
   it('covers every seed word with an antigravity draft hook', () => {
@@ -24,5 +25,13 @@ describe('memory hooks', () => {
     const issues = Object.entries(antigravityHooks).flatMap(([word, hook]) => auditMemoryHook(word, hook))
 
     expect(issues).toEqual([])
+  })
+
+  it('has a word origin for every seed word', () => {
+    const missing = seedWords
+      .map((word) => word.word)
+      .filter((word) => !wordOrigins[word])
+
+    expect(missing).toEqual([])
   })
 })

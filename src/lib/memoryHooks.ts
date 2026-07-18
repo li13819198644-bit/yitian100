@@ -1,5 +1,6 @@
 import type { VocabWord } from '../types'
 import { antigravityHooks } from './antigravityHooks'
+import { wordOrigins } from './wordOrigins'
 
 const specialHooks: Record<string, NonNullable<VocabWord['memoryHook']>> = {
   facilitate: {
@@ -168,16 +169,27 @@ const actionWords: Record<string, string> = {
 
 export function buildMemoryHook(word: VocabWord): NonNullable<VocabWord['memoryHook']> {
   const antigravity = antigravityHooks[word.word.toLowerCase()]
-  if (antigravity) return antigravity
+  const origin = wordOrigins[word.word.toLowerCase()]
+  if (antigravity) {
+    return {
+      ...antigravity,
+      breakdown: origin ?? antigravity.breakdown,
+    }
+  }
 
   const exact = specialHooks[word.word.toLowerCase()]
-  if (exact) return exact
+  if (exact) {
+    return {
+      ...exact,
+      breakdown: origin ?? exact.breakdown,
+    }
+  }
 
   const core = actionWords[word.word.toLowerCase()] ?? `先抓它的使用场景：${word.meaning.split('；')[0]}。`
   return {
     core,
     image: `真实例句：${word.example}`,
-    breakdown: `先绑定搭配，不瞎拆词：${word.collocation}。`,
+    breakdown: origin ?? `词源暂缺；先绑定搭配：${word.collocation}。`,
     cue: word.collocation,
     personalPrompt: `自己造句：用 ${word.word} 写一句和你生活有关的话。`,
   }

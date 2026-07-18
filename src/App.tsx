@@ -330,7 +330,7 @@ function WordCard({ title, word, progress, children }: { title: string; word: Vo
                   <p className="mt-1 font-semibold">{word.memoryHook.cue}</p>
                 </div>
                 <p className="leading-7 text-stone-700">{word.memoryHook.image}</p>
-                <p className="text-sm leading-6 text-stone-600">用法审核：{word.memoryHook.breakdown}</p>
+                <p className="text-sm leading-6 text-stone-600">单词起源：{word.memoryHook.breakdown}</p>
                 <p className="rounded-lg bg-emerald-100 p-3 text-sm font-medium leading-6 text-emerald-950">现在补一句：{word.memoryHook.personalPrompt}</p>
               </div>
             )}
