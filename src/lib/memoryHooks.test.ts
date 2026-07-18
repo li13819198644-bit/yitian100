@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { nextBatchDraft } from '../data/nextBatchDraft'
+import { nextBatchDraft2 } from '../data/nextBatchDraft2'
 import { seedWords } from '../data/seedWords'
 import { antigravityHooks } from './antigravityHooks'
 import { auditMemoryHook } from './memoryHookAudit'
@@ -52,5 +53,12 @@ describe('memory hooks', () => {
     const existingWords = seedWords.map((word) => word.word).filter((word) => !nextBatchWords.has(word))
 
     expect(auditDraftWords(existingWords, nextBatchDraft, 10)).toEqual([])
+  })
+
+  it('accepts the second supervised batch before release', () => {
+    const draftWords = new Set(nextBatchDraft2.map((word) => word.word))
+    const existingWords = seedWords.map((word) => word.word).filter((word) => !draftWords.has(word))
+
+    expect(auditDraftWords(existingWords, nextBatchDraft2, 10)).toEqual([])
   })
 })

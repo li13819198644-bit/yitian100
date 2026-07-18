@@ -1,6 +1,7 @@
 import type { VocabWord } from '../types'
 import { buildMemoryHook } from '../lib/memoryHooks'
 import { nextBatchDraft } from './nextBatchDraft'
+import { nextBatchDraft2 } from './nextBatchDraft2'
 
 const rawWords = [
   ['facilitate', '/fəˈsɪlɪteɪt/', '促进；使便利', 'facilitate communication', 'Clear visuals facilitate communication across teams.', 3, 'B2'],
@@ -129,4 +130,12 @@ const nextBatchWords: VocabWord[] = nextBatchDraft.map(({ wordOrigin, nebula, me
   },
 }))
 
-export const seedWords: VocabWord[] = [...baseWords, ...nextBatchWords]
+const nextBatchWords2: VocabWord[] = nextBatchDraft2.map(({ wordOrigin, nebula, memoryHook, ...word }) => ({
+  ...word,
+  memoryHook: {
+    ...memoryHook,
+    breakdown: nebula ? `${wordOrigin} ${nebula}` : wordOrigin,
+  },
+}))
+
+export const seedWords: VocabWord[] = [...baseWords, ...nextBatchWords, ...nextBatchWords2]
