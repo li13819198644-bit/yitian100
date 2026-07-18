@@ -1,5 +1,6 @@
 import type { VocabWord } from '../types'
 import { antigravityHooks } from './antigravityHooks'
+import { withOriginNebula } from './originNebula'
 import { wordOrigins } from './wordOrigins'
 
 const specialHooks: Record<string, NonNullable<VocabWord['memoryHook']>> = {
@@ -169,7 +170,8 @@ const actionWords: Record<string, string> = {
 
 export function buildMemoryHook(word: VocabWord): NonNullable<VocabWord['memoryHook']> {
   const antigravity = antigravityHooks[word.word.toLowerCase()]
-  const origin = wordOrigins[word.word.toLowerCase()]
+  const rawOrigin = wordOrigins[word.word.toLowerCase()]
+  const origin = rawOrigin ? withOriginNebula(word.word, rawOrigin) : undefined
   if (antigravity) {
     return {
       ...antigravity,

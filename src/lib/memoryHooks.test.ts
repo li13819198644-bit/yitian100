@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { seedWords } from '../data/seedWords'
 import { antigravityHooks } from './antigravityHooks'
 import { auditMemoryHook } from './memoryHookAudit'
+import { originNebula } from './originNebula'
 import { wordOrigins } from './wordOrigins'
 
 describe('memory hooks', () => {
@@ -33,5 +34,12 @@ describe('memory hooks', () => {
       .filter((word) => !wordOrigins[word])
 
     expect(missing).toEqual([])
+  })
+
+  it('adds nebula links for key etymology families', () => {
+    expect(originNebula.explicit).toContain('implicit')
+    expect(originNebula.anticipate).toContain('participate')
+    expect(originNebula.sustain).toContain('retain')
+    expect(originNebula.include).toContain('exclude')
   })
 })
