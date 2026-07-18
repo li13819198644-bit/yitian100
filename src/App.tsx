@@ -151,7 +151,7 @@ function App() {
 
   return (
     <main className="min-h-dvh bg-[#f7f4ef] text-stone-950">
-      <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-4 pb-[calc(88px+env(safe-area-inset-bottom))] pt-[calc(18px+env(safe-area-inset-top))]">
+      <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-4 pb-[calc(168px+env(safe-area-inset-bottom))] pt-[calc(18px+env(safe-area-inset-top))]">
         <header className="flex items-center justify-between py-2">
           <div>
             <p className="text-sm text-stone-500">iPhone 离线背词</p>
@@ -320,7 +320,11 @@ function WordCard({ title, word, progress, children }: { title: string; word: Vo
           复习 {progress?.repetitions ?? 0} 次 · 稳定度 {(progress?.stability ?? 0).toFixed(1)} 天 · 错误 {progress?.lapses ?? 0}
         </p>
       </div>
-      {children}
+      {children && (
+        <div className="fixed inset-x-0 bottom-[calc(72px+env(safe-area-inset-bottom))] z-20 border-t border-stone-200 bg-[#f7f4ef]/95 py-3 backdrop-blur">
+          <div className="mx-auto w-full max-w-md px-4">{children}</div>
+        </div>
+      )}
     </section>
   )
 }
