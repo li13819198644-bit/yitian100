@@ -305,15 +305,15 @@ function WordCard({ title, word, progress, children }: { title: string; word: Vo
         </div>
         {word.memoryHook && (
           <div className="mt-4 space-y-3 rounded-lg bg-emerald-50 p-4 text-left ring-1 ring-emerald-100">
-            <p className="text-sm font-semibold text-emerald-900">记忆钩子</p>
+            <p className="text-sm font-semibold text-emerald-900">先会用这个词</p>
             <p className="text-lg font-semibold leading-7 text-emerald-950">{word.memoryHook.core}</p>
-            <p className="leading-7 text-stone-700">{word.memoryHook.image}</p>
-            <p className="text-sm leading-6 text-stone-600">{word.memoryHook.breakdown}</p>
             <div className="rounded-lg bg-white p-3">
-              <p className="text-xs font-medium text-stone-500">看到它先想</p>
+              <p className="text-xs font-medium text-stone-500">闭眼先说这个搭配</p>
               <p className="mt-1 font-semibold">{word.memoryHook.cue}</p>
             </div>
-            <p className="text-sm font-medium text-emerald-900">{word.memoryHook.personalPrompt}</p>
+            <p className="leading-7 text-stone-700">{word.memoryHook.image}</p>
+            <p className="text-sm leading-6 text-stone-600">用法审核：{word.memoryHook.breakdown}</p>
+            <p className="rounded-lg bg-emerald-100 p-3 text-sm font-medium leading-6 text-emerald-950">马上造句：{word.memoryHook.personalPrompt}</p>
           </div>
         )}
         <p className="mt-4 text-sm text-stone-500">

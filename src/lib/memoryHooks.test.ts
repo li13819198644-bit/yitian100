@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { seedWords } from '../data/seedWords'
 import { antigravityHooks } from './antigravityHooks'
+import { auditMemoryHook } from './memoryHookAudit'
 
 describe('memory hooks', () => {
   it('covers every seed word with an antigravity draft hook', () => {
@@ -17,5 +18,11 @@ describe('memory hooks', () => {
       expect(hook.cue.length).toBeLessThanOrEqual(48)
       expect(hook.personalPrompt.length).toBeLessThanOrEqual(80)
     }
+  })
+
+  it('passes the stronger usefulness audit', () => {
+    const issues = Object.entries(antigravityHooks).flatMap(([word, hook]) => auditMemoryHook(word, hook))
+
+    expect(issues).toEqual([])
   })
 })
