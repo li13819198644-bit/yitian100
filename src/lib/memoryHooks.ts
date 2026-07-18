@@ -1,4 +1,5 @@
 import type { VocabWord } from '../types'
+import { antigravityHooks } from './antigravityHooks'
 
 const specialHooks: Record<string, NonNullable<VocabWord['memoryHook']>> = {
   facilitate: {
@@ -166,6 +167,9 @@ const actionWords: Record<string, string> = {
 }
 
 export function buildMemoryHook(word: VocabWord): NonNullable<VocabWord['memoryHook']> {
+  const antigravity = antigravityHooks[word.word.toLowerCase()]
+  if (antigravity) return antigravity
+
   const exact = specialHooks[word.word.toLowerCase()]
   if (exact) return exact
 
