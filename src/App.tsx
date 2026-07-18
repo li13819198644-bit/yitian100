@@ -322,16 +322,9 @@ function WordCard({ title, word, progress, children }: { title: string; word: Vo
               <p className="leading-7 text-stone-600">{word.example}</p>
             </div>
             {word.memoryHook && (
-              <div className="mt-4 space-y-3 rounded-lg bg-emerald-50 p-4 text-left ring-1 ring-emerald-100">
-                <p className="text-sm font-semibold text-emerald-900">反馈校正</p>
-                <p className="text-lg font-semibold leading-7 text-emerald-950">{word.memoryHook.core}</p>
-                <div className="rounded-lg bg-white p-3">
-                  <p className="text-xs font-medium text-stone-500">你刚才应该想起这个搭配</p>
-                  <p className="mt-1 font-semibold">{word.memoryHook.cue}</p>
-                </div>
-                <p className="leading-7 text-stone-700">{word.memoryHook.image}</p>
-                <p className="text-sm leading-6 text-stone-600">单词起源：{word.memoryHook.breakdown}</p>
-                <p className="rounded-lg bg-emerald-100 p-3 text-sm font-medium leading-6 text-emerald-950">现在补一句：{word.memoryHook.personalPrompt}</p>
+              <div className="mt-4 rounded-lg bg-emerald-50 p-4 text-left ring-1 ring-emerald-100">
+                <p className="text-sm font-semibold text-emerald-900">单词起源</p>
+                <p className="mt-2 text-base font-medium leading-7 text-emerald-950">{word.memoryHook.breakdown}</p>
               </div>
             )}
             <p className="mt-4 text-sm text-stone-500">
