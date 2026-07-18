@@ -151,7 +151,7 @@ function App() {
 
   return (
     <main className="min-h-dvh bg-[#f7f4ef] text-stone-950">
-      <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-4 pb-[calc(168px+env(safe-area-inset-bottom))] pt-[calc(18px+env(safe-area-inset-top))]">
+      <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-4 pb-[calc(136px+env(safe-area-inset-bottom))] pt-[calc(18px+env(safe-area-inset-top))]">
         <header className="flex items-center justify-between py-2">
           <div>
             <p className="text-sm text-stone-500">iPhone 离线背词</p>
@@ -257,7 +257,7 @@ function App() {
         {feedback && <div className="fixed left-1/2 top-[calc(14px+env(safe-area-inset-top))] z-20 w-[calc(100%-32px)] max-w-sm -translate-x-1/2 rounded-lg bg-stone-950 px-4 py-3 text-center text-sm text-white shadow-lg">{feedback}</div>}
 
         <nav className="fixed inset-x-0 bottom-0 z-10 border-t border-stone-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur">
-          <div className="mx-auto grid max-w-md grid-cols-5 px-2 py-2">
+          <div className="mx-auto grid max-w-md grid-cols-5 px-2 py-1">
             <NavButton active={screen === 'home'} onClick={() => setScreen('home')} icon={<Home size={20} />} label="首页" />
             <NavButton active={screen === 'learn'} onClick={() => startSession('learn')} icon={<BookOpen size={20} />} label="学习" />
             <NavButton active={screen === 'review'} onClick={() => setScreen('review')} icon={<RotateCcw size={20} />} label="复习" />
@@ -321,7 +321,7 @@ function WordCard({ title, word, progress, children }: { title: string; word: Vo
         </p>
       </div>
       {children && (
-        <div className="fixed inset-x-0 bottom-[calc(72px+env(safe-area-inset-bottom))] z-20 border-t border-stone-200 bg-[#f7f4ef]/95 py-3 backdrop-blur">
+        <div className="fixed inset-x-0 bottom-[calc(52px+env(safe-area-inset-bottom))] z-20 border-t border-stone-200 bg-[#f7f4ef]/95 py-2 backdrop-blur">
           <div className="mx-auto w-full max-w-md px-4">{children}</div>
         </div>
       )}
@@ -428,7 +428,7 @@ function SecondaryButton({ icon, label, onClick }: { icon: React.ReactNode; labe
 
 function NavButton({ active, icon, label, onClick }: { active: boolean; icon: React.ReactNode; label: string; onClick: () => void }) {
   return (
-    <button className={clsx('flex min-h-14 flex-col items-center justify-center gap-1 rounded-lg text-xs', active ? 'text-emerald-700' : 'text-stone-500')} onClick={onClick}>
+    <button className={clsx('flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-lg text-[11px]', active ? 'text-emerald-700' : 'text-stone-500')} onClick={onClick}>
       {icon}
       <span>{label}</span>
     </button>
