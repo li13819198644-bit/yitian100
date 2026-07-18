@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { BarChart3, BookOpen, Check, ChevronRight, Download, Home, RotateCcw, Settings, Upload, X } from 'lucide-react'
 import clsx from 'clsx'
 import type { AppSettings, AppStats, QuizMode, Rating, Screen, VocabWord, WordProgress } from './types'
-import { createProgress, accuracy, chooseDailyWords, isWeak, scheduleReview } from './lib/srs'
+import { createProgress, accuracy, chooseDailyWords, insertDelayedRetry, isWeak, scheduleReview } from './lib/srs'
 import {
   defaultSettings,
   defaultStats,
@@ -107,13 +107,7 @@ function App() {
       lastStudyDate: todayKey(),
     }
     await saveStats(nextStats)
-    if (rating !== 'known') {
-      setSessionWordIds((ids) => {
-        const remainingIds = ids.slice(activeIndex + 1)
-        if (remainingIds.includes(word.id)) return ids
-        return [...ids, word.id]
-      })
-    }
+    setSessionWordIds((ids) => insertDelayedRetry(ids, activeIndex, word.id, rating))
     setFeedback(`${word.word}: ${actionMap[rating].label}`)
     setActiveIndex((index) => index + 1)
     await refresh()
@@ -309,7 +303,9 @@ function WordCard({ title, word, progress, children }: { title: string; word: Vo
           <p className="font-medium">{word.collocation}</p>
           <p className="leading-7 text-stone-600">{word.example}</p>
         </div>
-        <p className="mt-4 text-sm text-stone-500">复习 {progress?.repetitions ?? 0} 次 · lapses {progress?.lapses ?? 0}</p>
+        <p className="mt-4 text-sm text-stone-500">
+          复习 {progress?.repetitions ?? 0} 次 · 稳定度 {(progress?.stability ?? 0).toFixed(1)} 天 · 错误 {progress?.lapses ?? 0}
+        </p>
       </div>
       {children}
     </section>

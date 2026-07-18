@@ -20,6 +20,8 @@ export interface WordProgress {
   nextReviewAt: number
   repetitions: number
   easeFactor: number
+  stability: number
+  difficultyScore: number
   lapses: number
   seen: number
   correct: number
