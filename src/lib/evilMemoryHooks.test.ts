@@ -12,10 +12,12 @@ const bannedPatterns = [
 ]
 
 const weakTemplatePatterns = [
+  /[像想听记联想]“/,
   /像“.*法条”/,
   /像“.*规则”/,
   /像“.*标准”/,
   /像“.*流程”/,
+  /采购门/,
   /叫/,
   /就是/,
 ]
