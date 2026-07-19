@@ -6,7 +6,7 @@ import { generatedBatch6 } from '../data/generatedBatch6'
 import { nextBatchDraft } from '../data/nextBatchDraft'
 import { nextBatchDraft2 } from '../data/nextBatchDraft2'
 import { seedWords } from '../data/seedWords'
-import { antigravityHooks } from './antigravityHooks'
+import { reviewedMemoryHooks } from './reviewedMemoryHooks'
 import { auditMemoryHook } from './memoryHookAudit'
 import { originNebula } from './originNebula'
 import { auditDraftWords } from './vocabQuality'
@@ -28,7 +28,7 @@ describe('memory hooks', () => {
   })
 
   it('keeps each hook concise enough for mobile cards', () => {
-    for (const hook of Object.values(antigravityHooks)) {
+    for (const hook of Object.values(reviewedMemoryHooks)) {
       expect(hook.core.length).toBeLessThanOrEqual(32)
       expect(hook.cue.length).toBeLessThanOrEqual(48)
       expect(hook.personalPrompt.length).toBeLessThanOrEqual(80)
@@ -36,7 +36,7 @@ describe('memory hooks', () => {
   })
 
   it('passes the stronger usefulness audit', () => {
-    const issues = Object.entries(antigravityHooks).flatMap(([word, hook]) => auditMemoryHook(word, hook))
+    const issues = Object.entries(reviewedMemoryHooks).flatMap(([word, hook]) => auditMemoryHook(word, hook))
 
     expect(issues).toEqual([])
   })

@@ -2,7 +2,7 @@ import type { VocabWord } from '../types'
 
 type MemoryHook = NonNullable<VocabWord['memoryHook']>
 
-export const antigravityHooks: Record<string, MemoryHook> = {
+export const reviewedMemoryHooks: Record<string, MemoryHook> = {
   facilitate: {
     core: '让一件事更容易发生或推进。',
     image: '会议前发清晰议程，大家更快进入讨论。',

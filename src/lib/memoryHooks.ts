@@ -1,5 +1,5 @@
 import type { VocabWord } from '../types'
-import { antigravityHooks } from './antigravityHooks'
+import { reviewedMemoryHooks } from './reviewedMemoryHooks'
 import { withOriginNebula } from './originNebula'
 import { wordOrigins } from './wordOrigins'
 
@@ -169,13 +169,13 @@ const actionWords: Record<string, string> = {
 }
 
 export function buildMemoryHook(word: VocabWord): NonNullable<VocabWord['memoryHook']> {
-  const antigravity = antigravityHooks[word.word.toLowerCase()]
+  const reviewed = reviewedMemoryHooks[word.word.toLowerCase()]
   const rawOrigin = wordOrigins[word.word.toLowerCase()]
   const origin = rawOrigin ? withOriginNebula(word.word, rawOrigin) : undefined
-  if (antigravity) {
+  if (reviewed) {
     return {
-      ...antigravity,
-      breakdown: origin ?? antigravity.breakdown,
+      ...reviewed,
+      breakdown: origin ?? reviewed.breakdown,
     }
   }
 
