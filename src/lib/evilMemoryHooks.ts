@@ -188,7 +188,7 @@ export const evilMemoryHooks: Record<string, string> = {
   ordinance: 'ordinance听order按次：城市把命令排成地方条例。',
   jurisdiction: 'jurisdiction想法院在地图盖章，章内才归它管。',
   litigation: 'litigation想两摞文件冲进法庭，争议进入诉讼。',
-  precedent: 'precedent想旧判决坐前排，新案件偷偷照着抄。',
+  precedent: 'precedent想旧案卷压住新案：后面照前面判。',
   oversight: 'oversight想楼上监控屏：监督团队不偏航。',
   accountability: 'accountability想账要说清：责任可追问可说明。',
   transparency: 'transparency想透明玻璃账本：流程人人看见。',

@@ -56,6 +56,14 @@ describe('memory hooks', () => {
     expect(originNebula.include).toContain('exclude')
   })
 
+  it('keeps precedent distinct from procedure/process', () => {
+    const precedent = seedWords.find((word) => word.word === 'precedent')
+
+    expect(precedent?.memoryHook?.core).toContain('前案')
+    expect(precedent?.memoryHook?.breakdown).toContain('procedure 才是流程')
+    expect(precedent?.memoryHook?.breakdown).toContain('案例')
+  })
+
   it('keeps the draft audit available for future batches', () => {
     expect(auditDraftWords(seedWords.map((word) => word.word), [])).toContain('draft must contain exactly 100 words, got 0')
     expect(auditDraftWords(seedWords.map((word) => word.word), [], 10)).toContain('draft must contain exactly 10 words, got 0')

@@ -84,14 +84,14 @@ export const generatedBatch6: DraftWord[] = [
     difficulty: 4,
     level: 'C1',
     memoryHook: {
-      core: '以前的决定成为后来处理类似问题的参照。',
-      image: '法官把旧案卷放在新案卷旁边，用过去的判决照亮今天的争议。',
-      breakdown: 'set a precedent / legal precedent；不是 example alone，强调对之后决定有规范性影响。',
+      core: '前案压后案：以前的决定影响后来判断。',
+      image: '新案卷刚放上桌，旧案卷啪地压在上面，法官先看旧案再判新案。',
+      breakdown: 'set a precedent / legal precedent；不是 procedure 流程，而是“前面已有案例，后面照它判断”。',
       cue: 'set a precedent / legal precedent',
       personalPrompt: '造句：This decision could set a precedent for ___.',
     },
     wordOrigin: '词源：来自拉丁 praecedere，prae 是 before，cedere 是 go；precedent 原意是“先走在前面的东西”。',
-    nebula: '同源星云：precede 表示在前；procedure 与 proceed 也含有 go forward 的历史脉络。',
+    nebula: '同源星云：precede 是在前面；precedent 是前面那个案例。procedure 才是流程步骤，别把 precedent 当流程。',
   },
   {
     id: 'oversight',
