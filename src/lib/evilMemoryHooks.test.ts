@@ -20,6 +20,17 @@ const weakTemplatePatterns = [
   /就是/,
 ]
 
+const originLikePatterns = [
+  /拆/,
+  /含/,
+  /源于/,
+  /来自/,
+  /词源/,
+  /拉丁/,
+  /希腊/,
+  /\+/,
+]
+
 describe('evilMemoryHooks', () => {
   it('covers every published seed word and only published seed words', () => {
     const seedWordSet = new Set(seedWords.map((item) => item.word))
@@ -56,6 +67,14 @@ describe('evilMemoryHooks', () => {
       .map(([word]) => word)
 
     expect(weakWords).toEqual([])
+  })
+
+  it('stays visually distinct from word origins', () => {
+    const originLikeWords = Object.entries(evilMemoryHooks)
+      .filter(([, hook]) => originLikePatterns.some((pattern) => pattern.test(hook)))
+      .map(([word]) => word)
+
+    expect(originLikeWords).toEqual([])
   })
 
   it('does not leave blank values', () => {
