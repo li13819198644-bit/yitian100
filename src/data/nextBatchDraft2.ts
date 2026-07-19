@@ -11,9 +11,9 @@ export const nextBatchDraft2: DraftWord[] = [
     difficulty: 5,
     level: 'C1',
     memoryHook: {
-      core: '给说法加上真实证据，让它不只是观点。',
-      image: '报告里一个大胆结论旁边，附上实验结果、访谈记录和清晰图表。',
-      breakdown: 'substantiate a claim / argument / allegation；比 support 更正式，强调用证据证明站得住。',
+      core: '给空话加实料证据，让它变成站得住的说法。',
+      image: 'claim 像一张空纸，data 和 examples 像水泥倒上去，纸变成硬砖。',
+      breakdown: '常搭 substantiate a claim / argument / allegation；抓 substance：给说法加实料证据，使它站得住。',
       cue: 'substantiate a claim / argument / allegation',
       personalPrompt: '造句：To substantiate ___, I would need ___.',
     },

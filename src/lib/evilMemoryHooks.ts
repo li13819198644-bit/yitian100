@@ -113,7 +113,7 @@ export const evilMemoryHooks: Record<string, string> = {
   align: 'align想椅子排成直线：目标口径一致。',
   quantify: 'quantify听quantity：感觉被塞进数字格。',
   mandate: 'mandate听man-date：命令贴上日期必须执行。',
-  substantiate: 'substantiate想空纸箱塞满证据，说法终于有重量。',
+  substantiate: 'substantiate听substance：空话灌进证据水泥。',
   streamline: 'streamline看水流冲掉石头：流程立刻变顺。',
   consolidate: 'consolidate听solid：散票压成一块硬板。',
   articulate: 'articulate想舌头打拍子，复杂观点一拍拍说清。',

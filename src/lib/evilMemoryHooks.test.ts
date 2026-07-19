@@ -104,4 +104,9 @@ describe('evilMemoryHooks', () => {
     expect(evilMemoryHooks.sanction).toContain('allow')
     expect(evilMemoryHooks.sanction).toContain('ban')
   })
+
+  it('uses substance as the bridge for substantiate', () => {
+    expect(evilMemoryHooks.substantiate).toContain('substance')
+    expect(evilMemoryHooks.substantiate).toContain('证据')
+  })
 })
