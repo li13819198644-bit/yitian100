@@ -11,6 +11,15 @@ const bannedPatterns = [
   /恐吓/,
 ]
 
+const weakTemplatePatterns = [
+  /像“.*法条”/,
+  /像“.*规则”/,
+  /像“.*标准”/,
+  /像“.*流程”/,
+  /叫/,
+  /就是/,
+]
+
 describe('evilMemoryHooks', () => {
   it('covers every published seed word and only published seed words', () => {
     const seedWordSet = new Set(seedWords.map((item) => item.word))
@@ -39,6 +48,14 @@ describe('evilMemoryHooks', () => {
       .map(([word]) => word)
 
     expect(flagged).toEqual([])
+  })
+
+  it('rejects weak template wording across the whole hook set', () => {
+    const weakWords = Object.entries(evilMemoryHooks)
+      .filter(([, hook]) => weakTemplatePatterns.some((pattern) => pattern.test(hook)))
+      .map(([word]) => word)
+
+    expect(weakWords).toEqual([])
   })
 
   it('does not leave blank values', () => {
