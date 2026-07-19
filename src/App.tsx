@@ -8,6 +8,7 @@ import {
   buildDailyPlan,
   chooseLearnSession,
   chooseReviewSession,
+  chooseWeakPracticeSession,
   insertDelayedRetry,
   isWeak,
   scheduleQuizResult,
@@ -134,6 +135,22 @@ function App() {
     setActiveIndex(0)
     setSessionKind(reviewQueue.length ? 'review' : 'quiz')
     setScreen('quiz')
+  }
+
+  function startWeakPracticeSession(nextScreen: Screen = 'learn') {
+    const nextWords = chooseWeakPracticeSession(words, progress, {
+      baseNewWordsPerDay: settings.dailyTarget,
+      dailyCapacity: settings.dailyCapacity,
+      weakPracticeLimit: 30,
+    })
+    if (!nextWords.length) {
+      setScreen('weak')
+      return
+    }
+    setSessionWordIds(nextWords.map((word) => word.id))
+    setActiveIndex(0)
+    setSessionKind('weak')
+    setScreen(nextScreen)
   }
 
   async function rateWord(word: VocabWord, rating: Rating) {
@@ -303,6 +320,7 @@ function App() {
 
             <div className="grid grid-cols-2 gap-3">
               <Metric label="今日该复习" value={dailyPlan.reviewDebt} />
+              <Metric label="弱词债" value={dailyPlan.weakDebt} />
               <Metric label="建议新词" value={dailyPlan.recommendedNewCount} />
               <Metric label="明日复习" value={dailyPlan.forecastReviewLoad[1] ?? 0} />
               <Metric label="7日峰值" value={Math.max(0, ...dailyPlan.forecastReviewLoad)} />
@@ -314,14 +332,18 @@ function App() {
             </div>
 
             <div className="grid gap-3">
-              <PrimaryButton onClick={dailyPlan.reviewDebt ? () => startReviewSession('learn') : startLearnSession} icon={<BookOpen size={20} />} label={dailyPlan.reviewDebt ? '先清复习' : '学习新词'} />
+              <PrimaryButton
+                onClick={dailyPlan.reviewDebt ? () => startReviewSession('learn') : dailyPlan.recommendedNewCount ? startLearnSession : () => startWeakPracticeSession('learn')}
+                icon={<BookOpen size={20} />}
+                label={dailyPlan.reviewDebt ? '先清复习' : dailyPlan.recommendedNewCount ? '学习新词' : '修复弱词'}
+              />
               <SecondaryButton onClick={startQuizSession} icon={<BarChart3 size={20} />} label="进入测验" />
             </div>
           </section>
         )}
 
         {screen === 'learn' && activeWord && activeIndex < sessionWords.length && (
-          <WordCard title={`${sessionKind === 'review' ? '到期复习' : '新词学习'} · 第 ${Math.floor(activeIndex / 5) + 1} 组 / ${Math.max(1, Math.ceil(sessionWords.length / 5))}`} word={activeWord} progress={progressMap.get(activeWord.id)}>
+          <WordCard title={`${sessionKind === 'review' ? '到期复习' : sessionKind === 'weak' ? '弱词修复' : '新词学习'} · 第 ${Math.floor(activeIndex / 5) + 1} 组 / ${Math.max(1, Math.ceil(sessionWords.length / 5))}`} word={activeWord} progress={progressMap.get(activeWord.id)}>
             <div className="grid grid-cols-3 gap-2">
               {(Object.keys(actionMap) as Rating[]).map((rating) => (
                 <button key={rating} className={clsx('tap-button', actionMap[rating].className)} onClick={() => rateWord(activeWord, rating)}>
@@ -333,7 +355,7 @@ function App() {
         )}
 
         {screen === 'learn' && sessionWords.length > 0 && activeIndex >= sessionWords.length && (
-          <DoneCard title={sessionKind === 'review' ? '复习完成' : '今日新词完成'} subtitle={sessionKind === 'review' ? '到期复习已经清完。现在可以开一点新词。' : '这组新词已经学完。模糊和不认识的词会按间隔回来。'} onRestart={sessionKind === 'review' ? startLearnSession : startLearnSession} />
+          <DoneCard title={sessionKind === 'review' ? '复习完成' : sessionKind === 'weak' ? '弱词修复完成' : '今日新词完成'} subtitle={sessionKind === 'review' ? '到期复习已经清完。如果弱词债仍高，先修弱词。' : sessionKind === 'weak' ? '这组高错误词已经重新压了一遍，系统会更谨慎安排。' : '这组新词已经学完。模糊和不认识的词会按间隔回来。'} onRestart={sessionKind === 'review' ? () => startWeakPracticeSession('learn') : sessionKind === 'weak' ? startWeakPracticeSession : startLearnSession} />
         )}
 
         {screen === 'quiz' && activeWord && activeIndex < sessionWords.length && (
@@ -357,7 +379,12 @@ function App() {
             <WordList title="复习队列" words={reviewWords} progressMap={progressMap} empty="现在没有到期复习词。" />
           </section>
         )}
-        {screen === 'weak' && <WordList title="弱词本" words={weakWords} progressMap={progressMap} empty="还没有弱词。" />}
+        {screen === 'weak' && (
+          <section className="space-y-3">
+            <PrimaryButton onClick={() => startWeakPracticeSession('learn')} icon={<RotateCcw size={20} />} label={weakWords.length ? `修复弱词 ${Math.min(30, weakWords.length)} 个` : '暂无弱词'} />
+            <WordList title="弱词本" words={weakWords} progressMap={progressMap} empty="还没有弱词。" />
+          </section>
+        )}
 
         {screen === 'settings' && (
           <section className="space-y-4">

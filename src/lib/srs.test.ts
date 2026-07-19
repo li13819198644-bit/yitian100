@@ -3,6 +3,7 @@ import {
   buildDailyPlan,
   chooseLearnSession,
   chooseReviewSession,
+  chooseWeakPracticeSession,
   createProgress,
   chooseDailyWords,
   forecastReviewLoad,
@@ -10,7 +11,9 @@ import {
   getDueReviewWords,
   insertDelayedRetry,
   isWeak,
+  isLeech,
   recommendNewWordCount,
+  recommendNewWordCountWithWeakDebt,
   scheduleQuizResult,
   scheduleReview,
 } from './srs'
@@ -53,6 +56,22 @@ describe('spaced repetition', () => {
     expect(unknown.incorrect).toBe(1)
     expect(unknown.nextReviewAt - now).toBe(10 * 60 * 1000)
     expect(isWeak(unknown)).toBe(true)
+  })
+
+  it('caps review intervals for repeated lapse words until they recover', () => {
+    const leech = {
+      ...createProgress('encompass', now),
+      repetitions: 2,
+      lapses: 12,
+      stability: 16,
+      seen: 20,
+      correct: 9,
+      incorrect: 11,
+    }
+    const next = scheduleReview(leech, 'known', now)
+
+    expect(isLeech(leech)).toBe(true)
+    expect(next.nextReviewAt - now).toBeLessThanOrEqual(12 * 60 * 60 * 1000)
   })
 
   it('treats correct quiz answers as light reinforcement instead of known mastery', () => {
@@ -118,6 +137,11 @@ describe('spaced repetition', () => {
     expect(recommendNewWordCountWithForecast(0, 100, 160, overloadedForecast)).toBeLessThan(100)
   })
 
+  it('stops new words when weak debt is high', () => {
+    expect(recommendNewWordCountWithWeakDebt(0, 95, 120, 100, 160)).toBe(0)
+    expect(recommendNewWordCountWithWeakDebt(0, 10, 20, 100, 160)).toBe(20)
+  })
+
   it('keeps learn sessions to unseen new words only', () => {
     const words = [word('seen-due'), word('seen-future'), word('new-a'), word('new-b')]
     const seenDue = { ...createProgress('seen-due', now), nextReviewAt: now - 1000 }
@@ -130,6 +154,31 @@ describe('spaced repetition', () => {
     })
 
     expect(learn.map((item) => item.id)).toEqual(['new-a', 'new-b'])
+  })
+
+  it('prioritizes leech words in weak practice sessions', () => {
+    const words = [word('mild'), word('leech')]
+    const mild = {
+      ...createProgress('mild', now),
+      nextReviewAt: now + day,
+      lapses: 1,
+      incorrect: 1,
+    }
+    const leech = {
+      ...createProgress('leech', now),
+      nextReviewAt: now + day,
+      lapses: 6,
+      incorrect: 6,
+      correct: 2,
+    }
+
+    const practice = chooseWeakPracticeSession(words, [mild, leech], {
+      baseNewWordsPerDay: 100,
+      dailyCapacity: 160,
+      now,
+    })
+
+    expect(practice.map((item) => item.id)).toEqual(['leech', 'mild'])
   })
 
   it('builds a daily plan with review debt and capped new words', () => {
@@ -146,6 +195,7 @@ describe('spaced repetition', () => {
     })
 
     expect(plan.reviewDebt).toBe(90)
+    expect(plan.weakDebt).toBe(0)
     expect(plan.recommendedNewCount).toBe(70)
     expect(plan.dueReviewWords).toHaveLength(90)
     expect(plan.newWords).toHaveLength(70)

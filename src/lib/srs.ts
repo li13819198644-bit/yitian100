@@ -18,6 +18,7 @@ export interface DailyPlan {
   forecastReviewLoad: number[]
   forecastPressure: number
   reviewDebt: number
+  weakDebt: number
   recommendedNewCount: number
   dailyCapacity: number
 }
@@ -43,6 +44,18 @@ export function qualityFromRating(rating: Rating): number {
   if (rating === 'known') return 5
   if (rating === 'fuzzy') return 3
   return 1
+}
+
+function recoveryIntervalCapMs(lapses: number, repetitions: number, rating: Rating): number | undefined {
+  if (lapses < 3 || repetitions >= Math.min(8, Math.max(3, Math.ceil(lapses / 2)))) return undefined
+  if (rating === 'fuzzy') {
+    if (lapses >= 10) return 30 * MINUTE
+    if (lapses >= 6) return 6 * 60 * MINUTE
+    return 12 * 60 * MINUTE
+  }
+  if (lapses >= 10) return 12 * 60 * MINUTE
+  if (lapses >= 6) return DAY
+  return 2 * DAY
 }
 
 export function scheduleReview(progress: WordProgress, rating: Rating, now = Date.now()): WordProgress {
@@ -85,6 +98,8 @@ export function scheduleReview(progress: WordProgress, rating: Rating, now = Dat
       stability = Math.max(previousStability + 1, previousStability * easeFactor * difficultyDrag)
       intervalMs = Math.round(stability) * DAY
     }
+    intervalMs = Math.min(intervalMs, recoveryIntervalCapMs(lapses, repetitions, rating) ?? intervalMs)
+    stability = Math.min(stability, intervalMs / DAY)
   }
 
   const seen = progress.seen + 1
@@ -120,7 +135,15 @@ export function accuracy(progress: WordProgress[]): number {
 }
 
 export function isWeak(progress: WordProgress): boolean {
-  return progress.lapses > 0 || progress.lastRating === 'unknown' || progress.easeFactor < 2
+  const attempts = progress.correct + progress.incorrect
+  const accuracy = attempts ? progress.correct / attempts : 1
+  return progress.lapses > 0 || progress.lastRating === 'unknown' || progress.easeFactor < 2 || (progress.incorrect >= 3 && accuracy < 0.6)
+}
+
+export function isLeech(progress: WordProgress): boolean {
+  const attempts = progress.correct + progress.incorrect
+  const accuracy = attempts ? progress.correct / attempts : 1
+  return progress.lapses >= 5 || (progress.incorrect >= 4 && accuracy < 0.45)
 }
 
 function progressMap(progress: WordProgress[]): Map<string, WordProgress> {
@@ -152,13 +175,28 @@ export function getWeakPracticeWords(words: VocabWord[], progress: WordProgress[
     .sort((a, b) => {
       const left = byId.get(a.id)
       const right = byId.get(b.id)
-      return (right?.lapses ?? 0) - (left?.lapses ?? 0) || (left?.easeFactor ?? 2.5) - (right?.easeFactor ?? 2.5)
+      return Number(Boolean(right && isLeech(right))) - Number(Boolean(left && isLeech(left)))
+        || (right?.lapses ?? 0) - (left?.lapses ?? 0)
+        || (left?.easeFactor ?? 2.5) - (right?.easeFactor ?? 2.5)
     })
     .slice(0, Math.max(0, limit))
 }
 
 export function recommendNewWordCount(dueReviewCount: number, baseNewWordsPerDay: number, dailyCapacity = 160): number {
   return Math.max(0, Math.min(baseNewWordsPerDay, dailyCapacity - dueReviewCount))
+}
+
+export function recommendNewWordCountWithWeakDebt(
+  dueReviewCount: number,
+  weakDebt: number,
+  availableNewWords: number,
+  baseNewWordsPerDay: number,
+  dailyCapacity = 160,
+  forecastLoad: number[] = [],
+): number {
+  if (weakDebt >= Math.max(30, baseNewWordsPerDay * 0.8)) return 0
+  const pressureAdjusted = recommendNewWordCountWithForecast(dueReviewCount + Math.floor(weakDebt / 2), baseNewWordsPerDay, dailyCapacity, forecastLoad)
+  return Math.min(availableNewWords, pressureAdjusted)
 }
 
 export function forecastReviewLoad(progress: WordProgress[], days = 7, now = Date.now()): number[] {
@@ -189,11 +227,17 @@ export function recommendNewWordCountWithForecast(
 export function buildDailyPlan(words: VocabWord[], progress: WordProgress[], options: DailyPlanOptions): DailyPlan {
   const now = options.now ?? Date.now()
   const dailyCapacity = options.dailyCapacity ?? 160
+  const byId = progressMap(progress)
   const dueReviewWords = getDueReviewWords(words, progress, now)
   const reviewDebt = dueReviewWords.length
   const load = forecastReviewLoad(progress, 7, now)
   const pressure = forecastPressure(load, dailyCapacity)
-  const recommendedNewCount = recommendNewWordCountWithForecast(reviewDebt, options.baseNewWordsPerDay, dailyCapacity, load)
+  const weakDebt = words.filter((word) => {
+    const item = byId.get(word.id)
+    return item ? isWeak(item) : false
+  }).length
+  const availableNewWords = getNewWords(words, progress).length
+  const recommendedNewCount = recommendNewWordCountWithWeakDebt(reviewDebt, weakDebt, availableNewWords, options.baseNewWordsPerDay, dailyCapacity, load)
   const reviewLimit = options.reviewCap ?? reviewDebt
 
   return {
@@ -203,6 +247,7 @@ export function buildDailyPlan(words: VocabWord[], progress: WordProgress[], opt
     forecastReviewLoad: load,
     forecastPressure: pressure,
     reviewDebt,
+    weakDebt,
     recommendedNewCount,
     dailyCapacity,
   }
@@ -214,6 +259,10 @@ export function chooseReviewSession(words: VocabWord[], progress: WordProgress[]
 
 export function chooseLearnSession(words: VocabWord[], progress: WordProgress[], options: DailyPlanOptions): VocabWord[] {
   return buildDailyPlan(words, progress, options).newWords
+}
+
+export function chooseWeakPracticeSession(words: VocabWord[], progress: WordProgress[], options: DailyPlanOptions): VocabWord[] {
+  return buildDailyPlan(words, progress, options).weakPracticeWords
 }
 
 export function chooseDailyWords(words: VocabWord[], progress: WordProgress[], target = 100, now = Date.now()): VocabWord[] {
