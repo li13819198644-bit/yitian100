@@ -35,6 +35,8 @@ const actionMap: Record<Rating, { label: string; className: string }> = {
   unknown: { label: '不认识', className: 'bg-rose-600 text-white' },
 }
 
+const dayMs = 24 * 60 * 60 * 1000
+
 function blankStats(): AppStats {
   return defaultStats()
 }
@@ -218,6 +220,59 @@ function App() {
     await saveSettings(next)
   }
 
+  function exportLearningReport() {
+    const now = Date.now()
+    const learnedIds = new Set(progress.map((item) => item.wordId))
+    const weakIds = new Set(weakWords.map((word) => word.id))
+    const report = {
+      schemaVersion: 1,
+      app: '一天100词',
+      exportedAt: new Date(now).toISOString(),
+      summary: {
+        totalWords: words.length,
+        learnedWords: learnedIds.size,
+        unlearnedWords: words.length - learnedIds.size,
+        masteredWords: mastered,
+        weakWords: weakWords.length,
+        dueReviewWords: dailyPlan.reviewDebt,
+        recommendedNewWords: dailyPlan.recommendedNewCount,
+        tomorrowReviews: dailyPlan.forecastReviewLoad[1] ?? 0,
+        sevenDayPeak: Math.max(0, ...dailyPlan.forecastReviewLoad),
+        accuracy: todayAccuracy,
+        combo: stats.combo,
+        streak: stats.streak,
+      },
+      forecast: dailyPlan.forecastReviewLoad.map((count, index) => ({
+        date: new Date(now + index * dayMs).toISOString().slice(0, 10),
+        dueCount: count,
+      })),
+      weakWords: weakWords.map((word) => ({
+        word: word.word,
+        meaning: word.meaning,
+        progress: progressMap.get(word.id),
+      })),
+      words: words.map((word) => ({
+        id: word.id,
+        word: word.word,
+        meaning: word.meaning,
+        level: word.level,
+        difficulty: word.difficulty,
+        learned: learnedIds.has(word.id),
+        weak: weakIds.has(word.id),
+        progress: progressMap.get(word.id) ?? null,
+      })),
+      settings,
+      stats,
+    }
+    const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `yitian100-learning-report-${todayKey()}.json`
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <main className="min-h-dvh bg-[#f7f4ef] text-stone-950">
       <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-4 pb-[calc(136px+env(safe-area-inset-bottom))] pt-[calc(18px+env(safe-area-inset-top))]">
@@ -313,6 +368,9 @@ function App() {
               <button className="mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-stone-900 px-4 font-medium text-white" onClick={() => setScreen('import')}>
                 <Upload size={18} /> 导入词库
               </button>
+              <button className="mt-3 flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-white px-4 font-medium text-stone-900 ring-1 ring-stone-200" onClick={exportLearningReport}>
+                <Download size={18} /> 导出学习报告
+              </button>
               <button className="mt-3 flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-white px-4 font-medium text-rose-700 ring-1 ring-rose-200" onClick={async () => { await resetProgress(); await refresh() }}>
                 <RotateCcw size={18} /> 重置学习进度
               </button>
@@ -402,6 +460,12 @@ function WordCard({ title, word, progress, children }: { title: string; word: Vo
               <div className="mt-4 rounded-lg bg-emerald-50 p-4 text-left ring-1 ring-emerald-100">
                 <p className="text-sm font-semibold text-emerald-900">单词起源</p>
                 <p className="mt-2 text-base font-medium leading-7 text-emerald-950">{word.memoryHook.breakdown}</p>
+              </div>
+            )}
+            {word.evilHook && (
+              <div className="mt-4 rounded-lg bg-fuchsia-50 p-4 text-left ring-1 ring-fuchsia-100">
+                <p className="text-sm font-semibold text-fuchsia-900">邪修记法</p>
+                <p className="mt-2 text-base font-medium leading-7 text-fuchsia-950">{word.evilHook}</p>
               </div>
             )}
             <p className="mt-4 text-sm text-stone-500">

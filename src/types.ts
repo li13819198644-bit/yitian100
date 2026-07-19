@@ -19,6 +19,7 @@ export interface VocabWord {
     cue: string
     personalPrompt: string
   }
+  evilHook?: string
   difficulty: 1 | 2 | 3 | 4 | 5
   level: 'B2' | 'C1'
 }
