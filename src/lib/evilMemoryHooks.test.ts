@@ -98,4 +98,10 @@ describe('evilMemoryHooks', () => {
 
     expect(missing).toEqual([])
   })
+
+  it('uses the section confusion as the bridge for sanction', () => {
+    expect(evilMemoryHooks.sanction).toContain('section')
+    expect(evilMemoryHooks.sanction).toContain('allow')
+    expect(evilMemoryHooks.sanction).toContain('ban')
+  })
 })

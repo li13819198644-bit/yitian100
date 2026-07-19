@@ -193,7 +193,7 @@ export const evilMemoryHooks: Record<string, string> = {
   accountability: 'accountability看账本追人：责任一路追到名字。',
   transparency: 'transparency看玻璃账本：每一步都被看见。',
   enforcement: 'enforcement看规则穿警靴：命令真的落地。',
-  sanction: 'sanction想同一枚章：盖绿章批准，盖红章制裁。',
+  sanction: 'sanction听section：条款写allow批准，写ban制裁。',
   amendment: 'amendment看红笔缝条款：旧文件被修补。',
   referendum: 'referendum看选票回流成河：全民投票决定。',
   constituency: 'constituency看选区围栏：里面的人推代表。',

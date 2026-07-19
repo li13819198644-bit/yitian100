@@ -176,8 +176,8 @@ export const generatedBatch6: DraftWord[] = [
     level: 'C1',
     memoryHook: {
       core: '可表示惩罚性制裁，也可表示正式许可，要看搭配。',
-      image: '一份文件左边写着批准印章，右边写着违反规则后的罚单。',
-      breakdown: 'economic sanction / impose sanctions；也可 sanction a plan，表示正式批准，含义方向相反要看结构。',
+      image: '你看到文件里的一个 section：写 allow plan 是批准，写 ban company 是制裁。',
+      breakdown: 'economic sanction / impose sanctions；别从中文背，先借 section 想“官方条款”：允许某事是批准，处罚对象是制裁。',
       cue: 'economic sanction / sanction a plan',
       personalPrompt: '造句：The authority may sanction ___ if ___.',
     },
