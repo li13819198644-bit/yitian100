@@ -10,6 +10,7 @@
 - 英译中、中译英选择、语境填空、快刷模式
 - 首页显示今日进度、正确率、Combo、连续学习、掌握词、弱词数
 - CSV / JSON 本地导入词库
+- 可选 Supabase 账号密码云同步进度
 - PWA manifest、service worker、离线缓存、iOS safe-area 支持
 - Capacitor iOS 工程，可用 Xcode 安装到 iPhone
 - GitHub Pages 自动部署工作流
@@ -69,6 +70,70 @@ npm run dev -- --host 0.0.0.0
 6. 发布网址通常是：`https://你的GitHub用户名.github.io/yitian100/`。
 
 本项目已经包含 `.github/workflows/deploy.yml`，提交后会自动安装依赖、运行测试、构建并部署 `dist`。
+
+## 云同步设置
+
+云同步使用 Supabase Auth 和一张用户私有进度表。密码由 Supabase Auth 处理，本应用不保存明文密码；本地 IndexedDB 仍然是主存储，登录后额外上传云端快照。
+
+1. 在 Supabase 新建项目。
+2. 打开 `SQL Editor`，执行：
+
+```sql
+create table if not exists public.learning_snapshots (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  payload jsonb not null,
+  updated_at timestamptz not null default now()
+);
+
+alter table public.learning_snapshots enable row level security;
+
+create policy "Users can read own learning snapshot"
+on public.learning_snapshots
+for select
+to authenticated
+using (auth.uid() = user_id);
+
+create policy "Users can insert own learning snapshot"
+on public.learning_snapshots
+for insert
+to authenticated
+with check (auth.uid() = user_id);
+
+create policy "Users can update own learning snapshot"
+on public.learning_snapshots
+for update
+to authenticated
+using (auth.uid() = user_id)
+with check (auth.uid() = user_id);
+```
+
+3. 复制项目的 `Project URL` 和 `anon public key`，创建 `.env.local`：
+
+```bash
+cp .env.example .env.local
+```
+
+然后填写：
+
+```bash
+VITE_SUPABASE_URL=你的 Project URL
+VITE_SUPABASE_ANON_KEY=你的 anon public key
+```
+
+4. 本地运行：
+
+```bash
+npm run dev
+```
+
+5. 发布到 GitHub Pages 时，在仓库 `Settings` → `Secrets and variables` → `Actions` 里添加同名变量或 secret：
+
+```text
+VITE_SUPABASE_URL
+VITE_SUPABASE_ANON_KEY
+```
+
+如果你想用“用户名”而不是邮箱，本应用会把 `huali` 转成 `huali@yitian100.local` 交给 Supabase Auth。Supabase 如果开启邮件确认，建议用真实邮箱注册；如果只给自己用，可以在 Supabase Auth 设置里关闭邮箱确认。
 
 ## 方式二：打包成 iPhone App
 

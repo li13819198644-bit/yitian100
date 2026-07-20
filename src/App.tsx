@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { BarChart3, BookOpen, Check, ChevronRight, Download, Home, RotateCcw, Settings, Upload, X } from 'lucide-react'
+import { BarChart3, BookOpen, Check, ChevronRight, Cloud, Download, Home, RotateCcw, Settings, Upload, X } from 'lucide-react'
 import clsx from 'clsx'
 import type { AppSettings, AppStats, QuizMode, Rating, Screen, SessionKind, VocabWord, WordProgress } from './types'
 import {
@@ -29,6 +29,15 @@ import {
   todayKey,
 } from './lib/db'
 import { parseVocabulary } from './lib/importer'
+import {
+  getCloudUser,
+  isCloudSyncConfigured,
+  restoreCloudSnapshot,
+  signInToCloud,
+  signOutFromCloud,
+  signUpToCloud,
+  uploadLocalSnapshot,
+} from './lib/cloudSync'
 
 const actionMap: Record<Rating, { label: string; className: string }> = {
   known: { label: '认识', className: 'bg-emerald-600 text-white' },
@@ -54,6 +63,11 @@ function App() {
   const [quizMode, setQuizMode] = useState<QuizMode>('en-zh')
   const [feedback, setFeedback] = useState<string>('')
   const [importMessage, setImportMessage] = useState('')
+  const [cloudUser, setCloudUser] = useState<string>('')
+  const [cloudLogin, setCloudLogin] = useState('')
+  const [cloudPassword, setCloudPassword] = useState('')
+  const [cloudMessage, setCloudMessage] = useState('')
+  const [cloudBusy, setCloudBusy] = useState(false)
 
   async function refresh() {
     const [nextWords, nextProgress, nextSettings, nextStats] = await Promise.all([
@@ -70,7 +84,18 @@ function App() {
 
   useEffect(() => {
     refresh()
+    getCloudUser().then((user) => setCloudUser(user?.email ?? '')).catch(() => setCloudUser(''))
   }, [])
+
+  async function syncCloudQuietly() {
+    if (!cloudUser) return
+    try {
+      await uploadLocalSnapshot()
+      setCloudMessage('已自动云同步')
+    } catch {
+      setCloudMessage('自动云同步失败，本地进度已保存')
+    }
+  }
 
   const progressMap = useMemo(() => new Map(progress.map((item) => [item.wordId, item])), [progress])
   const wordMap = useMemo(() => new Map(words.map((item) => [item.id, item])), [words])
@@ -171,6 +196,7 @@ function App() {
       lastStudyDate: todayKey(),
     }
     await saveStats(nextStats)
+    void syncCloudQuietly()
     setSessionWordIds((ids) => insertDelayedRetry(ids, activeIndex, word.id, rating))
     setFeedback(`${word.word}: ${actionMap[rating].label}`)
     setActiveIndex((index) => index + 1)
@@ -194,6 +220,7 @@ function App() {
       lastStudyDate: todayKey(),
     }
     await saveStats(nextStats)
+    void syncCloudQuietly()
     setSessionWordIds((ids) => insertDelayedRetry(ids, activeIndex, word.id, correct ? 'fuzzy' : 'unknown'))
     setFeedback(`${word.word}: ${correct ? '测验答对' : '测验答错'}`)
     setActiveIndex((index) => index + 1)
@@ -235,6 +262,69 @@ function App() {
     const next = { ...settings, dailyTarget, dailyCapacity: Math.max(settings.dailyCapacity, dailyTarget) }
     setSettings(next)
     await saveSettings(next)
+    void syncCloudQuietly()
+  }
+
+  async function signInOrUp(mode: 'in' | 'up') {
+    setCloudBusy(true)
+    setCloudMessage('')
+    try {
+      const user = mode === 'in'
+        ? await signInToCloud(cloudLogin, cloudPassword)
+        : await signUpToCloud(cloudLogin, cloudPassword)
+      setCloudUser(user?.email ?? cloudLogin)
+      setCloudMessage(mode === 'in' ? '已登录，之后学习会自动同步' : '账号已创建，之后学习会自动同步')
+      await uploadLocalSnapshot()
+      setCloudMessage(mode === 'in' ? '已登录，并已上传本机进度' : '账号已创建，并已上传本机进度')
+    } catch (error) {
+      setCloudMessage(error instanceof Error ? error.message : '云同步操作失败')
+    } finally {
+      setCloudBusy(false)
+    }
+  }
+
+  async function uploadCloudNow() {
+    setCloudBusy(true)
+    setCloudMessage('')
+    try {
+      const snapshot = await uploadLocalSnapshot()
+      setCloudMessage(`已上传 ${snapshot.progress.length} 条进度`)
+    } catch (error) {
+      setCloudMessage(error instanceof Error ? error.message : '上传失败')
+    } finally {
+      setCloudBusy(false)
+    }
+  }
+
+  async function restoreCloudNow() {
+    setCloudBusy(true)
+    setCloudMessage('')
+    try {
+      const snapshot = await restoreCloudSnapshot()
+      if (!snapshot) {
+        setCloudMessage('云端还没有进度')
+      } else {
+        await refresh()
+        setCloudMessage(`已从云端恢复 ${snapshot.progress.length} 条进度`)
+      }
+    } catch (error) {
+      setCloudMessage(error instanceof Error ? error.message : '恢复失败')
+    } finally {
+      setCloudBusy(false)
+    }
+  }
+
+  async function signOutCloudNow() {
+    setCloudBusy(true)
+    try {
+      await signOutFromCloud()
+      setCloudUser('')
+      setCloudMessage('已退出登录')
+    } catch (error) {
+      setCloudMessage(error instanceof Error ? error.message : '退出失败')
+    } finally {
+      setCloudBusy(false)
+    }
   }
 
   function exportLearningReport() {
@@ -395,14 +485,58 @@ function App() {
               <button className="mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-stone-900 px-4 font-medium text-white" onClick={() => setScreen('import')}>
                 <Upload size={18} /> 导入词库
               </button>
+              <button className="mt-3 flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-white px-4 font-medium text-stone-900 ring-1 ring-stone-200" onClick={() => setScreen('sync')}>
+                <Cloud size={18} /> 云同步
+              </button>
               <button className="mt-3 flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-white px-4 font-medium text-stone-900 ring-1 ring-stone-200" onClick={exportLearningReport}>
                 <Download size={18} /> 导出学习报告
               </button>
-              <button className="mt-3 flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-white px-4 font-medium text-rose-700 ring-1 ring-rose-200" onClick={async () => { await resetProgress(); await refresh() }}>
+              <button className="mt-3 flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-white px-4 font-medium text-rose-700 ring-1 ring-rose-200" onClick={async () => { await resetProgress(); await refresh(); void syncCloudQuietly() }}>
                 <RotateCcw size={18} /> 重置学习进度
               </button>
             </Panel>
           </section>
+        )}
+
+        {screen === 'sync' && (
+          <Panel title="云同步">
+            {!isCloudSyncConfigured() ? (
+              <div className="space-y-3 text-sm leading-6 text-stone-600">
+                <p>还没配置 Supabase。配置后可以用账号密码把进度保存到云端。</p>
+                <p>本地 IndexedDB 仍然会继续保存，不会因为没登录而丢进度。</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="rounded-lg bg-stone-50 p-4 text-sm leading-6 text-stone-600">
+                  <p className="font-medium text-stone-900">{cloudUser ? `已登录：${cloudUser}` : '未登录'}</p>
+                  <p>登录后，每次学习、测验或改设置都会自动上传一份进度快照。</p>
+                </div>
+
+                {!cloudUser && (
+                  <div className="space-y-3">
+                    <label className="block text-sm font-medium text-stone-700">用户名或邮箱</label>
+                    <input className="min-h-12 w-full rounded-lg bg-white px-3 ring-1 ring-stone-200" value={cloudLogin} autoCapitalize="none" autoCorrect="off" onChange={(event) => setCloudLogin(event.target.value)} placeholder="例如 huali 或 you@example.com" />
+                    <label className="block text-sm font-medium text-stone-700">密码</label>
+                    <input className="min-h-12 w-full rounded-lg bg-white px-3 ring-1 ring-stone-200" value={cloudPassword} type="password" onChange={(event) => setCloudPassword(event.target.value)} placeholder="至少 6 位" />
+                    <div className="grid grid-cols-2 gap-3">
+                      <button disabled={cloudBusy} className="tap-button bg-stone-950 text-white disabled:opacity-50" onClick={() => signInOrUp('in')}>登录</button>
+                      <button disabled={cloudBusy} className="tap-button bg-white text-stone-900 ring-1 ring-stone-200 disabled:opacity-50" onClick={() => signInOrUp('up')}>注册</button>
+                    </div>
+                  </div>
+                )}
+
+                {cloudUser && (
+                  <div className="grid gap-3">
+                    <button disabled={cloudBusy} className="tap-button bg-stone-950 text-white disabled:opacity-50" onClick={uploadCloudNow}>上传本机进度</button>
+                    <button disabled={cloudBusy} className="tap-button bg-white text-stone-900 ring-1 ring-stone-200 disabled:opacity-50" onClick={restoreCloudNow}>从云端恢复</button>
+                    <button disabled={cloudBusy} className="tap-button bg-white text-rose-700 ring-1 ring-rose-200 disabled:opacity-50" onClick={signOutCloudNow}>退出登录</button>
+                  </div>
+                )}
+
+                {cloudMessage && <p className="rounded-lg bg-emerald-50 p-3 text-sm leading-6 text-emerald-800 ring-1 ring-emerald-100">{cloudMessage}</p>}
+              </div>
+            )}
+          </Panel>
         )}
 
         {screen === 'import' && (

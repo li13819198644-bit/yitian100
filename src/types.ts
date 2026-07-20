@@ -2,7 +2,7 @@ export type Rating = 'known' | 'fuzzy' | 'unknown'
 
 export type QuizMode = 'en-zh' | 'zh-en' | 'context' | 'swipe'
 
-export type Screen = 'home' | 'learn' | 'quiz' | 'review' | 'weak' | 'settings' | 'import'
+export type Screen = 'home' | 'learn' | 'quiz' | 'review' | 'weak' | 'settings' | 'import' | 'sync'
 export type SessionKind = 'learn' | 'review' | 'quiz' | 'weak'
 
 export interface VocabWord {
@@ -53,4 +53,12 @@ export interface AppStats {
   bestCombo: number
   streak: number
   lastStudyDate?: string
+}
+
+export interface LearningSnapshot {
+  schemaVersion: 1
+  updatedAt: number
+  progress: WordProgress[]
+  settings: AppSettings
+  stats: AppStats
 }
