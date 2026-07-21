@@ -50,14 +50,14 @@ export async function signUpToCloud(loginName: string, password: string) {
   const email = normalizeLoginName(loginName)
   const { data, error } = await (await getClient()).auth.signUp({ email, password })
   if (error) throw error
-  return data.user
+  return data
 }
 
 export async function signInToCloud(loginName: string, password: string) {
   const email = normalizeLoginName(loginName)
   const { data, error } = await (await getClient()).auth.signInWithPassword({ email, password })
   if (error) throw error
-  return data.user
+  return data
 }
 
 export async function signOutFromCloud() {

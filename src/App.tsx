@@ -269,13 +269,20 @@ function App() {
     setCloudBusy(true)
     setCloudMessage('')
     try {
-      const user = mode === 'in'
+      const auth = mode === 'in'
         ? await signInToCloud(cloudLogin, cloudPassword)
         : await signUpToCloud(cloudLogin, cloudPassword)
-      setCloudUser(user?.email ?? cloudLogin)
-      setCloudMessage(mode === 'in' ? '已登录，之后学习会自动同步' : '账号已创建，之后学习会自动同步')
+
+      if (!auth.session || !auth.user) {
+        setCloudUser('')
+        setCloudMessage('账号已创建，但还没有登录 session。请先确认邮箱，或在 Supabase Auth 里关闭邮箱确认后再注册/登录。')
+        return
+      }
+
+      setCloudUser(auth.user.email ?? cloudLogin)
+      setCloudMessage(mode === 'in' ? '已登录，之后学习会自动同步' : '账号已创建并登录，之后学习会自动同步')
       await uploadLocalSnapshot()
-      setCloudMessage(mode === 'in' ? '已登录，并已上传本机进度' : '账号已创建，并已上传本机进度')
+      setCloudMessage(mode === 'in' ? '已登录，并已上传本机进度' : '账号已创建并登录，已上传本机进度')
     } catch (error) {
       setCloudMessage(error instanceof Error ? error.message : '云同步操作失败')
     } finally {
