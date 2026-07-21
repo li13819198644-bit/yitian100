@@ -52,6 +52,16 @@ function blankStats(): AppStats {
   return defaultStats()
 }
 
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function maskTargetWord(text: string, target: string): string {
+  if (!text) return ''
+  const masked = '_'.repeat(Math.max(4, target.length))
+  return text.replace(new RegExp(`\\b${escapeRegExp(target)}\\b`, 'gi'), masked)
+}
+
 function App() {
   const [screen, setScreen] = useState<Screen>('home')
   const [words, setWords] = useState<VocabWord[]>([])
@@ -228,8 +238,14 @@ function App() {
   function quizPrompt(word: VocabWord) {
     if (quizMode === 'en-zh') return { question: word.word, answer: word.meaning }
     if (quizMode === 'zh-en') return { question: word.meaning, answer: word.word }
-    if (quizMode === 'context') return { question: word.example.replace(new RegExp(word.word, 'i'), '_____'), answer: word.word }
-    if (quizMode === 'spelling') return { question: `${word.meaning}\n${word.collocation || word.example}`, answer: word.word }
+    if (quizMode === 'context') return { question: maskTargetWord(word.example, word.word), answer: word.word }
+    if (quizMode === 'spelling') {
+      const context = maskTargetWord(word.collocation || word.example, word.word)
+      return {
+        question: [`中文：${word.meaning}`, `提示：${word.word[0]} 开头，${word.word.length} 个字母`, context && `语境：${context}`].filter(Boolean).join('\n'),
+        answer: word.word,
+      }
+    }
     return { question: word.word, answer: word.meaning }
   }
 
