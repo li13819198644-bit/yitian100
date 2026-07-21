@@ -1,6 +1,6 @@
 export type Rating = 'known' | 'fuzzy' | 'unknown'
 
-export type QuizMode = 'en-zh' | 'zh-en' | 'context' | 'swipe'
+export type QuizMode = 'en-zh' | 'zh-en' | 'context' | 'spelling' | 'swipe'
 
 export type Screen = 'home' | 'learn' | 'quiz' | 'review' | 'weak' | 'settings' | 'import' | 'sync'
 export type SessionKind = 'learn' | 'review' | 'quiz' | 'weak'

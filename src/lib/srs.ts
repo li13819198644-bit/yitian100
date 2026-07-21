@@ -8,6 +8,7 @@ export interface DailyPlanOptions {
   dailyCapacity?: number
   reviewCap?: number
   weakPracticeLimit?: number
+  quizSize?: number
   now?: number
 }
 
@@ -263,6 +264,54 @@ export function chooseLearnSession(words: VocabWord[], progress: WordProgress[],
 
 export function chooseWeakPracticeSession(words: VocabWord[], progress: WordProgress[], options: DailyPlanOptions): VocabWord[] {
   return buildDailyPlan(words, progress, options).weakPracticeWords
+}
+
+export function chooseQuizSession(words: VocabWord[], progress: WordProgress[], options: DailyPlanOptions): VocabWord[] {
+  const now = options.now ?? Date.now()
+  const quizSize = Math.max(5, options.quizSize ?? 20)
+  const byId = progressMap(progress)
+  const selected: VocabWord[] = []
+  const selectedIds = new Set<string>()
+  const add = (candidates: VocabWord[], limit = quizSize) => {
+    for (const word of candidates) {
+      if (selected.length >= quizSize || selected.length >= limit) break
+      if (selectedIds.has(word.id)) continue
+      selected.push(word)
+      selectedIds.add(word.id)
+    }
+  }
+
+  const overdue = getDueReviewWords(words, progress, now)
+  const weak = words
+    .filter((word) => {
+      const item = byId.get(word.id)
+      return item && item.nextReviewAt > now && isWeak(item)
+    })
+    .sort((a, b) => {
+      const left = byId.get(a.id)
+      const right = byId.get(b.id)
+      return (right?.lapses ?? 0) - (left?.lapses ?? 0)
+        || (right?.incorrect ?? 0) - (left?.incorrect ?? 0)
+        || (left?.easeFactor ?? 2.5) - (right?.easeFactor ?? 2.5)
+    })
+  const recentlyTouched = words
+    .filter((word) => byId.has(word.id))
+    .sort((a, b) => (byId.get(b.id)?.updatedAt ?? 0) - (byId.get(a.id)?.updatedAt ?? 0))
+  const stillYoung = words
+    .filter((word) => {
+      const item = byId.get(word.id)
+      return item && !item.mastered && item.nextReviewAt > now
+    })
+    .sort((a, b) => (byId.get(a.id)?.stability ?? 0) - (byId.get(b.id)?.stability ?? 0))
+
+  add(overdue, Math.min(quizSize, Math.max(8, Math.ceil(quizSize * 0.45))))
+  add(weak, Math.min(quizSize, Math.max(12, Math.ceil(quizSize * 0.7))))
+  add(recentlyTouched)
+  add(stillYoung)
+  add(getNewWords(words, progress, quizSize))
+  add(words)
+
+  return selected
 }
 
 export function chooseDailyWords(words: VocabWord[], progress: WordProgress[], target = 100, now = Date.now()): VocabWord[] {

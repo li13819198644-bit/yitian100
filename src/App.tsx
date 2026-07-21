@@ -7,6 +7,7 @@ import {
   accuracy,
   buildDailyPlan,
   chooseLearnSession,
+  chooseQuizSession,
   chooseReviewSession,
   chooseWeakPracticeSession,
   insertDelayedRetry,
@@ -148,17 +149,14 @@ function App() {
   }
 
   function startQuizSession() {
-    const reviewQueue = chooseReviewSession(words, progress, {
+    const nextWords = chooseQuizSession(words, progress, {
       baseNewWordsPerDay: settings.dailyTarget,
       dailyCapacity: settings.dailyCapacity,
-    })
-    const nextWords = reviewQueue.length ? reviewQueue : chooseLearnSession(words, progress, {
-      baseNewWordsPerDay: settings.dailyTarget,
-      dailyCapacity: settings.dailyCapacity,
+      quizSize: 20,
     })
     setSessionWordIds(nextWords.map((word) => word.id))
     setActiveIndex(0)
-    setSessionKind(reviewQueue.length ? 'review' : 'quiz')
+    setSessionKind('quiz')
     setScreen('quiz')
   }
 
@@ -231,11 +229,13 @@ function App() {
     if (quizMode === 'en-zh') return { question: word.word, answer: word.meaning }
     if (quizMode === 'zh-en') return { question: word.meaning, answer: word.word }
     if (quizMode === 'context') return { question: word.example.replace(new RegExp(word.word, 'i'), '_____'), answer: word.word }
+    if (quizMode === 'spelling') return { question: `${word.meaning}\n${word.collocation || word.example}`, answer: word.word }
     return { question: word.word, answer: word.meaning }
   }
 
   function choices(word: VocabWord) {
     const answer = quizPrompt(word).answer
+    if (quizMode === 'spelling') return []
     const pool = words
       .filter((candidate) => candidate.id !== word.id)
       .slice()
@@ -680,28 +680,62 @@ function QuizCard({ mode, setMode, word, prompt, choices, onAnswer }: {
   onAnswer: (correct: boolean) => void
 }) {
   const [answered, setAnswered] = useState<string>('')
-  useEffect(() => setAnswered(''), [word.id, mode])
+  const [spelling, setSpelling] = useState('')
+  useEffect(() => {
+    setAnswered('')
+    setSpelling('')
+  }, [word.id, mode])
+  const submitSpelling = () => {
+    if (answered) return
+    const normalizedInput = spelling.trim().toLowerCase()
+    const normalizedAnswer = prompt.answer.trim().toLowerCase()
+    const correct = normalizedInput === normalizedAnswer
+    setAnswered(spelling.trim() || ' ')
+    setTimeout(() => onAnswer(correct), 650)
+  }
+
   return (
     <section className="space-y-4">
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-5 gap-1.5">
         {[
           ['en-zh', '英中'],
           ['zh-en', '中英'],
           ['context', '填空'],
+          ['spelling', '拼写'],
           ['swipe', '快刷'],
         ].map(([key, label]) => (
-          <button key={key} className={clsx('min-h-11 rounded-lg text-sm font-medium ring-1 ring-stone-200', mode === key ? 'bg-stone-900 text-white' : 'bg-white')} onClick={() => setMode(key as QuizMode)}>
+          <button key={key} className={clsx('min-h-11 rounded-lg text-xs font-medium ring-1 ring-stone-200', mode === key ? 'bg-stone-900 text-white' : 'bg-white')} onClick={() => setMode(key as QuizMode)}>
             {label}
           </button>
         ))}
       </div>
       <div className="rounded-lg bg-white p-5 shadow-sm ring-1 ring-stone-200">
-        <p className="text-sm text-stone-500">{mode === 'swipe' ? '快刷判断' : '即时反馈'}</p>
-        <p className="mt-4 text-3xl font-semibold leading-tight">{prompt.question}</p>
+        <p className="text-sm text-stone-500">{mode === 'swipe' ? '快刷判断' : mode === 'spelling' ? '看中文和搭配，拼出英文' : '即时反馈'}</p>
+        <p className={clsx('mt-4 whitespace-pre-line font-semibold leading-tight', mode === 'spelling' ? 'text-2xl' : 'text-3xl')}>{prompt.question}</p>
         {mode === 'swipe' ? (
           <div className="mt-6 grid grid-cols-2 gap-3">
             <button className="tap-button bg-emerald-600 text-white" onClick={() => onAnswer(true)}><Check size={18} /> 认识</button>
             <button className="tap-button bg-rose-600 text-white" onClick={() => onAnswer(false)}><X size={18} /> 不认识</button>
+          </div>
+        ) : mode === 'spelling' ? (
+          <div className="mt-6 grid gap-3">
+            <input
+              className={clsx('min-h-14 rounded-lg border border-stone-200 bg-stone-50 px-4 text-xl font-semibold outline-none focus:border-stone-900', answered && answered.trim().toLowerCase() === prompt.answer.toLowerCase() && 'border-emerald-300 bg-emerald-50', answered && answered.trim().toLowerCase() !== prompt.answer.toLowerCase() && 'border-rose-300 bg-rose-50')}
+              value={spelling}
+              onChange={(event) => setSpelling(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') submitSpelling()
+              }}
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              placeholder="输入英文单词"
+              disabled={Boolean(answered)}
+            />
+            {answered && <p className="rounded-lg bg-stone-100 px-4 py-3 text-sm font-medium text-stone-700">正确拼写：{prompt.answer}</p>}
+            <button className="tap-button bg-stone-950 text-white disabled:bg-stone-300" onClick={submitSpelling} disabled={!spelling.trim() || Boolean(answered)}>
+              提交拼写
+            </button>
           </div>
         ) : (
           <div className="mt-6 grid gap-3">

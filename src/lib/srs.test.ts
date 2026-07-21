@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   buildDailyPlan,
   chooseLearnSession,
+  chooseQuizSession,
   chooseReviewSession,
   chooseWeakPracticeSession,
   createProgress,
@@ -154,6 +155,28 @@ describe('spaced repetition', () => {
     })
 
     expect(learn.map((item) => item.id)).toEqual(['new-a', 'new-b'])
+  })
+
+  it('supplements quiz sessions beyond a small overdue queue', () => {
+    const words = Array.from({ length: 12 }, (_, index) => word(`word-${index}`))
+    const dueA = { ...createProgress('word-0', now), nextReviewAt: now - 5000, updatedAt: now - 5000 }
+    const dueB = { ...createProgress('word-1', now), nextReviewAt: now - 1000, updatedAt: now - 1000 }
+    const recent = words.slice(2, 8).map((item, index) => ({
+      ...createProgress(item.id, now),
+      nextReviewAt: now + day,
+      updatedAt: now - index,
+    }))
+
+    const quiz = chooseQuizSession(words, [dueB, dueA, ...recent], {
+      baseNewWordsPerDay: 100,
+      dailyCapacity: 160,
+      quizSize: 8,
+      now,
+    })
+
+    expect(quiz).toHaveLength(8)
+    expect(quiz.slice(0, 2).map((item) => item.id)).toEqual(['word-0', 'word-1'])
+    expect(new Set(quiz.map((item) => item.id)).size).toBe(8)
   })
 
   it('prioritizes leech words in weak practice sessions', () => {
