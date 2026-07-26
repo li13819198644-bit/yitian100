@@ -43,6 +43,7 @@ export interface WordProgress {
 export interface AppSettings {
   dailyTarget: number
   dailyCapacity: number
+  reliefMode: boolean
   currentLevel: 'B2' | 'C1'
 }
 

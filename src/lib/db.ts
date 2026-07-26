@@ -51,6 +51,7 @@ function writeBackup<T>(key: string, value: T) {
 export const defaultSettings: AppSettings = {
   dailyTarget: 100,
   dailyCapacity: 160,
+  reliefMode: true,
   currentLevel: 'B2',
 }
 

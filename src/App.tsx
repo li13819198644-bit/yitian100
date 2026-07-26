@@ -117,15 +117,19 @@ function App() {
     }),
     [words, progress, settings.dailyTarget, settings.dailyCapacity],
   )
+  const reliefActive = settings.reliefMode && (dailyPlan.reviewDebt >= 30 || dailyPlan.weakDebt >= 20 || dailyPlan.forecastPressure > 0)
+  const reliefReviewLimit = reliefActive && dailyPlan.reviewDebt ? Math.min(20, dailyPlan.reviewDebt) : undefined
+  const recommendedNewCount = reliefActive ? 0 : dailyPlan.recommendedNewCount
   const sessionWords = useMemo(
     () => sessionWordIds.map((id) => wordMap.get(id)).filter((word): word is VocabWord => Boolean(word)),
     [sessionWordIds, wordMap],
   )
-  const reviewWords = dailyPlan.dueReviewWords
+  const reviewWords = reliefReviewLimit ? dailyPlan.dueReviewWords.slice(0, reliefReviewLimit) : dailyPlan.dueReviewWords
   const weakWords = useMemo(() => words.filter((word) => {
     const item = progressMap.get(word.id)
     return item ? isWeak(item) : false
   }), [words, progressMap])
+  const reliefActionCount = dailyPlan.reviewDebt ? (reliefReviewLimit ?? dailyPlan.reviewDebt) : Math.min(10, weakWords.length || 10)
   const mastered = progress.filter((item) => item.mastered).length
   const progressStudiedToday = progress.filter((item) => todayKey(new Date(item.updatedAt)) === todayKey()).length
   const todayProgress = Math.max(stats.todayDate === todayKey() ? stats.todaySeen.length : 0, progressStudiedToday)
@@ -134,7 +138,7 @@ function App() {
 
   function startLearnSession() {
     const nextWords = chooseLearnSession(words, progress, {
-      baseNewWordsPerDay: settings.dailyTarget,
+      baseNewWordsPerDay: reliefActive ? 0 : settings.dailyTarget,
       dailyCapacity: settings.dailyCapacity,
     })
     setSessionWordIds(nextWords.map((word) => word.id))
@@ -147,6 +151,7 @@ function App() {
     const nextWords = chooseReviewSession(words, progress, {
       baseNewWordsPerDay: settings.dailyTarget,
       dailyCapacity: settings.dailyCapacity,
+      reviewCap: reliefReviewLimit,
     })
     if (!nextWords.length) {
       setScreen('review')
@@ -162,7 +167,7 @@ function App() {
     const nextWords = chooseQuizSession(words, progress, {
       baseNewWordsPerDay: settings.dailyTarget,
       dailyCapacity: settings.dailyCapacity,
-      quizSize: 20,
+      quizSize: reliefActive ? 10 : 20,
     })
     setSessionWordIds(nextWords.map((word) => word.id))
     setActiveIndex(0)
@@ -174,7 +179,7 @@ function App() {
     const nextWords = chooseWeakPracticeSession(words, progress, {
       baseNewWordsPerDay: settings.dailyTarget,
       dailyCapacity: settings.dailyCapacity,
-      weakPracticeLimit: 30,
+      weakPracticeLimit: reliefActive ? 10 : 30,
     })
     if (!nextWords.length) {
       setScreen('weak')
@@ -274,8 +279,15 @@ function App() {
   }
 
   async function updateDailyTarget(value: number) {
-    const dailyTarget = Math.max(5, Math.min(200, value))
+    const dailyTarget = Math.max(0, Math.min(200, value))
     const next = { ...settings, dailyTarget, dailyCapacity: Math.max(settings.dailyCapacity, dailyTarget) }
+    setSettings(next)
+    await saveSettings(next)
+    void syncCloudQuietly()
+  }
+
+  async function updateReliefMode(reliefMode: boolean) {
+    const next = { ...settings, reliefMode }
     setSettings(next)
     await saveSettings(next)
     void syncCloudQuietly()
@@ -431,10 +443,18 @@ function App() {
               </div>
             </div>
 
+            {reliefActive && (
+              <div className="rounded-lg bg-emerald-50 p-5 shadow-sm ring-1 ring-emerald-100">
+                <p className="text-sm font-medium text-emerald-800">减负模式</p>
+                <p className="mt-2 text-2xl font-semibold text-stone-950">今天做 {reliefActionCount} 个就停</p>
+                <p className="mt-2 leading-6 text-stone-600">先不追欠账，不加新词。把 App 打开、完成一小包，就算今天恢复节奏。</p>
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-3">
               <Metric label="今日该复习" value={dailyPlan.reviewDebt} />
               <Metric label="弱词债" value={dailyPlan.weakDebt} />
-              <Metric label="建议新词" value={dailyPlan.recommendedNewCount} />
+              <Metric label="建议新词" value={recommendedNewCount} />
               <Metric label="明日复习" value={dailyPlan.forecastReviewLoad[1] ?? 0} />
               <Metric label="7日峰值" value={Math.max(0, ...dailyPlan.forecastReviewLoad)} />
               <Metric label="正确率" value={`${todayAccuracy}%`} />
@@ -446,9 +466,9 @@ function App() {
 
             <div className="grid gap-3">
               <PrimaryButton
-                onClick={dailyPlan.reviewDebt ? () => startReviewSession('learn') : dailyPlan.recommendedNewCount ? startLearnSession : () => startWeakPracticeSession('learn')}
+                onClick={dailyPlan.reviewDebt ? () => startReviewSession('learn') : recommendedNewCount ? startLearnSession : () => startWeakPracticeSession('learn')}
                 icon={<BookOpen size={20} />}
-                label={dailyPlan.reviewDebt ? '先清复习' : dailyPlan.recommendedNewCount ? '学习新词' : '修复弱词'}
+                label={reliefActive ? `做 ${reliefActionCount} 个就停` : dailyPlan.reviewDebt ? '先清复习' : recommendedNewCount ? '学习新词' : '修复弱词'}
               />
               <SecondaryButton onClick={startQuizSession} icon={<BarChart3 size={20} />} label="进入测验" />
             </div>
@@ -503,8 +523,12 @@ function App() {
           <section className="space-y-4">
             <Panel title="设置">
               <label className="block text-sm font-medium text-stone-700">每日新词目标</label>
-              <input className="mt-2 w-full accent-emerald-700" type="range" min="20" max="200" step="5" value={settings.dailyTarget} onChange={(event) => updateDailyTarget(Number(event.target.value))} />
+              <input className="mt-2 w-full accent-emerald-700" type="range" min="0" max="200" step="5" value={settings.dailyTarget} onChange={(event) => updateDailyTarget(Number(event.target.value))} />
               <div className="mt-1 text-sm text-stone-500">{settings.dailyTarget} 新词 / 天 · 总容量 {settings.dailyCapacity} 张卡</div>
+              <label className="mt-5 flex min-h-12 items-center justify-between rounded-lg bg-stone-50 px-4 ring-1 ring-stone-200">
+                <span className="font-medium text-stone-900">自动减负</span>
+                <input className="h-6 w-6 accent-emerald-700" type="checkbox" checked={settings.reliefMode} onChange={(event) => updateReliefMode(event.target.checked)} />
+              </label>
               <button className="mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-stone-900 px-4 font-medium text-white" onClick={() => setScreen('import')}>
                 <Upload size={18} /> 导入词库
               </button>
