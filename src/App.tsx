@@ -62,6 +62,34 @@ function maskTargetWord(text: string, target: string): string {
   return text.replace(new RegExp(`\\b${escapeRegExp(target)}\\b`, 'gi'), masked)
 }
 
+let activeAudio: HTMLAudioElement | undefined
+
+function pronunciationUrls(word: string): string[] {
+  const normalized = word.toLowerCase().replace(/[^a-z-]/g, '')
+  if (!normalized) return []
+  return [
+    `https://api.dictionaryapi.dev/media/pronunciations/en/${normalized}-us.mp3`,
+    `https://api.dictionaryapi.dev/media/pronunciations/en/${normalized}-uk.mp3`,
+  ]
+}
+
+function playAudioUrl(url: string): Promise<void> {
+  activeAudio?.pause()
+  activeAudio = new Audio(url)
+  activeAudio.preload = 'auto'
+  activeAudio.volume = 1
+
+  return new Promise((resolve, reject) => {
+    if (!activeAudio) {
+      reject(new Error('Audio missing'))
+      return
+    }
+    activeAudio.onended = () => resolve()
+    activeAudio.onerror = () => reject(new Error('Audio failed'))
+    activeAudio.play().then(() => undefined).catch(reject)
+  })
+}
+
 function pickEnglishVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | undefined {
   return voices.find((voice) => voice.lang === 'en-US')
     ?? voices.find((voice) => voice.lang.startsWith('en-'))
@@ -99,6 +127,18 @@ async function speakEnglish(text: string, options: { rate?: number } = {}) {
   await new Promise((resolve) => window.setTimeout(resolve, 80))
   synthesis.resume()
   synthesis.speak(utterance)
+}
+
+async function speakWord(word: string) {
+  for (const url of pronunciationUrls(word)) {
+    try {
+      await playAudioUrl(url)
+      return
+    } catch {
+      // Some imported words will not have dictionary audio; TTS remains the fallback.
+    }
+  }
+  await speakEnglish(word)
 }
 
 function App() {
@@ -691,7 +731,7 @@ function WordCard({ title, word, progress, children }: { title: string; word: Vo
           </div>
           <button
             className="flex min-h-12 min-w-12 shrink-0 items-center justify-center rounded-full bg-stone-950 text-white shadow-sm"
-            onClick={() => speakEnglish(word.word)}
+            onClick={() => speakWord(word.word)}
             aria-label={`朗读 ${word.word}`}
           >
             <Volume2 size={21} />
@@ -817,7 +857,7 @@ function QuizCard({ mode, setMode, word, prompt, choices, onAnswer }: {
           {(mode === 'en-zh' || mode === 'swipe') && (
             <button
               className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full bg-stone-950 text-white shadow-sm"
-              onClick={() => speakEnglish(word.word)}
+              onClick={() => speakWord(word.word)}
               aria-label={`朗读 ${word.word}`}
             >
               <Volume2 size={19} />
