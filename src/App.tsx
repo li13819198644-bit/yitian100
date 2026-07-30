@@ -63,6 +63,12 @@ function maskTargetWord(text: string, target: string): string {
 }
 
 let activeAudio: HTMLAudioElement | undefined
+let audioContext: AudioContext | undefined
+const audioBufferCache = new Map<string, AudioBuffer>()
+
+type AudioWindow = Window & typeof globalThis & {
+  webkitAudioContext?: typeof AudioContext
+}
 
 function pronunciationUrls(word: string): string[] {
   const normalized = word.toLowerCase().replace(/[^a-z-]/g, '')
@@ -75,19 +81,41 @@ function pronunciationUrls(word: string): string[] {
 
 function playAudioUrl(url: string): Promise<void> {
   activeAudio?.pause()
-  activeAudio = new Audio(url)
-  activeAudio.preload = 'auto'
-  activeAudio.volume = 1
+  const audio = new Audio(url)
+  activeAudio = audio
+  audio.preload = 'auto'
+  audio.volume = 1
 
   return new Promise((resolve, reject) => {
-    if (!activeAudio) {
-      reject(new Error('Audio missing'))
-      return
-    }
-    activeAudio.onended = () => resolve()
-    activeAudio.onerror = () => reject(new Error('Audio failed'))
-    activeAudio.play().then(() => undefined).catch(reject)
+    audio.onerror = () => reject(new Error('Audio failed'))
+    audio.play().then(() => resolve()).catch(reject)
   })
+}
+
+async function playWebAudioUrl(url: string): Promise<void> {
+  if (typeof window === 'undefined') {
+    throw new Error('Web Audio unavailable')
+  }
+  const AudioContextCtor = window.AudioContext ?? (window as AudioWindow).webkitAudioContext
+  if (!AudioContextCtor) throw new Error('Web Audio unavailable')
+  audioContext = audioContext ?? new AudioContextCtor()
+  if (audioContext.state === 'suspended') await audioContext.resume()
+
+  let buffer = audioBufferCache.get(url)
+  if (!buffer) {
+    const response = await fetch(url)
+    if (!response.ok) throw new Error('Audio fetch failed')
+    buffer = await audioContext.decodeAudioData(await response.arrayBuffer())
+    audioBufferCache.set(url, buffer)
+  }
+
+  const source = audioContext.createBufferSource()
+  const gain = audioContext.createGain()
+  gain.gain.value = 1
+  source.buffer = buffer
+  source.connect(gain)
+  gain.connect(audioContext.destination)
+  source.start()
 }
 
 function pickEnglishVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | undefined {
@@ -132,10 +160,16 @@ async function speakEnglish(text: string, options: { rate?: number } = {}) {
 async function speakWord(word: string) {
   for (const url of pronunciationUrls(word)) {
     try {
+      await playWebAudioUrl(url)
+      return
+    } catch {
+      // Web Audio helps with iPhone silent mode, but HTML audio is a useful fallback.
+    }
+    try {
       await playAudioUrl(url)
       return
     } catch {
-      // Some imported words will not have dictionary audio; TTS remains the fallback.
+      // Some imported words will not have dictionary audio; TTS remains the final fallback.
     }
   }
   await speakEnglish(word)
@@ -215,6 +249,12 @@ function App() {
   const todayAccuracy = accuracy(progress)
   const activeWord = sessionWords[activeIndex]
 
+  function speakNextSessionWord(nextIds: string[], nextIndex: number) {
+    const nextId = nextIds[nextIndex]
+    const nextWord = nextId ? wordMap.get(nextId) : undefined
+    if (nextWord) void speakWord(nextWord.word)
+  }
+
   function startLearnSession() {
     const nextWords = chooseLearnSession(words, progress, {
       baseNewWordsPerDay: reliefActive ? 0 : settings.dailyTarget,
@@ -273,6 +313,8 @@ function App() {
   async function rateWord(word: VocabWord, rating: Rating) {
     const existing = progressMap.get(word.id) ?? createProgress(word.id)
     const updated = scheduleReview(existing, rating)
+    const nextSessionIds = insertDelayedRetry(sessionWordIds, activeIndex, word.id, rating)
+    speakNextSessionWord(nextSessionIds, activeIndex + 1)
     await saveProgress(updated)
 
     const isCorrect = rating !== 'unknown'
@@ -289,7 +331,7 @@ function App() {
     }
     await saveStats(nextStats)
     void syncCloudQuietly()
-    setSessionWordIds((ids) => insertDelayedRetry(ids, activeIndex, word.id, rating))
+    setSessionWordIds(nextSessionIds)
     setFeedback(`${word.word}: ${actionMap[rating].label}`)
     setActiveIndex((index) => index + 1)
     await refresh()
