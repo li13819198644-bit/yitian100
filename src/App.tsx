@@ -215,12 +215,6 @@ function App() {
   const todayAccuracy = accuracy(progress)
   const activeWord = sessionWords[activeIndex]
 
-  function speakNextSessionWord(nextIds: string[], nextIndex: number) {
-    const nextId = nextIds[nextIndex]
-    const nextWord = nextId ? wordMap.get(nextId) : undefined
-    if (nextWord) void speakWord(nextWord.word)
-  }
-
   function startLearnSession() {
     const nextWords = chooseLearnSession(words, progress, {
       baseNewWordsPerDay: reliefActive ? 0 : settings.dailyTarget,
@@ -230,7 +224,6 @@ function App() {
     setActiveIndex(0)
     setSessionKind('learn')
     setScreen('learn')
-    if (nextWords[0]) void speakWord(nextWords[0].word)
   }
 
   function startReviewSession(nextScreen: Screen = 'learn') {
@@ -247,7 +240,6 @@ function App() {
     setActiveIndex(0)
     setSessionKind('review')
     setScreen(nextScreen)
-    if (nextWords[0]) void speakWord(nextWords[0].word)
   }
 
   function startQuizSession() {
@@ -276,14 +268,11 @@ function App() {
     setActiveIndex(0)
     setSessionKind('weak')
     setScreen(nextScreen)
-    if (nextWords[0]) void speakWord(nextWords[0].word)
   }
 
   async function rateWord(word: VocabWord, rating: Rating) {
     const existing = progressMap.get(word.id) ?? createProgress(word.id)
     const updated = scheduleReview(existing, rating)
-    const nextSessionIds = insertDelayedRetry(sessionWordIds, activeIndex, word.id, rating)
-    speakNextSessionWord(nextSessionIds, activeIndex + 1)
     await saveProgress(updated)
 
     const isCorrect = rating !== 'unknown'
@@ -300,7 +289,7 @@ function App() {
     }
     await saveStats(nextStats)
     void syncCloudQuietly()
-    setSessionWordIds(nextSessionIds)
+    setSessionWordIds((ids) => insertDelayedRetry(ids, activeIndex, word.id, rating))
     setFeedback(`${word.word}: ${actionMap[rating].label}`)
     setActiveIndex((index) => index + 1)
     await refresh()
