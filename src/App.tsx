@@ -75,18 +75,14 @@ function pronunciationUrls(word: string): string[] {
 
 function playAudioUrl(url: string): Promise<void> {
   activeAudio?.pause()
-  activeAudio = new Audio(url)
-  activeAudio.preload = 'auto'
-  activeAudio.volume = 1
+  const audio = new Audio(url)
+  activeAudio = audio
+  audio.preload = 'auto'
+  audio.volume = 1
 
   return new Promise((resolve, reject) => {
-    if (!activeAudio) {
-      reject(new Error('Audio missing'))
-      return
-    }
-    activeAudio.onended = () => resolve()
-    activeAudio.onerror = () => reject(new Error('Audio failed'))
-    activeAudio.play().then(() => undefined).catch(reject)
+    audio.onerror = () => reject(new Error('Audio failed'))
+    audio.play().then(() => resolve()).catch(reject)
   })
 }
 
@@ -230,7 +226,6 @@ function App() {
     setActiveIndex(0)
     setSessionKind('learn')
     setScreen('learn')
-    if (nextWords[0]) void speakWord(nextWords[0].word)
   }
 
   function startReviewSession(nextScreen: Screen = 'learn') {
@@ -247,7 +242,6 @@ function App() {
     setActiveIndex(0)
     setSessionKind('review')
     setScreen(nextScreen)
-    if (nextWords[0]) void speakWord(nextWords[0].word)
   }
 
   function startQuizSession() {
@@ -276,7 +270,6 @@ function App() {
     setActiveIndex(0)
     setSessionKind('weak')
     setScreen(nextScreen)
-    if (nextWords[0]) void speakWord(nextWords[0].word)
   }
 
   async function rateWord(word: VocabWord, rating: Rating) {
