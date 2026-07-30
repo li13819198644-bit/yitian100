@@ -62,16 +62,43 @@ function maskTargetWord(text: string, target: string): string {
   return text.replace(new RegExp(`\\b${escapeRegExp(target)}\\b`, 'gi'), masked)
 }
 
-function speakEnglish(text: string, options: { rate?: number } = {}) {
+function pickEnglishVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | undefined {
+  return voices.find((voice) => voice.lang === 'en-US')
+    ?? voices.find((voice) => voice.lang.startsWith('en-'))
+    ?? voices.find((voice) => voice.lang.startsWith('en'))
+}
+
+function waitForEnglishVoice(synthesis: SpeechSynthesis): Promise<SpeechSynthesisVoice | undefined> {
+  const voice = pickEnglishVoice(synthesis.getVoices())
+  if (voice) return Promise.resolve(voice)
+
+  return new Promise((resolve) => {
+    const done = () => {
+      window.clearTimeout(timeoutId)
+      synthesis.removeEventListener('voiceschanged', done)
+      resolve(pickEnglishVoice(synthesis.getVoices()))
+    }
+    const timeoutId = window.setTimeout(done, 800)
+    synthesis.addEventListener('voiceschanged', done)
+  })
+}
+
+async function speakEnglish(text: string, options: { rate?: number } = {}) {
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) return
   const trimmed = text.trim()
   if (!trimmed) return
-  window.speechSynthesis.cancel()
+  const synthesis = window.speechSynthesis
+  const voice = await waitForEnglishVoice(synthesis)
   const utterance = new SpeechSynthesisUtterance(trimmed)
   utterance.lang = 'en-US'
+  if (voice) utterance.voice = voice
   utterance.rate = options.rate ?? 0.86
   utterance.pitch = 1
-  window.speechSynthesis.speak(utterance)
+  utterance.volume = 1
+  synthesis.cancel()
+  await new Promise((resolve) => window.setTimeout(resolve, 80))
+  synthesis.resume()
+  synthesis.speak(utterance)
 }
 
 function App() {
