@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { BarChart3, BookOpen, Check, ChevronRight, Cloud, Download, Home, RotateCcw, Settings, Upload, X } from 'lucide-react'
+import { BarChart3, BookOpen, Check, ChevronRight, Cloud, Download, Home, RotateCcw, Settings, Upload, Volume2, X } from 'lucide-react'
 import clsx from 'clsx'
 import type { AppSettings, AppStats, QuizMode, Rating, Screen, SessionKind, VocabWord, WordProgress } from './types'
 import {
@@ -60,6 +60,18 @@ function maskTargetWord(text: string, target: string): string {
   if (!text) return ''
   const masked = '_'.repeat(Math.max(4, target.length))
   return text.replace(new RegExp(`\\b${escapeRegExp(target)}\\b`, 'gi'), masked)
+}
+
+function speakEnglish(text: string, options: { rate?: number } = {}) {
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return
+  const trimmed = text.trim()
+  if (!trimmed) return
+  window.speechSynthesis.cancel()
+  const utterance = new SpeechSynthesisUtterance(trimmed)
+  utterance.lang = 'en-US'
+  utterance.rate = options.rate ?? 0.86
+  utterance.pitch = 1
+  window.speechSynthesis.speak(utterance)
 }
 
 function App() {
@@ -645,8 +657,19 @@ function WordCard({ title, word, progress, children }: { title: string; word: Vo
         <span>难度 {word.difficulty} · {word.level}</span>
       </div>
       <div className="rounded-lg bg-white p-5 shadow-sm ring-1 ring-stone-200">
-        <p className="text-4xl font-semibold">{word.word}</p>
-        <p className="mt-2 text-stone-500">{word.phonetic}</p>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-4xl font-semibold">{word.word}</p>
+            <p className="mt-2 text-stone-500">{word.phonetic}</p>
+          </div>
+          <button
+            className="flex min-h-12 min-w-12 shrink-0 items-center justify-center rounded-full bg-stone-950 text-white shadow-sm"
+            onClick={() => speakEnglish(word.word)}
+            aria-label={`朗读 ${word.word}`}
+          >
+            <Volume2 size={21} />
+          </button>
+        </div>
         {!revealed ? (
           <div className="mt-6 space-y-4 rounded-lg bg-amber-50 p-4 text-left ring-1 ring-amber-100">
             <p className="text-sm font-semibold text-amber-900">先主动回忆，别急着看答案</p>
@@ -661,8 +684,19 @@ function WordCard({ title, word, progress, children }: { title: string; word: Vo
           <>
             <p className="mt-5 text-2xl font-medium">{word.meaning}</p>
             <div className="mt-5 space-y-3 rounded-lg bg-stone-50 p-4 text-left">
-              <p className="font-medium">{word.collocation}</p>
-              <p className="leading-7 text-stone-600">{word.example}</p>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="font-medium">{word.collocation}</p>
+                  <p className="mt-3 leading-7 text-stone-600">{word.example}</p>
+                </div>
+                <button
+                  className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full bg-white text-stone-900 ring-1 ring-stone-200"
+                  onClick={() => speakEnglish(word.example || word.collocation, { rate: 0.82 })}
+                  aria-label="朗读例句"
+                >
+                  <Volume2 size={19} />
+                </button>
+              </div>
             </div>
             {word.memoryHook && (
               <div className="mt-4 rounded-lg bg-emerald-50 p-4 text-left ring-1 ring-emerald-100">
@@ -751,7 +785,18 @@ function QuizCard({ mode, setMode, word, prompt, choices, onAnswer }: {
       </div>
       <div className="rounded-lg bg-white p-5 shadow-sm ring-1 ring-stone-200">
         <p className="text-sm text-stone-500">{mode === 'swipe' ? '快刷判断' : mode === 'spelling' ? '看中文和搭配，拼出英文' : '即时反馈'}</p>
-        <p className={clsx('mt-4 whitespace-pre-line font-semibold leading-tight', mode === 'spelling' ? 'text-2xl' : 'text-3xl')}>{prompt.question}</p>
+        <div className="mt-4 flex items-start justify-between gap-3">
+          <p className={clsx('whitespace-pre-line font-semibold leading-tight', mode === 'spelling' ? 'text-2xl' : 'text-3xl')}>{prompt.question}</p>
+          {(mode === 'en-zh' || mode === 'swipe') && (
+            <button
+              className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full bg-stone-950 text-white shadow-sm"
+              onClick={() => speakEnglish(word.word)}
+              aria-label={`朗读 ${word.word}`}
+            >
+              <Volume2 size={19} />
+            </button>
+          )}
+        </div>
         {mode === 'swipe' ? (
           <div className="mt-6 grid grid-cols-2 gap-3">
             <button className="tap-button bg-emerald-600 text-white" onClick={() => onAnswer(true)}><Check size={18} /> 认识</button>
