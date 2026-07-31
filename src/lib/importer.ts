@@ -11,6 +11,8 @@ function normalizeWord(raw: Partial<VocabWord>, index: number): VocabWord {
     collocation: String(raw.collocation ?? '').trim(),
     example: String(raw.example ?? '').trim(),
     memoryHook: raw.memoryHook,
+    evilHook: raw.evilHook,
+    confusions: raw.confusions,
     difficulty: Number(raw.difficulty || 3) as VocabWord['difficulty'],
     level: raw.level === 'C1' ? 'C1' : 'B2',
   }

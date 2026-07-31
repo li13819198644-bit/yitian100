@@ -64,6 +64,17 @@ describe('memory hooks', () => {
     expect(precedent?.memoryHook?.breakdown).toContain('案例')
   })
 
+  it('keeps user-specific confusion corrections visible', () => {
+    const articulate = seedWords.find((word) => word.word === 'articulate')
+    const sanction = seedWords.find((word) => word.word === 'sanction')
+    const precedent = seedWords.find((word) => word.word === 'precedent')
+
+    expect(articulate?.confusions?.[0].trap).toContain('agriculture')
+    expect(articulate?.confusions?.[0].cue).toContain('articul')
+    expect(sanction?.confusions?.[0].trap).toContain('section')
+    expect(precedent?.confusions?.[0].cue).toContain('前案')
+  })
+
   it('keeps the draft audit available for future batches', () => {
     expect(auditDraftWords(seedWords.map((word) => word.word), [])).toContain('draft must contain exactly 100 words, got 0')
     expect(auditDraftWords(seedWords.map((word) => word.word), [], 10)).toContain('draft must contain exactly 10 words, got 0')

@@ -1,6 +1,6 @@
 export type Rating = 'known' | 'fuzzy' | 'unknown'
 
-export type QuizMode = 'en-zh' | 'zh-en' | 'context' | 'spelling' | 'swipe'
+export type QuizMode = 'en-zh' | 'zh-en' | 'context' | 'spelling' | 'confusion' | 'swipe'
 
 export type Screen = 'home' | 'learn' | 'quiz' | 'review' | 'weak' | 'settings' | 'import' | 'sync'
 export type SessionKind = 'learn' | 'review' | 'quiz' | 'weak'
@@ -20,6 +20,12 @@ export interface VocabWord {
     personalPrompt: string
   }
   evilHook?: string
+  confusions?: Array<{
+    trap: string
+    wrongPath: string
+    correction: string
+    cue: string
+  }>
   difficulty: 1 | 2 | 3 | 4 | 5
   level: 'B2' | 'C1'
 }

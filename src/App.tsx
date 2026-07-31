@@ -372,12 +372,31 @@ function App() {
         answer: word.word,
       }
     }
+    if (quizMode === 'confusion') {
+      const confusion = word.confusions?.[0]
+      if (confusion) {
+        return {
+          question: `${word.word}\n容易误想：${confusion.trap}\n应该抓哪个线索？`,
+          answer: confusion.cue,
+        }
+      }
+      return { question: `${word.word}\n这个词没有专门误区，选核心意思。`, answer: word.meaning }
+    }
     return { question: word.word, answer: word.meaning }
   }
 
   function choices(word: VocabWord) {
     const answer = quizPrompt(word).answer
     if (quizMode === 'spelling') return []
+    if (quizMode === 'confusion') {
+      const traps = [
+        '看开头长得像就猜，不管词源核心。',
+        '把它当成普通流程词。',
+        '只记谐音，不校正错方向。',
+        '把相近词混成同一个意思。',
+      ]
+      return [answer, ...traps.filter((trap) => trap !== answer).slice(0, 3)].sort(() => 0.5 - Math.random())
+    }
     const pool = words
       .filter((candidate) => candidate.id !== word.id)
       .slice()
@@ -807,6 +826,14 @@ function WordCard({ title, word, progress, children }: { title: string; word: Vo
                 </button>
               </div>
             </div>
+            {word.confusions?.map((confusion) => (
+              <div key={confusion.trap} className="mt-4 rounded-lg bg-rose-50 p-4 text-left ring-1 ring-rose-100">
+                <p className="text-sm font-semibold text-rose-900">容易误想：{confusion.trap}</p>
+                <p className="mt-2 text-sm leading-6 text-rose-950">{confusion.wrongPath}</p>
+                <p className="mt-3 text-base font-medium leading-7 text-stone-950">{confusion.correction}</p>
+                <p className="mt-3 rounded-lg bg-white/75 px-3 py-2 text-sm font-semibold text-rose-900">{confusion.cue}</p>
+              </div>
+            ))}
             {word.memoryHook && (
               <div className="mt-4 rounded-lg bg-emerald-50 p-4 text-left ring-1 ring-emerald-100">
                 <p className="text-sm font-semibold text-emerald-900">单词起源</p>
@@ -879,12 +906,13 @@ function QuizCard({ mode, setMode, word, prompt, choices, onAnswer }: {
 
   return (
     <section className="space-y-4">
-      <div className="grid grid-cols-5 gap-1.5">
+      <div className="grid grid-cols-3 gap-1.5">
         {[
           ['en-zh', '英中'],
           ['zh-en', '中英'],
           ['context', '填空'],
           ['spelling', '拼写'],
+          ['confusion', '防偏'],
           ['swipe', '快刷'],
         ].map(([key, label]) => (
           <button key={key} className={clsx('min-h-11 rounded-lg text-xs font-medium ring-1 ring-stone-200', mode === key ? 'bg-stone-900 text-white' : 'bg-white')} onClick={() => setMode(key as QuizMode)}>
@@ -893,7 +921,7 @@ function QuizCard({ mode, setMode, word, prompt, choices, onAnswer }: {
         ))}
       </div>
       <div className="rounded-lg bg-white p-5 shadow-sm ring-1 ring-stone-200">
-        <p className="text-sm text-stone-500">{mode === 'swipe' ? '快刷判断' : mode === 'spelling' ? '看中文和搭配，拼出英文' : '即时反馈'}</p>
+        <p className="text-sm text-stone-500">{mode === 'swipe' ? '快刷判断' : mode === 'spelling' ? '看中文和搭配，拼出英文' : mode === 'confusion' ? '校正错误联想' : '即时反馈'}</p>
         <div className="mt-4 flex items-start justify-between gap-3">
           <p className={clsx('whitespace-pre-line font-semibold leading-tight', mode === 'spelling' ? 'text-2xl' : 'text-3xl')}>{prompt.question}</p>
           {(mode === 'en-zh' || mode === 'swipe') && (

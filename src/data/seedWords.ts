@@ -8,6 +8,7 @@ import { generatedBatch5 } from './generatedBatch5'
 import { generatedBatch6 } from './generatedBatch6'
 import { nextBatchDraft } from './nextBatchDraft'
 import { nextBatchDraft2 } from './nextBatchDraft2'
+import { confusionNotes } from './confusions'
 
 const rawWords = [
   ['facilitate', '/fəˈsɪlɪteɪt/', '促进；使便利', 'facilitate communication', 'Clear visuals facilitate communication across teams.', 3, 'B2'],
@@ -125,6 +126,7 @@ const baseWords: VocabWord[] = rawWords.map(([word, phonetic, meaning, collocati
   example,
   memoryHook: buildMemoryHook({ id: word, word, phonetic, meaning, collocation, example, difficulty, level }),
   evilHook: evilMemoryHooks[word],
+  confusions: confusionNotes[word],
   difficulty,
   level,
 }))
@@ -137,6 +139,7 @@ function publishDraftWords(draft: DraftWord[]): VocabWord[] {
       breakdown: nebula ? `${wordOrigin} ${nebula}` : wordOrigin,
     },
     evilHook: evilMemoryHooks[word.word],
+    confusions: confusionNotes[word.word],
   }))
 }
 
