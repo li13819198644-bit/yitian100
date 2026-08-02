@@ -1,3 +1,5 @@
+import { generatedBatch7EvilHooks } from '../data/generatedBatch7'
+
 export const evilMemoryHooks: Record<string, string> = {
   facilitate: 'facilitate像开闸放车：卡点一移开，事情顺起来。',
   constrain: 'constrain像束带勒树干：长势被限制住。',
@@ -204,4 +206,5 @@ export const evilMemoryHooks: Record<string, string> = {
   exemption: 'exemption听exit门：从通用要求旁门退出获豁免。',
   allegation: 'allegation像先扔指控纸：证据还没到场。',
   impartial: 'impartial想裁判蒙住队徽，只看证据不站边。',
+  ...generatedBatch7EvilHooks,
 }

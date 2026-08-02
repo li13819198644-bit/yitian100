@@ -3,6 +3,7 @@ import { generatedBatch3 } from '../data/generatedBatch3'
 import { generatedBatch4 } from '../data/generatedBatch4'
 import { generatedBatch5 } from '../data/generatedBatch5'
 import { generatedBatch6 } from '../data/generatedBatch6'
+import { generatedBatch7 } from '../data/generatedBatch7'
 import { nextBatchDraft } from '../data/nextBatchDraft'
 import { nextBatchDraft2 } from '../data/nextBatchDraft2'
 import { seedWords } from '../data/seedWords'
@@ -18,6 +19,7 @@ const supervisedBatches = [
   { name: 'generatedBatch4', words: generatedBatch4, expectedCount: 21 },
   { name: 'generatedBatch5', words: generatedBatch5, expectedCount: 20 },
   { name: 'generatedBatch6', words: generatedBatch6, expectedCount: 20 },
+  { name: 'generatedBatch7', words: generatedBatch7, expectedCount: 100 },
 ]
 
 describe('memory hooks', () => {

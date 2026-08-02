@@ -47,7 +47,7 @@ describe('evilMemoryHooks', () => {
     const missing = seedWords.map((item) => item.word).filter((word) => !(word in evilMemoryHooks))
     const extra = hookWords.filter((word) => !seedWordSet.has(word))
 
-    expect(seedWords).toHaveLength(205)
+    expect(seedWords).toHaveLength(305)
     expect(hookWords).toHaveLength(seedWords.length)
     expect(missing).toEqual([])
     expect(extra).toEqual([])

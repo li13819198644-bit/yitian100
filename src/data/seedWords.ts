@@ -6,6 +6,7 @@ import { generatedBatch3 } from './generatedBatch3'
 import { generatedBatch4 } from './generatedBatch4'
 import { generatedBatch5 } from './generatedBatch5'
 import { generatedBatch6 } from './generatedBatch6'
+import { generatedBatch7 } from './generatedBatch7'
 import { nextBatchDraft } from './nextBatchDraft'
 import { nextBatchDraft2 } from './nextBatchDraft2'
 import { confusionNotes } from './confusions'
@@ -151,4 +152,5 @@ export const seedWords: VocabWord[] = [
   ...publishDraftWords(generatedBatch4),
   ...publishDraftWords(generatedBatch5),
   ...publishDraftWords(generatedBatch6),
+  ...publishDraftWords(generatedBatch7),
 ]
