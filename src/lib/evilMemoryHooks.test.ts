@@ -11,10 +11,9 @@ const bannedPatterns = [
 ]
 
 const weakTemplatePatterns = [
-  /像“.*法条”/,
-  /像“.*规则”/,
-  /像“.*标准”/,
-  /像“.*流程”/,
+  /像/,
+  /，指/,
+  /带到/,
   /采购门/,
   /方法目录/,
   /框架骨架/,
@@ -27,14 +26,11 @@ const weakTemplatePatterns = [
 ]
 
 const originLikePatterns = [
-  /拆/,
-  /含/,
   /源于/,
   /来自/,
   /词源/,
   /拉丁/,
   /希腊/,
-  /\+/,
 ]
 
 describe('evilMemoryHooks', () => {
