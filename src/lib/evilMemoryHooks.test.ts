@@ -129,4 +129,11 @@ describe('evilMemoryHooks', () => {
     expect(feasible).toContain('possible')
     expect(feasible).toContain('能落地')
   })
+
+  it('uses the approved sound bridge for incentive', () => {
+    const hook = seedWords.find((word) => word.word === 'incentive')?.evilHook
+    expect(hook).toContain('硬塞你')
+    expect(hook).toContain('诱你行动')
+    expect(hook).not.toContain('in+cent')
+  })
 })

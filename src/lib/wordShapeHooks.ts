@@ -170,7 +170,7 @@ const specialHooks: Record<string, string> = {
   throughput: 'throughput=through+put：放进去穿过去，就是处理量。',
   backlog: 'backlog=back+log：背后日志堆着，就是积压待办。',
   budget: 'budget听不准花：钱有限额，就是预算。',
-  incentive: 'incentive听in+cent：把钱放进去激励你。',
+  incentive: 'incentive听“硬塞你”：奖励硬塞过来，诱你行动。',
   compliance: 'compliance抓comply：配合规则的状态，就是合规。',
   methodology: 'methodology=method+ology：研究方法那一套。',
   empirical: 'empirical听experience：靠经验观察数据，不靠空想。',
