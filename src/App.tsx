@@ -139,10 +139,10 @@ function waitForEnglishVoice(synthesis: SpeechSynthesis): Promise<SpeechSynthesi
   })
 }
 
-async function speakEnglish(text: string, options: { rate?: number } = {}) {
-  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return
+async function speakEnglish(text: string, options: { rate?: number } = {}): Promise<boolean> {
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return false
   const trimmed = text.trim()
-  if (!trimmed) return
+  if (!trimmed) return false
   const synthesis = window.speechSynthesis
   const voice = await waitForEnglishVoice(synthesis)
   const utterance = new SpeechSynthesisUtterance(trimmed)
@@ -155,9 +155,13 @@ async function speakEnglish(text: string, options: { rate?: number } = {}) {
   await new Promise((resolve) => window.setTimeout(resolve, 80))
   synthesis.resume()
   synthesis.speak(utterance)
+  return true
 }
 
 async function speakWord(word: string) {
+  const spokenBySystemVoice = await speakEnglish(word, { rate: 0.78 })
+  if (spokenBySystemVoice) return
+
   for (const url of pronunciationUrls(word)) {
     try {
       await playWebAudioUrl(url)

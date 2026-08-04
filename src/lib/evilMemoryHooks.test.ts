@@ -109,4 +109,11 @@ describe('evilMemoryHooks', () => {
     expect(evilMemoryHooks.substantiate).toContain('substance')
     expect(evilMemoryHooks.substantiate).toContain('证据')
   })
+
+  it('uses the word shape as the bridge for eligible', () => {
+    expect(evilMemoryHooks.eligible).toContain('e-lig-ible')
+    expect(evilMemoryHooks.eligible).toContain('有资格')
+    expect(evilMemoryHooks.eligible).not.toContain('绿灯')
+    expect(evilMemoryHooks.eligible).not.toContain('候选池')
+  })
 })
