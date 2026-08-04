@@ -117,7 +117,7 @@ const specialHooks: Record<string, string> = {
   preserve: 'preserve=pre+serve：提前守住，就是保护保存。',
   replace: 'replace=re+place：重新放位置，就是替换。',
   mitigate: 'mitigate听mini-gate：把大风险缩小，就是减轻。',
-  validate: 'validate抓valid：证明有效，就是验证确认。',
+  validate: 'validate看valid：valid是有效，用数据证明有效。',
   infer: 'infer听in+fer：从里面线索推出结论。',
   synthesize: 'synthesize抓synthetic合成：把材料合成综合。',
   scrutinize: 'scrutinize抓scrutiny：拿放大镜仔细审查。',
@@ -348,6 +348,7 @@ function firstMeaning(meaning: string): string {
 
 function trimHook(hook: string): string {
   const cleaned = hook
+    .replace(/抓(?=[A-Za-z])/g, '看')
     .replace(/，就是/g, '，')
     .replace(/就是/g, '')
     .replace(/，叫/g, '，')
@@ -359,9 +360,9 @@ function trimHook(hook: string): string {
 function hasWordShapeBridge(word: string, hook: string): boolean {
   const lower = hook.toLowerCase()
   const normalized = word.toLowerCase()
-  if (/像|想/.test(hook) && !/抓|借|看|听/.test(hook)) return false
+  if (/像|想/.test(hook) && !/借|看|听|先认/.test(hook)) return false
   return (lower.includes(normalized) || lower.includes(normalized.slice(0, 4)))
-    && /抓|借|看|听/.test(hook)
+    && /借|看|听|先认/.test(hook)
 }
 
 export function buildWordShapeHook(input: HookInput, fallback?: string): string {

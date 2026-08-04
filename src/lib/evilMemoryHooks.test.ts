@@ -23,6 +23,7 @@ const weakTemplatePatterns = [
   /意思/,
   /叫/,
   /就是/,
+  /抓[A-Za-z]/,
 ]
 
 const originLikePatterns = [
