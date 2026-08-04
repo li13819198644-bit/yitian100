@@ -223,6 +223,7 @@ function App() {
 
   const progressMap = useMemo(() => new Map(progress.map((item) => [item.wordId, item])), [progress])
   const wordMap = useMemo(() => new Map(words.map((item) => [item.id, item])), [words])
+  const learnedIds = useMemo(() => new Set(progress.map((item) => item.wordId)), [progress])
   const dailyPlan = useMemo(
     () => buildDailyPlan(words, progress, {
       baseNewWordsPerDay: settings.dailyTarget,
@@ -243,6 +244,8 @@ function App() {
     return item ? isWeak(item) : false
   }), [words, progressMap])
   const reliefActionCount = dailyPlan.reviewDebt ? (reliefReviewLimit ?? dailyPlan.reviewDebt) : Math.min(10, weakWords.length || 10)
+  const unlearnedCount = Math.max(0, words.length - learnedIds.size)
+  const gentleNewWordCount = Math.min(10, unlearnedCount)
   const mastered = progress.filter((item) => item.mastered).length
   const progressStudiedToday = progress.filter((item) => todayKey(new Date(item.updatedAt)) === todayKey()).length
   const todayProgress = Math.max(stats.todayDate === todayKey() ? stats.todaySeen.length : 0, progressStudiedToday)
@@ -255,11 +258,17 @@ function App() {
     if (nextWord) void speakWord(nextWord.word)
   }
 
-  function startLearnSession() {
+  function startLearnSession(options: { limit?: number } = {}) {
+    const target = options.limit ?? settings.dailyTarget
     const nextWords = chooseLearnSession(words, progress, {
-      baseNewWordsPerDay: reliefActive ? 0 : settings.dailyTarget,
-      dailyCapacity: settings.dailyCapacity,
-    })
+      baseNewWordsPerDay: target,
+      dailyCapacity: Math.max(settings.dailyCapacity, target),
+    }).slice(0, target)
+    if (!nextWords.length) {
+      setFeedback('现在没有未学新词。可以先复习，或导入新词。')
+      setScreen('home')
+      return
+    }
     setSessionWordIds(nextWords.map((word) => word.id))
     setActiveIndex(0)
     setSessionKind('learn')
@@ -587,11 +596,13 @@ function App() {
               <div className="rounded-lg bg-emerald-50 p-5 shadow-sm ring-1 ring-emerald-100">
                 <p className="text-sm font-medium text-emerald-800">减负模式</p>
                 <p className="mt-2 text-2xl font-semibold text-stone-950">今天做 {reliefActionCount} 个就停</p>
-                <p className="mt-2 leading-6 text-stone-600">先不追欠账，不加新词。把 App 打开、完成一小包，就算今天恢复节奏。</p>
+                <p className="mt-2 leading-6 text-stone-600">默认先清最该复习的词；如果还有力气，可以只学 10 个新词，不追欠账。</p>
               </div>
             )}
 
             <div className="grid grid-cols-2 gap-3">
+              <Metric label="词库总量" value={words.length} />
+              <Metric label="未学新词" value={unlearnedCount} />
               <Metric label="今日该复习" value={dailyPlan.reviewDebt} />
               <Metric label="弱词债" value={dailyPlan.weakDebt} />
               <Metric label="建议新词" value={recommendedNewCount} />
@@ -606,10 +617,13 @@ function App() {
 
             <div className="grid gap-3">
               <PrimaryButton
-                onClick={dailyPlan.reviewDebt ? () => startReviewSession('learn') : recommendedNewCount ? startLearnSession : () => startWeakPracticeSession('learn')}
+                onClick={dailyPlan.reviewDebt ? () => startReviewSession('learn') : recommendedNewCount ? () => startLearnSession() : () => startWeakPracticeSession('learn')}
                 icon={<BookOpen size={20} />}
                 label={reliefActive ? `做 ${reliefActionCount} 个就停` : dailyPlan.reviewDebt ? '先清复习' : recommendedNewCount ? '学习新词' : '修复弱词'}
               />
+              {gentleNewWordCount > 0 && (
+                <SecondaryButton onClick={() => startLearnSession({ limit: gentleNewWordCount })} icon={<BookOpen size={20} />} label={`学 ${gentleNewWordCount} 个新词`} />
+              )}
               <SecondaryButton onClick={startQuizSession} icon={<BarChart3 size={20} />} label="进入测验" />
             </div>
           </section>
@@ -628,7 +642,7 @@ function App() {
         )}
 
         {screen === 'learn' && sessionWords.length > 0 && activeIndex >= sessionWords.length && (
-          <DoneCard title={sessionKind === 'review' ? '复习完成' : sessionKind === 'weak' ? '弱词修复完成' : '今日新词完成'} subtitle={sessionKind === 'review' ? '到期复习已经清完。如果弱词债仍高，先修弱词。' : sessionKind === 'weak' ? '这组高错误词已经重新压了一遍，系统会更谨慎安排。' : '这组新词已经学完。模糊和不认识的词会按间隔回来。'} onRestart={sessionKind === 'review' ? () => startWeakPracticeSession('learn') : sessionKind === 'weak' ? startWeakPracticeSession : startLearnSession} />
+          <DoneCard title={sessionKind === 'review' ? '复习完成' : sessionKind === 'weak' ? '弱词修复完成' : '今日新词完成'} subtitle={sessionKind === 'review' ? '到期复习已经清完。如果弱词债仍高，先修弱词。' : sessionKind === 'weak' ? '这组高错误词已经重新压了一遍，系统会更谨慎安排。' : '这组新词已经学完。模糊和不认识的词会按间隔回来。'} onRestart={sessionKind === 'review' ? () => startWeakPracticeSession('learn') : sessionKind === 'weak' ? startWeakPracticeSession : () => startLearnSession()} />
         )}
 
         {screen === 'quiz' && activeWord && activeIndex < sessionWords.length && (
@@ -742,7 +756,7 @@ function App() {
         <nav className="fixed inset-x-0 bottom-0 z-10 border-t border-stone-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur">
           <div className="mx-auto grid max-w-md grid-cols-5 px-2 py-1">
             <NavButton active={screen === 'home'} onClick={() => setScreen('home')} icon={<Home size={20} />} label="首页" />
-            <NavButton active={screen === 'learn'} onClick={startLearnSession} icon={<BookOpen size={20} />} label="学习" />
+            <NavButton active={screen === 'learn'} onClick={() => startLearnSession()} icon={<BookOpen size={20} />} label="学习" />
             <NavButton active={screen === 'review'} onClick={() => setScreen('review')} icon={<RotateCcw size={20} />} label="复习" />
             <NavButton active={screen === 'weak'} onClick={() => setScreen('weak')} icon={<X size={20} />} label="弱词" />
             <NavButton active={screen === 'settings'} onClick={() => setScreen('settings')} icon={<Settings size={20} />} label="设置" />
