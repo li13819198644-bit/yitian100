@@ -2,6 +2,7 @@ import type { VocabWord } from '../types'
 import { buildMemoryHook } from '../lib/memoryHooks'
 import type { DraftWord } from '../lib/vocabQuality'
 import { evilMemoryHooks } from '../lib/evilMemoryHooks'
+import { buildWordShapeHook } from '../lib/wordShapeHooks'
 import { generatedBatch3 } from './generatedBatch3'
 import { generatedBatch4 } from './generatedBatch4'
 import { generatedBatch5 } from './generatedBatch5'
@@ -126,7 +127,7 @@ const baseWords: VocabWord[] = rawWords.map(([word, phonetic, meaning, collocati
   collocation,
   example,
   memoryHook: buildMemoryHook({ id: word, word, phonetic, meaning, collocation, example, difficulty, level }),
-  evilHook: evilMemoryHooks[word],
+  evilHook: buildWordShapeHook({ word, meaning }, evilMemoryHooks[word]),
   confusions: confusionNotes[word],
   difficulty,
   level,
@@ -139,7 +140,7 @@ function publishDraftWords(draft: DraftWord[]): VocabWord[] {
       ...memoryHook,
       breakdown: nebula ? `${wordOrigin} ${nebula}` : wordOrigin,
     },
-    evilHook: evilMemoryHooks[word.word],
+    evilHook: buildWordShapeHook(word, evilMemoryHooks[word.word]),
     confusions: confusionNotes[word.word],
   }))
 }
