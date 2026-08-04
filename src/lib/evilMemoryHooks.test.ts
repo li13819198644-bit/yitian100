@@ -117,9 +117,9 @@ describe('evilMemoryHooks', () => {
     expect(evilMemoryHooks.eligible).not.toContain('候选池')
   })
 
-  it('uses motion as the bridge for emotional', () => {
-    expect(evilMemoryHooks.emotional).toContain('e-motion')
-    expect(evilMemoryHooks.emotional).toContain('心里动')
+  it('uses emo as the bridge for emotional', () => {
+    expect(evilMemoryHooks.emotional).toContain('emo')
+    expect(evilMemoryHooks.emotional).toContain('情绪化')
     expect(evilMemoryHooks.emotional).not.toContain('温度计')
   })
 })
