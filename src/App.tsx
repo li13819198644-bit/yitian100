@@ -7,10 +7,10 @@ import {
   accuracy,
   buildDailyPlan,
   chooseLeechRepairSession,
-  chooseLearnSession,
   chooseQuizSession,
   chooseReviewSession,
   chooseWeakPracticeSession,
+  getNewWords,
   insertDelayedRetry,
   isLeech,
   isMastered,
@@ -273,10 +273,9 @@ function App() {
 
   function startLearnSession(options: { limit?: number } = {}) {
     const target = options.limit ?? settings.dailyTarget
-    const nextWords = chooseLearnSession(words, progress, {
-      baseNewWordsPerDay: target,
-      dailyCapacity: Math.max(settings.dailyCapacity, target),
-    }).slice(0, target)
+    // Reaching this function is an explicit request to learn new words. Daily
+    // load recommendations may show zero, but they must not disable this action.
+    const nextWords = getNewWords(words, progress, target)
     if (!nextWords.length) {
       setFeedback('现在没有未学新词。可以先复习，或导入新词。')
       setScreen('home')
