@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildDailyPlan,
+  chooseLeechRepairSession,
   chooseLearnSession,
   chooseQuizSession,
   chooseReviewSession,
@@ -13,6 +14,8 @@ import {
   insertDelayedRetry,
   isWeak,
   isLeech,
+  isMastered,
+  isRecovered,
   recommendNewWordCount,
   recommendNewWordCountWithWeakDebt,
   scheduleQuizResult,
@@ -73,6 +76,73 @@ describe('spaced repetition', () => {
 
     expect(isLeech(leech)).toBe(true)
     expect(next.nextReviewAt - now).toBeLessThanOrEqual(12 * 60 * 60 * 1000)
+  })
+
+  it('lets a historically weak word recover after enough consecutive recalls', () => {
+    const recovered = {
+      ...createProgress('recovered', now),
+      repetitions: 6,
+      lapses: 8,
+      seen: 20,
+      correct: 12,
+      incorrect: 8,
+      easeFactor: 2.05,
+      stability: 7,
+      lastRating: 'known' as const,
+    }
+
+    expect(isRecovered(recovered)).toBe(true)
+    expect(isWeak(recovered)).toBe(false)
+  })
+
+  it('allows mastery after recovery instead of requiring a perfect history', () => {
+    const recovered = {
+      ...createProgress('eventual-mastery', now),
+      repetitions: 8,
+      lapses: 12,
+      seen: 30,
+      correct: 18,
+      incorrect: 12,
+      easeFactor: 2.3,
+      stability: 16,
+      lastRating: 'known' as const,
+    }
+
+    expect(isMastered(recovered)).toBe(true)
+    expect(isWeak(recovered)).toBe(false)
+  })
+
+  it('keeps a lapse word weak while consecutive-recall recovery is incomplete', () => {
+    const recovering = {
+      ...createProgress('recovering', now),
+      repetitions: 2,
+      lapses: 8,
+      seen: 12,
+      correct: 7,
+      incorrect: 5,
+      easeFactor: 2.2,
+      lastRating: 'known' as const,
+    }
+
+    expect(isRecovered(recovering)).toBe(false)
+    expect(isWeak(recovering)).toBe(true)
+  })
+
+  it('does not graduate a lapse word while the learner still rates it fuzzy', () => {
+    const fuzzy = {
+      ...createProgress('still-fuzzy', now),
+      repetitions: 6,
+      lapses: 8,
+      seen: 20,
+      correct: 12,
+      incorrect: 8,
+      easeFactor: 2.05,
+      stability: 7,
+      lastRating: 'fuzzy' as const,
+    }
+
+    expect(isRecovered(fuzzy)).toBe(false)
+    expect(isWeak(fuzzy)).toBe(true)
   })
 
   it('treats correct quiz answers as light reinforcement instead of known mastery', () => {
@@ -202,6 +272,34 @@ describe('spaced repetition', () => {
     })
 
     expect(practice.map((item) => item.id)).toEqual(['leech', 'mild'])
+  })
+
+  it('builds a dedicated leech session even when stubborn words are already due', () => {
+    const words = [word('future-mild'), word('due-leech'), word('future-leech')]
+    const futureMild = {
+      ...createProgress('future-mild', now),
+      nextReviewAt: now + day,
+      lapses: 1,
+      incorrect: 1,
+    }
+    const dueLeech = {
+      ...createProgress('due-leech', now),
+      nextReviewAt: now - day,
+      lapses: 9,
+      incorrect: 9,
+      correct: 3,
+    }
+    const futureLeech = {
+      ...createProgress('future-leech', now),
+      nextReviewAt: now + day,
+      lapses: 6,
+      incorrect: 6,
+      correct: 2,
+    }
+
+    const repair = chooseLeechRepairSession(words, [futureMild, futureLeech, dueLeech], 10)
+
+    expect(repair.map((item) => item.id)).toEqual(['due-leech', 'future-leech'])
   })
 
   it('builds a daily plan with review debt and capped new words', () => {

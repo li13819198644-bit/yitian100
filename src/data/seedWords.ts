@@ -8,6 +8,7 @@ import { generatedBatch4 } from './generatedBatch4'
 import { generatedBatch5 } from './generatedBatch5'
 import { generatedBatch6 } from './generatedBatch6'
 import { generatedBatch7 } from './generatedBatch7'
+import { generatedBatch8 } from './generatedBatch8'
 import { nextBatchDraft } from './nextBatchDraft'
 import { nextBatchDraft2 } from './nextBatchDraft2'
 import { confusionNotes } from './confusions'
@@ -134,13 +135,13 @@ const baseWords: VocabWord[] = rawWords.map(([word, phonetic, meaning, collocati
 }))
 
 function publishDraftWords(draft: DraftWord[]): VocabWord[] {
-  return draft.map(({ wordOrigin, nebula, memoryHook, ...word }) => ({
+  return draft.map(({ wordOrigin, nebula, memoryHook, evilHook, ...word }) => ({
     ...word,
     memoryHook: {
       ...memoryHook,
       breakdown: nebula ? `${wordOrigin} ${nebula}` : wordOrigin,
     },
-    evilHook: buildWordShapeHook(word, evilMemoryHooks[word.word]),
+    evilHook: buildWordShapeHook(word, evilHook ?? evilMemoryHooks[word.word]),
     confusions: confusionNotes[word.word],
   }))
 }
@@ -154,4 +155,5 @@ export const seedWords: VocabWord[] = [
   ...publishDraftWords(generatedBatch5),
   ...publishDraftWords(generatedBatch6),
   ...publishDraftWords(generatedBatch7),
+  ...publishDraftWords(generatedBatch8),
 ]

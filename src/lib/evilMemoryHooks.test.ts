@@ -41,7 +41,7 @@ describe('evilMemoryHooks', () => {
       .map((item) => item.word)
       .filter((word, index, words) => words.indexOf(word) !== index)
 
-    expect(seedWords).toHaveLength(305)
+    expect(seedWords).toHaveLength(405)
     expect(missing).toEqual([])
     expect(duplicateIds).toEqual([])
   })
@@ -135,5 +135,33 @@ describe('evilMemoryHooks', () => {
     expect(hook).toContain('硬塞你')
     expect(hook).toContain('诱你行动')
     expect(hook).not.toContain('in+cent')
+  })
+
+  it('blocks the silent misreading for resilient', () => {
+    const word = seedWords.find((item) => item.word === 'resilient')
+    const hook = word?.evilHook
+    const confusion = word?.confusions?.[0]
+
+    expect(hook).toContain('silent')
+    expect(hook).toContain('/zɪl/')
+    expect(hook).toContain('弹回')
+    expect(confusion?.trap).toContain('silent')
+    expect(confusion?.cue).toContain('回弹恢复')
+  })
+
+  it('uses the learner-approved refuse bridge for refute', () => {
+    const word = seedWords.find((item) => item.word === 'refute')
+
+    expect(word?.evilHook).toContain('refuse')
+    expect(word?.evilHook).toContain('s换t')
+    expect(word?.confusions?.[0].cue).toContain('用证据驳斥')
+  })
+
+  it('keeps moderate tied to the middle mode and its verb sense', () => {
+    const hook = seedWords.find((item) => item.word === 'moderate')?.evilHook
+
+    expect(hook).toContain('mode中间档')
+    expect(hook).toContain('适中')
+    expect(hook).toContain('缓和')
   })
 })

@@ -6,11 +6,14 @@ import {
   createProgress,
   accuracy,
   buildDailyPlan,
+  chooseLeechRepairSession,
   chooseLearnSession,
   chooseQuizSession,
   chooseReviewSession,
   chooseWeakPracticeSession,
   insertDelayedRetry,
+  isLeech,
+  isMastered,
   isWeak,
   scheduleQuizResult,
   scheduleReview,
@@ -250,7 +253,13 @@ function App() {
   const reliefActionCount = dailyPlan.reviewDebt ? (reliefReviewLimit ?? dailyPlan.reviewDebt) : Math.min(10, weakWords.length || 10)
   const unlearnedCount = Math.max(0, words.length - learnedIds.size)
   const gentleNewWordCount = Math.min(10, unlearnedCount)
-  const mastered = progress.filter((item) => item.mastered).length
+  // Derive this so existing local/cloud progress benefits from improved criteria
+  // without requiring a destructive data migration.
+  const mastered = progress.filter(isMastered).length
+  const stubbornWords = weakWords.filter((word) => {
+    const item = progressMap.get(word.id)
+    return item ? isLeech(item) : false
+  }).length
   const progressStudiedToday = progress.filter((item) => todayKey(new Date(item.updatedAt)) === todayKey()).length
   const todayProgress = Math.max(stats.todayDate === todayKey() ? stats.todaySeen.length : 0, progressStudiedToday)
   const todayAccuracy = accuracy(progress)
@@ -308,10 +317,12 @@ function App() {
   }
 
   function startWeakPracticeSession(nextScreen: Screen = 'learn') {
-    const nextWords = chooseWeakPracticeSession(words, progress, {
+    const limit = reliefActive ? 10 : 30
+    const leechWords = chooseLeechRepairSession(words, progress, limit)
+    const nextWords = leechWords.length ? leechWords : chooseWeakPracticeSession(words, progress, {
       baseNewWordsPerDay: settings.dailyTarget,
       dailyCapacity: settings.dailyCapacity,
-      weakPracticeLimit: reliefActive ? 10 : 30,
+      weakPracticeLimit: limit,
     })
     if (!nextWords.length) {
       setScreen('weak')
@@ -529,6 +540,7 @@ function App() {
         unlearnedWords: words.length - learnedIds.size,
         masteredWords: mastered,
         weakWords: weakWords.length,
+        stubbornWords,
         dueReviewWords: dailyPlan.reviewDebt,
         recommendedNewWords: dailyPlan.recommendedNewCount,
         tomorrowReviews: dailyPlan.forecastReviewLoad[1] ?? 0,
@@ -617,6 +629,7 @@ function App() {
               <Metric label="连续学习" value={`${stats.streak} 天`} />
               <Metric label="已掌握" value={mastered} />
               <Metric label="弱词" value={weakWords.length} />
+              <Metric label="顽固词" value={stubbornWords} />
             </div>
 
             <div className="grid gap-3">
@@ -634,15 +647,26 @@ function App() {
         )}
 
         {screen === 'learn' && activeWord && activeIndex < sessionWords.length && (
-          <WordCard title={`${sessionKind === 'review' ? '到期复习' : sessionKind === 'weak' ? '弱词修复' : '新词学习'} · 第 ${Math.floor(activeIndex / 5) + 1} 组 / ${Math.max(1, Math.ceil(sessionWords.length / 5))}`} word={activeWord} progress={progressMap.get(activeWord.id)}>
-            <div className="grid grid-cols-3 gap-2">
-              {(Object.keys(actionMap) as Rating[]).map((rating) => (
-                <button key={rating} className={clsx('tap-button', actionMap[rating].className)} onClick={() => rateWord(activeWord, rating)}>
-                  {actionMap[rating].label}
-                </button>
-              ))}
-            </div>
-          </WordCard>
+          sessionKind === 'weak' && isLeech(progressMap.get(activeWord.id) ?? createProgress(activeWord.id)) ? (
+            <LeechRepairCard
+              word={activeWord}
+              progress={progressMap.get(activeWord.id)}
+              attempt={sessionWordIds.slice(0, activeIndex).filter((id) => id === activeWord.id).length}
+              position={activeIndex + 1}
+              total={sessionWords.length}
+              onResult={(correct) => rateWord(activeWord, correct ? 'known' : 'unknown')}
+            />
+          ) : (
+            <WordCard title={`${sessionKind === 'review' ? '到期复习' : sessionKind === 'weak' ? '弱词修复' : '新词学习'} · 第 ${Math.floor(activeIndex / 5) + 1} 组 / ${Math.max(1, Math.ceil(sessionWords.length / 5))}`} word={activeWord} progress={progressMap.get(activeWord.id)}>
+              <div className="grid grid-cols-3 gap-2">
+                {(Object.keys(actionMap) as Rating[]).map((rating) => (
+                  <button key={rating} className={clsx('tap-button', actionMap[rating].className)} onClick={() => rateWord(activeWord, rating)}>
+                    {actionMap[rating].label}
+                  </button>
+                ))}
+              </div>
+            </WordCard>
+          )
         )}
 
         {screen === 'learn' && sessionWords.length > 0 && activeIndex >= sessionWords.length && (
@@ -672,7 +696,13 @@ function App() {
         )}
         {screen === 'weak' && (
           <section className="space-y-3">
-            <PrimaryButton onClick={() => startWeakPracticeSession('learn')} icon={<RotateCcw size={20} />} label={weakWords.length ? `修复弱词 ${Math.min(30, weakWords.length)} 个` : '暂无弱词'} />
+            {stubbornWords > 0 && (
+              <div className="rounded-lg bg-fuchsia-50 p-4 text-sm leading-6 text-fuchsia-950 ring-1 ring-fuchsia-100">
+                <p className="font-semibold">{stubbornWords} 个顽固词将使用专项修复</p>
+                <p className="mt-1">系统会轮换中文拼写、语境填空和听音拼写，答错后展示辨析与记忆钩子，再延迟重测。</p>
+              </div>
+            )}
+            <PrimaryButton onClick={() => startWeakPracticeSession('learn')} icon={<RotateCcw size={20} />} label={weakWords.length ? (stubbornWords ? `专项修复 ${Math.min(reliefActive ? 10 : 30, stubbornWords)} 个顽固词` : `修复弱词 ${Math.min(30, weakWords.length)} 个`) : '暂无弱词'} />
             <WordList title="弱词本" words={weakWords} progressMap={progressMap} empty="还没有弱词。" />
           </section>
         )}
@@ -785,6 +815,146 @@ function Panel({ title, children }: { title: string; children: React.ReactNode }
     <section className="rounded-lg bg-white p-5 shadow-sm ring-1 ring-stone-200">
       <h2 className="text-xl font-semibold">{title}</h2>
       <div className="mt-4">{children}</div>
+    </section>
+  )
+}
+
+function LeechRepairCard({ word, progress, attempt, position, total, onResult }: {
+  word: VocabWord
+  progress?: WordProgress
+  attempt: number
+  position: number
+  total: number
+  onResult: (correct: boolean) => void
+}) {
+  const [answer, setAnswer] = useState('')
+  const [submitted, setSubmitted] = useState(false)
+  const challenge = attempt % 3
+  const normalizedAnswer = answer.trim().toLowerCase()
+  const correct = submitted && normalizedAnswer === word.word.toLowerCase()
+  const context = maskTargetWord(word.example || word.collocation, word.word)
+
+  useEffect(() => {
+    setAnswer('')
+    setSubmitted(false)
+  }, [word.id, attempt])
+
+  const submit = () => {
+    if (!answer.trim() || submitted) return
+    setSubmitted(true)
+  }
+
+  return (
+    <section className="space-y-4">
+      <div className="flex items-center justify-between text-sm text-stone-500">
+        <span>顽固词专项 · {position} / {total}</span>
+        <span>已错 {progress?.lapses ?? 0} 次</span>
+      </div>
+
+      <div className="rounded-lg bg-white p-5 shadow-sm ring-1 ring-fuchsia-200">
+        <div className="flex items-center justify-between gap-3">
+          <span className="rounded-full bg-fuchsia-100 px-3 py-1 text-sm font-semibold text-fuchsia-900">
+            {challenge === 0 ? '中文 → 拼写' : challenge === 1 ? '语境填空' : '听音拼写'}
+          </span>
+          <span className="text-sm text-stone-500">自动判分</span>
+        </div>
+
+        {!submitted && (
+          <>
+            {challenge === 0 && (
+              <div className="mt-6">
+                <p className="text-2xl font-semibold leading-9">{word.meaning}</p>
+                <p className="mt-3 leading-7 text-stone-600">搭配提示：{maskTargetWord(word.collocation, word.word)}</p>
+              </div>
+            )}
+            {challenge === 1 && (
+              <div className="mt-6">
+                <p className="whitespace-pre-line text-xl font-semibold leading-8">{context || word.meaning}</p>
+                <p className="mt-3 text-stone-600">根据语境补出完整英文单词。</p>
+              </div>
+            )}
+            {challenge === 2 && (
+              <div className="mt-6 rounded-lg bg-sky-50 p-5 text-center ring-1 ring-sky-100">
+                <button className="mx-auto flex min-h-14 items-center justify-center gap-2 rounded-full bg-stone-950 px-6 font-semibold text-white" onClick={() => speakWord(word.word)}>
+                  <Volume2 size={21} /> 播放发音
+                </button>
+                <p className="mt-3 text-sm text-stone-600">只听声音，不看单词，把听到的词拼出来。</p>
+              </div>
+            )}
+
+            <div className="mt-6 grid gap-3">
+              <input
+                className="min-h-14 rounded-lg border border-stone-300 bg-stone-50 px-4 text-xl font-semibold outline-none focus:border-fuchsia-600"
+                value={answer}
+                onChange={(event) => setAnswer(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') submit()
+                }}
+                autoCapitalize="none"
+                autoCorrect="off"
+                autoComplete="off"
+                spellCheck={false}
+                placeholder="输入完整英文单词"
+                autoFocus
+              />
+              <button className="tap-button bg-stone-950 text-white disabled:bg-stone-300" onClick={submit} disabled={!answer.trim()}>
+                提交答案
+              </button>
+            </div>
+          </>
+        )}
+
+        {submitted && (
+          <>
+            <div className={clsx('mt-6 rounded-lg p-4 ring-1', correct ? 'bg-emerald-50 text-emerald-950 ring-emerald-200' : 'bg-rose-50 text-rose-950 ring-rose-200')}>
+              <p className="text-sm font-semibold">{correct ? '答对了：这次形成一次有效提取' : `答错了：你写的是 ${answer.trim()}`}</p>
+              <div className="mt-2 flex items-center justify-between gap-3">
+                <p className="text-3xl font-semibold">{word.word}</p>
+                <button className="flex min-h-11 min-w-11 items-center justify-center rounded-full bg-white text-stone-950 ring-1 ring-stone-200" onClick={() => speakWord(word.word)} aria-label={`朗读 ${word.word}`}>
+                  <Volume2 size={19} />
+                </button>
+              </div>
+              <p className="mt-2 text-lg font-medium">{word.meaning}</p>
+            </div>
+
+            {word.confusions?.map((confusion) => (
+              <div key={confusion.trap} className="mt-4 rounded-lg bg-rose-50 p-4 ring-1 ring-rose-100">
+                <p className="text-sm font-semibold text-rose-900">先切断错误联想：{confusion.trap}</p>
+                <p className="mt-2 leading-7 text-stone-800">{confusion.correction}</p>
+                <p className="mt-3 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-rose-900">新线索：{confusion.cue}</p>
+              </div>
+            ))}
+
+            {word.memoryHook && (
+              <div className="mt-4 rounded-lg bg-emerald-50 p-4 ring-1 ring-emerald-100">
+                <p className="text-sm font-semibold text-emerald-900">重新编码</p>
+                <p className="mt-2 font-medium leading-7 text-emerald-950">{word.memoryHook.core}</p>
+                <p className="mt-2 leading-7 text-stone-700">{word.memoryHook.breakdown}</p>
+                <p className="mt-3 rounded-lg bg-white/80 px-3 py-2 text-sm font-semibold text-emerald-900">{word.memoryHook.personalPrompt}</p>
+              </div>
+            )}
+
+            {word.evilHook && (
+              <div className="mt-4 rounded-lg bg-fuchsia-50 p-4 ring-1 ring-fuchsia-100">
+                <p className="text-sm font-semibold text-fuchsia-900">备用记忆钩子</p>
+                <p className="mt-2 leading-7 text-fuchsia-950">{word.evilHook}</p>
+              </div>
+            )}
+
+            {!correct && <p className="mt-4 text-sm leading-6 text-stone-600">系统会隔开几张卡后换一种题型再次测试；这次不会计作“认识”。</p>}
+          </>
+        )}
+      </div>
+
+      {submitted && (
+        <div className="fixed inset-x-0 bottom-[calc(52px+env(safe-area-inset-bottom))] z-20 border-t border-stone-200 bg-[#f7f4ef]/95 py-2 backdrop-blur">
+          <div className="mx-auto w-full max-w-md px-4">
+            <button className={clsx('tap-button w-full text-white', correct ? 'bg-emerald-700' : 'bg-stone-950')} onClick={() => onResult(correct)}>
+              {correct ? '答对，继续' : '看完线索，稍后重测'}
+            </button>
+          </div>
+        </div>
+      )}
     </section>
   )
 }

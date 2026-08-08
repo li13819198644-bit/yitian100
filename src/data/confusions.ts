@@ -65,6 +65,22 @@ export const confusionNotes: Record<string, NonNullable<VocabWord['confusions']>
       cue: 'imply 要能做动作：暗示/意味着。',
     },
   ],
+  refute: [
+    {
+      trap: 'refuse / 拒绝',
+      wrongPath: 'refuse 只是拒绝接受或去做；它没有证明对方错误。',
+      correction: 'refute 比 refuse 多走一步：拿证据或逻辑把一个说法驳倒。拼写上把 refuse 的 s 换成 t，得到 refute。',
+      cue: 'refuse 是拒绝；refute 是用证据驳斥。',
+    },
+  ],
+  resilient: [
+    {
+      trap: 'silent / 安静的',
+      wrongPath: 'resilient 中间的字母看起来有点像 silent，容易误切成“重新安静”。但两者读音和词源都不同。',
+      correction: 'resilient 来自拉丁语 resilire：re- 表示往回，salire 表示跳；核心画面是受压或受挫后“弹回来”。',
+      cue: 'silent 是安静；resilient 是回弹恢复。听 /zɪl/，看弹簧。',
+    },
+  ],
   statute: [
     {
       trap: 'status / statue / 站着',

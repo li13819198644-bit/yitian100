@@ -48,7 +48,7 @@ export function qualityFromRating(rating: Rating): number {
 }
 
 function recoveryIntervalCapMs(lapses: number, repetitions: number, rating: Rating): number | undefined {
-  if (lapses < 3 || repetitions >= Math.min(8, Math.max(3, Math.ceil(lapses / 2)))) return undefined
+  if (lapses < 3 || repetitions >= recoveryRepetitionTarget(lapses)) return undefined
   if (rating === 'fuzzy') {
     if (lapses >= 10) return 30 * MINUTE
     if (lapses >= 6) return 6 * 60 * MINUTE
@@ -57,6 +57,25 @@ function recoveryIntervalCapMs(lapses: number, repetitions: number, rating: Rati
   if (lapses >= 10) return 12 * 60 * MINUTE
   if (lapses >= 6) return DAY
   return 2 * DAY
+}
+
+/** Consecutive successful recalls needed to recover from historical lapses. */
+export function recoveryRepetitionTarget(lapses: number): number {
+  if (lapses <= 0) return 0
+  return Math.min(8, Math.max(3, Math.ceil(lapses / 2)))
+}
+
+export function isRecovered(progress: WordProgress): boolean {
+  return progress.lapses === 0
+    || (progress.lastRating === 'known' && progress.repetitions >= recoveryRepetitionTarget(progress.lapses))
+}
+
+export function isMastered(progress: WordProgress): boolean {
+  return progress.repetitions >= 4
+    && progress.stability >= 14
+    && progress.easeFactor >= 2.2
+    && progress.lastRating === 'known'
+    && isRecovered(progress)
 }
 
 export function scheduleReview(progress: WordProgress, rating: Rating, now = Date.now()): WordProgress {
@@ -107,7 +126,7 @@ export function scheduleReview(progress: WordProgress, rating: Rating, now = Dat
   const correct = progress.correct + (wasCorrect ? 1 : 0)
   const incorrect = progress.incorrect + (wasCorrect ? 0 : 1)
 
-  return {
+  const nextProgress: WordProgress = {
     ...progress,
     repetitions,
     easeFactor,
@@ -118,10 +137,13 @@ export function scheduleReview(progress: WordProgress, rating: Rating, now = Dat
     correct,
     incorrect,
     lastRating: rating,
-    mastered: repetitions >= 4 && stability >= 14 && easeFactor >= 2.2 && lapses === 0,
+    // Historical mistakes should make mastery harder, not permanently impossible.
+    mastered: false,
     nextReviewAt: now + intervalMs,
     updatedAt: now,
   }
+  nextProgress.mastered = isMastered(nextProgress)
+  return nextProgress
 }
 
 export function scheduleQuizResult(progress: WordProgress, correct: boolean, now = Date.now()): WordProgress {
@@ -137,8 +159,16 @@ export function accuracy(progress: WordProgress[]): number {
 
 export function isWeak(progress: WordProgress): boolean {
   const attempts = progress.correct + progress.incorrect
+  if (!attempts || isMastered(progress)) return false
   const accuracy = attempts ? progress.correct / attempts : 1
-  return progress.lapses > 0 || progress.lastRating === 'unknown' || progress.easeFactor < 2 || (progress.incorrect >= 3 && accuracy < 0.6)
+  const recoveryPending = progress.lapses > 0 && !isRecovered(progress)
+
+  // Weakness describes the learner's current state. Lifetime lapse/accuracy totals
+  // remain useful evidence, but a sustained recovery must let a word graduate.
+  return progress.lastRating === 'unknown'
+    || recoveryPending
+    || (progress.easeFactor < 2 && progress.repetitions < 4)
+    || (progress.incorrect >= 3 && accuracy < 0.6 && progress.repetitions < 3)
 }
 
 export function isLeech(progress: WordProgress): boolean {
@@ -266,6 +296,24 @@ export function chooseWeakPracticeSession(words: VocabWord[], progress: WordProg
   return buildDailyPlan(words, progress, options).weakPracticeWords
 }
 
+export function chooseLeechRepairSession(words: VocabWord[], progress: WordProgress[], limit = 10): VocabWord[] {
+  const byId = progressMap(progress)
+  return words
+    .filter((word) => {
+      const item = byId.get(word.id)
+      return item ? isWeak(item) && isLeech(item) : false
+    })
+    .sort((a, b) => {
+      const left = byId.get(a.id)
+      const right = byId.get(b.id)
+      return (right?.lapses ?? 0) - (left?.lapses ?? 0)
+        || (right?.incorrect ?? 0) - (left?.incorrect ?? 0)
+        || (left?.stability ?? 0) - (right?.stability ?? 0)
+        || (left?.nextReviewAt ?? 0) - (right?.nextReviewAt ?? 0)
+    })
+    .slice(0, Math.max(0, limit))
+}
+
 export function chooseQuizSession(words: VocabWord[], progress: WordProgress[], options: DailyPlanOptions): VocabWord[] {
   const now = options.now ?? Date.now()
   const quizSize = Math.max(5, options.quizSize ?? 20)
@@ -300,7 +348,7 @@ export function chooseQuizSession(words: VocabWord[], progress: WordProgress[], 
   const stillYoung = words
     .filter((word) => {
       const item = byId.get(word.id)
-      return item && !item.mastered && item.nextReviewAt > now
+      return item && !isMastered(item) && item.nextReviewAt > now
     })
     .sort((a, b) => (byId.get(a.id)?.stability ?? 0) - (byId.get(b.id)?.stability ?? 0))
 
