@@ -191,9 +191,32 @@ export function getDueReviewWords(words: VocabWord[], progress: WordProgress[], 
     .sort((a, b) => (byId.get(a.id)?.nextReviewAt ?? 0) - (byId.get(b.id)?.nextReviewAt ?? 0))
 }
 
-export function getNewWords(words: VocabWord[], progress: WordProgress[], limit = Number.POSITIVE_INFINITY): VocabWord[] {
+function localDayKey(now: number): string {
+  const date = new Date(now)
+  return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`
+}
+
+function stableHash(value: string): number {
+  let hash = 2166136261
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index)
+    hash = Math.imul(hash, 16777619)
+  }
+  return hash >>> 0
+}
+
+export function getNewWords(
+  words: VocabWord[],
+  progress: WordProgress[],
+  limit = Number.POSITIVE_INFINITY,
+  now = Date.now(),
+): VocabWord[] {
   const byId = progressMap(progress)
-  return words.filter((word) => !byId.has(word.id)).slice(0, Math.max(0, limit))
+  const day = localDayKey(now)
+  return words
+    .filter((word) => !byId.has(word.id))
+    .sort((left, right) => stableHash(`${day}:${left.id}`) - stableHash(`${day}:${right.id}`) || left.id.localeCompare(right.id))
+    .slice(0, Math.max(0, limit))
 }
 
 export function getWeakPracticeWords(words: VocabWord[], progress: WordProgress[], limit = 20, now = Date.now()): VocabWord[] {
@@ -267,13 +290,13 @@ export function buildDailyPlan(words: VocabWord[], progress: WordProgress[], opt
     const item = byId.get(word.id)
     return item ? isWeak(item) : false
   }).length
-  const availableNewWords = getNewWords(words, progress).length
+  const availableNewWords = getNewWords(words, progress, Number.POSITIVE_INFINITY, now).length
   const recommendedNewCount = recommendNewWordCountWithWeakDebt(reviewDebt, weakDebt, availableNewWords, options.baseNewWordsPerDay, dailyCapacity, load)
   const reviewLimit = options.reviewCap ?? reviewDebt
 
   return {
     dueReviewWords: dueReviewWords.slice(0, Math.max(0, reviewLimit)),
-    newWords: getNewWords(words, progress, recommendedNewCount),
+    newWords: getNewWords(words, progress, recommendedNewCount, now),
     weakPracticeWords: getWeakPracticeWords(words, progress, options.weakPracticeLimit ?? 20, now),
     forecastReviewLoad: load,
     forecastPressure: pressure,

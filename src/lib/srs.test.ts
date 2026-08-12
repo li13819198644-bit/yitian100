@@ -11,6 +11,7 @@ import {
   forecastReviewLoad,
   recommendNewWordCountWithForecast,
   getDueReviewWords,
+  getNewWords,
   insertDelayedRetry,
   isWeak,
   isLeech,
@@ -224,7 +225,19 @@ describe('spaced repetition', () => {
       now,
     })
 
-    expect(learn.map((item) => item.id)).toEqual(['new-a', 'new-b'])
+    expect(new Set(learn.map((item) => item.id))).toEqual(new Set(['new-a', 'new-b']))
+  })
+
+  it('keeps new words shuffled but stable within the same day', () => {
+    const words = Array.from({ length: 12 }, (_, index) => word(`new-${String(index).padStart(2, '0')}`))
+    const morning = new Date(2026, 7, 13, 8).getTime()
+    const evening = new Date(2026, 7, 13, 20).getTime()
+    const first = getNewWords(words, [], 12, morning).map((item) => item.id)
+    const repeated = getNewWords(words, [], 12, evening).map((item) => item.id)
+
+    expect(first).toEqual(repeated)
+    expect(first).not.toEqual(words.map((item) => item.id))
+    expect(new Set(first)).toEqual(new Set(words.map((item) => item.id)))
   })
 
   it('supplements quiz sessions beyond a small overdue queue', () => {
