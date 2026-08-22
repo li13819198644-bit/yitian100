@@ -1,4 +1,5 @@
 export type Rating = 'known' | 'fuzzy' | 'unknown'
+export type ReviewMode = 'choice' | 'advanced'
 
 export type QuizMode = 'en-zh' | 'zh-en' | 'context' | 'spelling' | 'confusion' | 'swipe'
 
@@ -50,6 +51,7 @@ export interface AppSettings {
   dailyTarget: number
   dailyCapacity: number
   reliefMode: boolean
+  reviewMode: ReviewMode
   currentLevel: 'B2' | 'C1'
 }
 

@@ -52,6 +52,7 @@ export const defaultSettings: AppSettings = {
   dailyTarget: 100,
   dailyCapacity: 160,
   reliefMode: true,
+  reviewMode: 'choice',
   currentLevel: 'B2',
 }
 
@@ -60,6 +61,7 @@ function normalizeSettings(settings: Partial<AppSettings>): AppSettings {
     ...defaultSettings,
     ...settings,
     dailyCapacity: settings.dailyCapacity ?? Math.max(160, settings.dailyTarget ?? defaultSettings.dailyTarget),
+    reviewMode: settings.reviewMode === 'advanced' ? 'advanced' : 'choice',
   }
 }
 

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { BarChart3, BookOpen, Check, ChevronRight, Cloud, Download, Home, RotateCcw, Settings, Upload, Volume2, X } from 'lucide-react'
 import clsx from 'clsx'
-import type { AppSettings, AppStats, QuizMode, Rating, Screen, SessionKind, VocabWord, WordProgress } from './types'
+import type { AppSettings, AppStats, QuizMode, Rating, ReviewMode, Screen, SessionKind, VocabWord, WordProgress } from './types'
 import {
   createProgress,
   accuracy,
@@ -63,6 +63,15 @@ function maskTargetWord(text: string, target: string): string {
   if (!text) return ''
   const masked = '_'.repeat(Math.max(4, target.length))
   return text.replace(new RegExp(`\\b${escapeRegExp(target)}\\b`, 'gi'), masked)
+}
+
+function choiceHash(value: string): number {
+  let hash = 2166136261
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index)
+    hash = Math.imul(hash, 16777619)
+  }
+  return hash >>> 0
 }
 
 let activeAudio: HTMLAudioElement | undefined
@@ -333,11 +342,11 @@ function App() {
     setScreen(nextScreen)
   }
 
-  async function rateWord(word: VocabWord, rating: Rating) {
+  async function rateWord(word: VocabWord, rating: Rating, options: { playNextWord?: boolean } = {}) {
     const existing = progressMap.get(word.id) ?? createProgress(word.id)
     const updated = scheduleReview(existing, rating)
     const nextSessionIds = insertDelayedRetry(sessionWordIds, activeIndex, word.id, rating)
-    speakNextSessionWord(nextSessionIds, activeIndex + 1)
+    if (options.playNextWord !== false) speakNextSessionWord(nextSessionIds, activeIndex + 1)
     await saveProgress(updated)
 
     const isCorrect = rating !== 'unknown'
@@ -454,6 +463,36 @@ function App() {
     setSettings(next)
     await saveSettings(next)
     void syncCloudQuietly()
+  }
+
+  async function updateReviewMode(reviewMode: ReviewMode) {
+    const next = { ...settings, reviewMode }
+    setSettings(next)
+    await saveSettings(next)
+    void syncCloudQuietly()
+  }
+
+  function reviewPrompt(word: VocabWord) {
+    const chineseToEnglish = activeIndex % 2 === 1
+    return chineseToEnglish
+      ? { direction: '中 → 英', question: word.meaning, answer: word.word, answerField: 'word' as const }
+      : { direction: '英 → 中', question: word.word, answer: word.meaning, answerField: 'meaning' as const }
+  }
+
+  function reviewChoices(word: VocabWord) {
+    const prompt = reviewPrompt(word)
+    const candidates = words
+      .filter((candidate) => candidate.id !== word.id)
+      .slice()
+      .sort((left, right) => choiceHash(`${word.id}:${left.id}`) - choiceHash(`${word.id}:${right.id}`))
+    const distractors: string[] = []
+    for (const candidate of candidates) {
+      const value = candidate[prompt.answerField]
+      if (value !== prompt.answer && !distractors.includes(value)) distractors.push(value)
+      if (distractors.length === 3) break
+    }
+    return [prompt.answer, ...distractors]
+      .sort((left, right) => choiceHash(`${word.id}:${left}`) - choiceHash(`${word.id}:${right}`))
   }
 
   async function signInOrUp(mode: 'in' | 'up') {
@@ -646,7 +685,18 @@ function App() {
         )}
 
         {screen === 'learn' && activeWord && activeIndex < sessionWords.length && (
-          sessionKind === 'weak' && isLeech(progressMap.get(activeWord.id) ?? createProgress(activeWord.id)) ? (
+          settings.reviewMode === 'choice' && (sessionKind === 'review' || sessionKind === 'weak') ? (
+            <ChoiceReviewCard
+              word={activeWord}
+              direction={reviewPrompt(activeWord).direction}
+              question={reviewPrompt(activeWord).question}
+              answer={reviewPrompt(activeWord).answer}
+              choices={reviewChoices(activeWord)}
+              position={activeIndex + 1}
+              total={sessionWords.length}
+              onAnswer={(correct) => rateWord(activeWord, correct ? 'known' : 'unknown', { playNextWord: false })}
+            />
+          ) : sessionKind === 'weak' && isLeech(progressMap.get(activeWord.id) ?? createProgress(activeWord.id)) ? (
             <LeechRepairCard
               word={activeWord}
               progress={progressMap.get(activeWord.id)}
@@ -689,19 +739,20 @@ function App() {
 
         {screen === 'review' && (
           <section className="space-y-3">
-            <PrimaryButton onClick={() => startReviewSession('learn')} icon={<RotateCcw size={20} />} label={reviewWords.length ? `开始复习 ${reviewWords.length} 个` : '暂无到期复习'} />
+            <ReviewModeControl value={settings.reviewMode} onChange={updateReviewMode} />
+            <PrimaryButton onClick={() => startReviewSession('learn')} icon={<RotateCcw size={20} />} label={reviewWords.length ? `${settings.reviewMode === 'choice' ? '选择题复习' : '复杂复习'} ${reviewWords.length} 个` : '暂无到期复习'} />
             <WordList title="复习队列" words={reviewWords} progressMap={progressMap} empty="现在没有到期复习词。" />
           </section>
         )}
         {screen === 'weak' && (
           <section className="space-y-3">
-            {stubbornWords > 0 && (
+            {settings.reviewMode === 'advanced' && stubbornWords > 0 && (
               <div className="rounded-lg bg-fuchsia-50 p-4 text-sm leading-6 text-fuchsia-950 ring-1 ring-fuchsia-100">
                 <p className="font-semibold">{stubbornWords} 个顽固词将使用专项修复</p>
                 <p className="mt-1">系统会轮换中文拼写、语境填空和听音拼写，答错后展示辨析与记忆钩子，再延迟重测。</p>
               </div>
             )}
-            <PrimaryButton onClick={() => startWeakPracticeSession('learn')} icon={<RotateCcw size={20} />} label={weakWords.length ? (stubbornWords ? `专项修复 ${Math.min(reliefActive ? 10 : 30, stubbornWords)} 个顽固词` : `修复弱词 ${Math.min(30, weakWords.length)} 个`) : '暂无弱词'} />
+            <PrimaryButton onClick={() => startWeakPracticeSession('learn')} icon={<RotateCcw size={20} />} label={weakWords.length ? (settings.reviewMode === 'choice' ? `选择题复习 ${Math.min(reliefActive ? 10 : 30, weakWords.length)} 个弱词` : stubbornWords ? `专项修复 ${Math.min(reliefActive ? 10 : 30, stubbornWords)} 个顽固词` : `修复弱词 ${Math.min(30, weakWords.length)} 个`) : '暂无弱词'} />
             <WordList title="弱词本" words={weakWords} progressMap={progressMap} empty="还没有弱词。" />
           </section>
         )}
@@ -709,7 +760,11 @@ function App() {
         {screen === 'settings' && (
           <section className="space-y-4">
             <Panel title="设置">
-              <label className="block text-sm font-medium text-stone-700">每日新词目标</label>
+              <p className="text-sm font-medium text-stone-700">复习方式</p>
+              <div className="mt-2">
+                <ReviewModeControl value={settings.reviewMode} onChange={updateReviewMode} compact />
+              </div>
+              <label className="mt-5 block text-sm font-medium text-stone-700">每日新词目标</label>
               <input className="mt-2 w-full accent-emerald-700" type="range" min="0" max="200" step="5" value={settings.dailyTarget} onChange={(event) => updateDailyTarget(Number(event.target.value))} />
               <div className="mt-1 text-sm text-stone-500">{settings.dailyTarget} 新词 / 天 · 总容量 {settings.dailyCapacity} 张卡</div>
               <label className="mt-5 flex min-h-12 items-center justify-between rounded-lg bg-stone-50 px-4 ring-1 ring-stone-200">
@@ -814,6 +869,101 @@ function Panel({ title, children }: { title: string; children: React.ReactNode }
     <section className="rounded-lg bg-white p-5 shadow-sm ring-1 ring-stone-200">
       <h2 className="text-xl font-semibold">{title}</h2>
       <div className="mt-4">{children}</div>
+    </section>
+  )
+}
+
+function ReviewModeControl({ value, onChange, compact = false }: {
+  value: ReviewMode
+  onChange: (mode: ReviewMode) => void
+  compact?: boolean
+}) {
+  return (
+    <div className="rounded-lg bg-stone-100 p-1 ring-1 ring-stone-200">
+      <div className="grid grid-cols-2 gap-1">
+        {([
+          ['choice', '普通复习'],
+          ['advanced', '复杂复习'],
+        ] as const).map(([mode, label]) => (
+          <button
+            key={mode}
+            type="button"
+            className={clsx('min-h-12 rounded-md px-3 font-semibold', value === mode ? 'bg-white text-stone-950 shadow-sm' : 'text-stone-500')}
+            onClick={() => onChange(mode)}
+            aria-pressed={value === mode}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      {!compact && (
+        <p className="px-3 pb-2 pt-3 text-sm leading-6 text-stone-600">
+          {value === 'choice' ? '全程四选一，无需声音和键盘。' : '使用主动回忆、拼写、语境和听音强化。'}
+        </p>
+      )}
+    </div>
+  )
+}
+
+function ChoiceReviewCard({ word, direction, question, answer, choices, position, total, onAnswer }: {
+  word: VocabWord
+  direction: string
+  question: string
+  answer: string
+  choices: string[]
+  position: number
+  total: number
+  onAnswer: (correct: boolean) => void
+}) {
+  const [selected, setSelected] = useState('')
+
+  useEffect(() => {
+    setSelected('')
+  }, [word.id, direction])
+
+  const choose = (choice: string) => {
+    if (selected) return
+    setSelected(choice)
+    window.setTimeout(() => onAnswer(choice === answer), 650)
+  }
+
+  return (
+    <section className="space-y-4">
+      <div className="flex items-center justify-between text-sm text-stone-500">
+        <span>普通复习 · {position} / {total}</span>
+        <span>{direction}</span>
+      </div>
+      <div className="rounded-lg bg-white p-5 shadow-sm ring-1 ring-stone-200">
+        <p className="text-sm font-medium text-emerald-700">选择正确答案</p>
+        <p className="mt-4 text-3xl font-semibold leading-tight">{question}</p>
+        <div className="mt-6 grid gap-3">
+          {choices.map((choice) => {
+            const isAnswer = choice === answer
+            const isSelected = choice === selected
+            return (
+              <button
+                key={choice}
+                type="button"
+                className={clsx(
+                  'min-h-16 rounded-lg px-4 py-3 text-left font-medium leading-6 ring-1 ring-stone-200 disabled:opacity-100',
+                  selected && isAnswer && 'bg-emerald-100 text-emerald-950 ring-emerald-300',
+                  selected && isSelected && !isAnswer && 'bg-rose-100 text-rose-950 ring-rose-300',
+                  !selected && 'bg-white active:bg-stone-100',
+                )}
+                onClick={() => choose(choice)}
+                disabled={Boolean(selected)}
+              >
+                {choice}
+              </button>
+            )
+          })}
+        </div>
+        {selected && (
+          <p className={clsx('mt-4 rounded-lg px-4 py-3 text-sm font-semibold', selected === answer ? 'bg-emerald-50 text-emerald-800' : 'bg-rose-50 text-rose-800')}>
+            {selected === answer ? '答对，准备下一题' : `答错，正确答案：${answer}`}
+          </p>
+        )}
+      </div>
     </section>
   )
 }
