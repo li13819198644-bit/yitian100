@@ -202,6 +202,9 @@ function App() {
   const [sessionKind, setSessionKind] = useState<SessionKind>('learn')
   const [quizMode, setQuizMode] = useState<QuizMode>('en-zh')
   const [feedback, setFeedback] = useState<string>('')
+  const [feedbackWordId, setFeedbackWordId] = useState('')
+  const [detailWordId, setDetailWordId] = useState('')
+  const [detailReturnScreen, setDetailReturnScreen] = useState<Screen>('home')
   const [importMessage, setImportMessage] = useState('')
   const [cloudUser, setCloudUser] = useState<string>('')
   const [cloudLogin, setCloudLogin] = useState('')
@@ -273,6 +276,14 @@ function App() {
   const todayProgress = Math.max(stats.todayDate === todayKey() ? stats.todaySeen.length : 0, progressStudiedToday)
   const todayAccuracy = accuracy(progress)
   const activeWord = sessionWords[activeIndex]
+  const detailWord = detailWordId ? wordMap.get(detailWordId) : undefined
+
+  function openWordDetail(wordId: string, returnScreen: Screen = screen) {
+    if (!wordMap.has(wordId)) return
+    setDetailWordId(wordId)
+    setDetailReturnScreen(returnScreen === 'detail' ? 'home' : returnScreen)
+    setScreen('detail')
+  }
 
   function speakNextSessionWord(nextIds: string[], nextIndex: number) {
     const nextId = nextIds[nextIndex]
@@ -287,6 +298,7 @@ function App() {
     const nextWords = getNewWords(words, progress, target, Date.now())
     if (!nextWords.length) {
       setFeedback('现在没有未学新词。可以先复习，或导入新词。')
+      setFeedbackWordId('')
       setScreen('home')
       return
     }
@@ -342,7 +354,7 @@ function App() {
     setScreen(nextScreen)
   }
 
-  async function rateWord(word: VocabWord, rating: Rating, options: { playNextWord?: boolean } = {}) {
+  async function rateWord(word: VocabWord, rating: Rating, options: { playNextWord?: boolean; openDetailOnWrong?: boolean } = {}) {
     const existing = progressMap.get(word.id) ?? createProgress(word.id)
     const updated = scheduleReview(existing, rating)
     const nextSessionIds = insertDelayedRetry(sessionWordIds, activeIndex, word.id, rating)
@@ -365,8 +377,14 @@ function App() {
     void syncCloudQuietly()
     setSessionWordIds(nextSessionIds)
     setFeedback(`${word.word}: ${actionMap[rating].label}`)
+    setFeedbackWordId(word.id)
     setActiveIndex((index) => index + 1)
     await refresh()
+    if (rating === 'unknown' && options.openDetailOnWrong) {
+      setDetailWordId(word.id)
+      setDetailReturnScreen('learn')
+      setScreen('detail')
+    }
   }
 
   async function rateQuizAnswer(word: VocabWord, correct: boolean) {
@@ -389,6 +407,7 @@ function App() {
     void syncCloudQuietly()
     setSessionWordIds((ids) => insertDelayedRetry(ids, activeIndex, word.id, correct ? 'fuzzy' : 'unknown'))
     setFeedback(`${word.word}: ${correct ? '测验答对' : '测验答错'}`)
+    setFeedbackWordId(word.id)
     setActiveIndex((index) => index + 1)
     await refresh()
   }
@@ -694,7 +713,7 @@ function App() {
               choices={reviewChoices(activeWord)}
               position={activeIndex + 1}
               total={sessionWords.length}
-              onAnswer={(correct) => rateWord(activeWord, correct ? 'known' : 'unknown', { playNextWord: false })}
+              onAnswer={(correct) => rateWord(activeWord, correct ? 'known' : 'unknown', { playNextWord: false, openDetailOnWrong: !correct })}
             />
           ) : sessionKind === 'weak' && isLeech(progressMap.get(activeWord.id) ?? createProgress(activeWord.id)) ? (
             <LeechRepairCard
@@ -703,13 +722,13 @@ function App() {
               attempt={sessionWordIds.slice(0, activeIndex).filter((id) => id === activeWord.id).length}
               position={activeIndex + 1}
               total={sessionWords.length}
-              onResult={(correct) => rateWord(activeWord, correct ? 'known' : 'unknown')}
+              onResult={(correct) => rateWord(activeWord, correct ? 'known' : 'unknown', { openDetailOnWrong: !correct })}
             />
           ) : (
             <WordCard title={`${sessionKind === 'review' ? '到期复习' : sessionKind === 'weak' ? '弱词修复' : '新词学习'} · 第 ${Math.floor(activeIndex / 5) + 1} 组 / ${Math.max(1, Math.ceil(sessionWords.length / 5))}`} word={activeWord} progress={progressMap.get(activeWord.id)}>
               <div className="grid grid-cols-3 gap-2">
                 {(Object.keys(actionMap) as Rating[]).map((rating) => (
-                  <button key={rating} className={clsx('tap-button', actionMap[rating].className)} onClick={() => rateWord(activeWord, rating)}>
+                  <button key={rating} className={clsx('tap-button', actionMap[rating].className)} onClick={() => rateWord(activeWord, rating, { openDetailOnWrong: rating === 'unknown' && (sessionKind === 'review' || sessionKind === 'weak') })}>
                     {actionMap[rating].label}
                   </button>
                 ))}
@@ -839,7 +858,36 @@ function App() {
           </Panel>
         )}
 
-        {feedback && <div className="fixed left-1/2 top-[calc(14px+env(safe-area-inset-top))] z-20 w-[calc(100%-32px)] max-w-sm -translate-x-1/2 rounded-lg bg-stone-950 px-4 py-3 text-center text-sm text-white shadow-lg">{feedback}</div>}
+        {screen === 'detail' && detailWord && (
+          <WordDetail
+            word={detailWord}
+            progress={progressMap.get(detailWord.id)}
+            onContinue={() => setScreen(detailReturnScreen)}
+            continueLabel={
+              detailReturnScreen === 'learn'
+                ? sessionKind === 'learn'
+                  ? '返回学习'
+                  : '看完，继续复习'
+                : detailReturnScreen === 'quiz'
+                  ? '返回测验'
+                  : '返回上一页'
+            }
+          />
+        )}
+
+        {feedback && screen !== 'detail' && (feedbackWordId ? (
+          <button
+            type="button"
+            className="fixed left-1/2 top-[calc(14px+env(safe-area-inset-top))] z-20 flex min-h-12 w-[calc(100%-32px)] max-w-sm -translate-x-1/2 items-center justify-between rounded-lg bg-stone-950 px-4 py-3 text-left text-sm text-white shadow-lg"
+            onClick={() => openWordDetail(feedbackWordId)}
+            aria-label={`打开上一个单词 ${feedbackWordId} 的详情`}
+          >
+            <span>上一个：{feedback}</span>
+            <span className="shrink-0 pl-3 text-stone-300">详情 ›</span>
+          </button>
+        ) : (
+          <div className="fixed left-1/2 top-[calc(14px+env(safe-area-inset-top))] z-20 w-[calc(100%-32px)] max-w-sm -translate-x-1/2 rounded-lg bg-stone-950 px-4 py-3 text-center text-sm text-white shadow-lg">{feedback}</div>
+        ))}
 
         <nav className="fixed inset-x-0 bottom-0 z-10 border-t border-stone-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur">
           <div className="mx-auto grid max-w-md grid-cols-5 px-2 py-1">
@@ -869,6 +917,75 @@ function Panel({ title, children }: { title: string; children: React.ReactNode }
     <section className="rounded-lg bg-white p-5 shadow-sm ring-1 ring-stone-200">
       <h2 className="text-xl font-semibold">{title}</h2>
       <div className="mt-4">{children}</div>
+    </section>
+  )
+}
+
+function WordDetail({ word, progress, onContinue, continueLabel }: {
+  word: VocabWord
+  progress?: WordProgress
+  onContinue: () => void
+  continueLabel: string
+}) {
+  return (
+    <section className="space-y-4">
+      <div className="flex items-center justify-between text-sm text-stone-500">
+        <span>单词详情</span>
+        <span>难度 {word.difficulty} · {word.level}</span>
+      </div>
+
+      <div className="rounded-lg bg-white p-5 shadow-sm ring-1 ring-stone-200">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="break-words text-4xl font-semibold">{word.word}</h2>
+            <p className="mt-2 text-stone-500">{word.phonetic}</p>
+          </div>
+          <button className="flex min-h-12 min-w-12 shrink-0 items-center justify-center rounded-full bg-stone-950 text-white" onClick={() => speakWord(word.word)} aria-label={`朗读 ${word.word}`}>
+            <Volume2 size={21} />
+          </button>
+        </div>
+        <p className="mt-5 text-2xl font-semibold leading-9">{word.meaning}</p>
+        <div className="mt-5 border-t border-stone-200 pt-4">
+          <p className="font-semibold">{word.collocation}</p>
+          <div className="mt-3 flex items-start justify-between gap-3">
+            <p className="leading-7 text-stone-600">{word.example}</p>
+            <button className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full bg-stone-100 text-stone-900" onClick={() => speakEnglish(word.example || word.collocation, { rate: 0.82 })} aria-label="朗读例句">
+              <Volume2 size={19} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {word.confusions?.map((confusion) => (
+        <div key={confusion.trap} className="rounded-lg bg-rose-50 p-4 ring-1 ring-rose-100">
+          <p className="text-sm font-semibold text-rose-900">容易误想：{confusion.trap}</p>
+          <p className="mt-2 text-sm leading-6 text-rose-950">{confusion.wrongPath}</p>
+          <p className="mt-3 font-medium leading-7 text-stone-950">{confusion.correction}</p>
+          <p className="mt-3 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-rose-900">{confusion.cue}</p>
+        </div>
+      ))}
+
+      {word.memoryHook && (
+        <div className="rounded-lg bg-emerald-50 p-4 ring-1 ring-emerald-100">
+          <p className="text-sm font-semibold text-emerald-900">单词起源</p>
+          <p className="mt-2 font-medium leading-7 text-emerald-950">{word.memoryHook.breakdown}</p>
+        </div>
+      )}
+
+      {word.evilHook && (
+        <div className="rounded-lg bg-fuchsia-50 p-4 ring-1 ring-fuchsia-100">
+          <p className="text-sm font-semibold text-fuchsia-900">邪修记法</p>
+          <p className="mt-2 font-medium leading-7 text-fuchsia-950">{word.evilHook}</p>
+        </div>
+      )}
+
+      <p className="rounded-lg bg-stone-100 px-4 py-3 text-sm text-stone-600">
+        已复习 {progress?.repetitions ?? 0} 次 · 错误 {progress?.lapses ?? 0} 次 · 稳定度 {(progress?.stability ?? 0).toFixed(1)} 天
+      </p>
+
+      <button className="tap-button w-full bg-stone-950 text-white" onClick={onContinue}>
+        {continueLabel}
+      </button>
     </section>
   )
 }
