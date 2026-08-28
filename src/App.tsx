@@ -285,7 +285,9 @@ function App() {
     setScreen('detail')
   }
 
-  function speakNextSessionWord(nextIds: string[], nextIndex: number) {
+  function autoSpeakSessionWord(nextIds: string[], nextIndex: number, kind: SessionKind = sessionKind) {
+    if (!settings.autoPronounce || kind === 'quiz') return
+    if (settings.reviewMode === 'choice' && (kind === 'review' || kind === 'weak') && nextIndex % 2 === 1) return
     const nextId = nextIds[nextIndex]
     const nextWord = nextId ? wordMap.get(nextId) : undefined
     if (nextWord) void speakWord(nextWord.word)
@@ -306,6 +308,7 @@ function App() {
     setActiveIndex(0)
     setSessionKind('learn')
     setScreen('learn')
+    autoSpeakSessionWord(nextWords.map((word) => word.id), 0, 'learn')
   }
 
   function startReviewSession(nextScreen: Screen = 'learn') {
@@ -322,6 +325,7 @@ function App() {
     setActiveIndex(0)
     setSessionKind('review')
     setScreen(nextScreen)
+    autoSpeakSessionWord(nextWords.map((word) => word.id), 0, 'review')
   }
 
   function startQuizSession() {
@@ -352,13 +356,16 @@ function App() {
     setActiveIndex(0)
     setSessionKind('weak')
     setScreen(nextScreen)
+    autoSpeakSessionWord(nextWords.map((word) => word.id), 0, 'weak')
   }
 
   async function rateWord(word: VocabWord, rating: Rating, options: { playNextWord?: boolean; openDetailOnWrong?: boolean } = {}) {
     const existing = progressMap.get(word.id) ?? createProgress(word.id)
     const updated = scheduleReview(existing, rating)
     const nextSessionIds = insertDelayedRetry(sessionWordIds, activeIndex, word.id, rating)
-    if (options.playNextWord !== false) speakNextSessionWord(nextSessionIds, activeIndex + 1)
+    if (options.playNextWord !== false && !(rating === 'unknown' && options.openDetailOnWrong)) {
+      autoSpeakSessionWord(nextSessionIds, activeIndex + 1)
+    }
     await saveProgress(updated)
 
     const isCorrect = rating !== 'unknown'
@@ -489,6 +496,20 @@ function App() {
     setSettings(next)
     await saveSettings(next)
     void syncCloudQuietly()
+  }
+
+  async function updateAutoPronounce(autoPronounce: boolean) {
+    const next = { ...settings, autoPronounce }
+    setSettings(next)
+    await saveSettings(next)
+    void syncCloudQuietly()
+  }
+
+  function continueFromWordDetail() {
+    setScreen(detailReturnScreen)
+    if (detailReturnScreen === 'learn') {
+      autoSpeakSessionWord(sessionWordIds, activeIndex)
+    }
   }
 
   function reviewPrompt(word: VocabWord) {
@@ -713,7 +734,8 @@ function App() {
               choices={reviewChoices(activeWord)}
               position={activeIndex + 1}
               total={sessionWords.length}
-              onAnswer={(correct) => rateWord(activeWord, correct ? 'known' : 'unknown', { playNextWord: false, openDetailOnWrong: !correct })}
+              onSpeak={() => speakWord(activeWord.word)}
+              onAnswer={(correct) => rateWord(activeWord, correct ? 'known' : 'unknown', { openDetailOnWrong: !correct })}
             />
           ) : sessionKind === 'weak' && isLeech(progressMap.get(activeWord.id) ?? createProgress(activeWord.id)) ? (
             <LeechRepairCard
@@ -783,6 +805,13 @@ function App() {
               <div className="mt-2">
                 <ReviewModeControl value={settings.reviewMode} onChange={updateReviewMode} compact />
               </div>
+              <label className="mt-5 flex min-h-14 items-center justify-between gap-4 rounded-lg bg-stone-50 px-4 ring-1 ring-stone-200">
+                <span>
+                  <span className="block font-medium text-stone-900">自动发音</span>
+                  <span className="mt-1 block text-sm text-stone-500">关闭后只在点击喇叭时朗读</span>
+                </span>
+                <input className="h-6 w-6 shrink-0 accent-emerald-700" type="checkbox" checked={settings.autoPronounce} onChange={(event) => updateAutoPronounce(event.target.checked)} />
+              </label>
               <label className="mt-5 block text-sm font-medium text-stone-700">每日新词目标</label>
               <input className="mt-2 w-full accent-emerald-700" type="range" min="0" max="200" step="5" value={settings.dailyTarget} onChange={(event) => updateDailyTarget(Number(event.target.value))} />
               <div className="mt-1 text-sm text-stone-500">{settings.dailyTarget} 新词 / 天 · 总容量 {settings.dailyCapacity} 张卡</div>
@@ -862,7 +891,7 @@ function App() {
           <WordDetail
             word={detailWord}
             progress={progressMap.get(detailWord.id)}
-            onContinue={() => setScreen(detailReturnScreen)}
+            onContinue={continueFromWordDetail}
             continueLabel={
               detailReturnScreen === 'learn'
                 ? sessionKind === 'learn'
@@ -1022,7 +1051,7 @@ function ReviewModeControl({ value, onChange, compact = false }: {
   )
 }
 
-function ChoiceReviewCard({ word, direction, question, answer, choices, position, total, onAnswer }: {
+function ChoiceReviewCard({ word, direction, question, answer, choices, position, total, onSpeak, onAnswer }: {
   word: VocabWord
   direction: string
   question: string
@@ -1030,6 +1059,7 @@ function ChoiceReviewCard({ word, direction, question, answer, choices, position
   choices: string[]
   position: number
   total: number
+  onSpeak: () => void
   onAnswer: (correct: boolean) => void
 }) {
   const [selected, setSelected] = useState('')
@@ -1052,7 +1082,19 @@ function ChoiceReviewCard({ word, direction, question, answer, choices, position
       </div>
       <div className="rounded-lg bg-white p-5 shadow-sm ring-1 ring-stone-200">
         <p className="text-sm font-medium text-emerald-700">选择正确答案</p>
-        <p className="mt-4 text-3xl font-semibold leading-tight">{question}</p>
+        <div className="mt-4 flex items-start justify-between gap-3">
+          <p className="min-w-0 break-words text-3xl font-semibold leading-tight">{question}</p>
+          {(direction === '英 → 中' || selected) && (
+            <button
+              type="button"
+              className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full bg-stone-950 text-white"
+              onClick={onSpeak}
+              aria-label={`朗读 ${word.word}`}
+            >
+              <Volume2 size={19} />
+            </button>
+          )}
+        </div>
         <div className="mt-6 grid gap-3">
           {choices.map((choice) => {
             const isAnswer = choice === answer

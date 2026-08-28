@@ -52,6 +52,7 @@ export const defaultSettings: AppSettings = {
   dailyTarget: 100,
   dailyCapacity: 160,
   reliefMode: true,
+  autoPronounce: true,
   reviewMode: 'choice',
   currentLevel: 'B2',
 }

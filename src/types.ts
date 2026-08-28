@@ -51,6 +51,7 @@ export interface AppSettings {
   dailyTarget: number
   dailyCapacity: number
   reliefMode: boolean
+  autoPronounce: boolean
   reviewMode: ReviewMode
   currentLevel: 'B2' | 'C1'
 }
