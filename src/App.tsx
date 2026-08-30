@@ -6,10 +6,9 @@ import {
   createProgress,
   accuracy,
   buildDailyPlan,
-  chooseLeechRepairSession,
   chooseQuizSession,
   chooseReviewSession,
-  chooseWeakPracticeSession,
+  chooseWeakRotationSession,
   getNewWords,
   insertDelayedRetry,
   isLeech,
@@ -342,12 +341,7 @@ function App() {
 
   function startWeakPracticeSession(nextScreen: Screen = 'learn') {
     const limit = reliefActive ? 10 : 30
-    const leechWords = chooseLeechRepairSession(words, progress, limit)
-    const nextWords = leechWords.length ? leechWords : chooseWeakPracticeSession(words, progress, {
-      baseNewWordsPerDay: settings.dailyTarget,
-      dailyCapacity: settings.dailyCapacity,
-      weakPracticeLimit: limit,
-    })
+    const nextWords = chooseWeakRotationSession(words, progress, limit)
     if (!nextWords.length) {
       setScreen('weak')
       return
@@ -793,7 +787,7 @@ function App() {
                 <p className="mt-1">系统会轮换中文拼写、语境填空和听音拼写，答错后展示辨析与记忆钩子，再延迟重测。</p>
               </div>
             )}
-            <PrimaryButton onClick={() => startWeakPracticeSession('learn')} icon={<RotateCcw size={20} />} label={weakWords.length ? (settings.reviewMode === 'choice' ? `选择题复习 ${Math.min(reliefActive ? 10 : 30, weakWords.length)} 个弱词` : stubbornWords ? `专项修复 ${Math.min(reliefActive ? 10 : 30, stubbornWords)} 个顽固词` : `修复弱词 ${Math.min(30, weakWords.length)} 个`) : '暂无弱词'} />
+            <PrimaryButton onClick={() => startWeakPracticeSession('learn')} icon={<RotateCcw size={20} />} label={weakWords.length ? `轮换复习 ${Math.min(reliefActive ? 10 : 30, weakWords.length)} 个弱词` : '暂无弱词'} />
             <WordList title="弱词本" words={weakWords} progressMap={progressMap} empty="还没有弱词。" />
           </section>
         )}

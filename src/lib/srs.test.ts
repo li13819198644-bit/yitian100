@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   buildDailyPlan,
   chooseLeechRepairSession,
+  chooseWeakRotationSession,
   chooseLearnSession,
   chooseQuizSession,
   chooseReviewSession,
@@ -313,6 +314,48 @@ describe('spaced repetition', () => {
     const repair = chooseLeechRepairSession(words, [futureMild, futureLeech, dueLeech], 10)
 
     expect(repair.map((item) => item.id)).toEqual(['due-leech', 'future-leech'])
+  })
+
+  it('rotates recently practised weak words behind untouched weak words', () => {
+    const words = Array.from({ length: 12 }, (_, index) => word(`weak-${index}`))
+    const weakProgress = words.map((item, index) => ({
+      ...createProgress(item.id, now),
+      nextReviewAt: now + day,
+      updatedAt: now - (12 - index) * day,
+      lapses: 6,
+      incorrect: 6,
+      correct: 2,
+      lastRating: 'known' as const,
+    }))
+
+    const first = chooseWeakRotationSession(words, weakProgress, 5, now)
+    const practisedIds = new Set(first.map((item) => item.id))
+    const updatedProgress = weakProgress.map((item) => practisedIds.has(item.wordId) ? { ...item, updatedAt: now } : item)
+    const second = chooseWeakRotationSession(words, updatedProgress, 5, now)
+
+    expect(first.map((item) => item.id)).toEqual(['weak-0', 'weak-1', 'weak-2', 'weak-3', 'weak-4'])
+    expect(second.map((item) => item.id)).toEqual(['weak-5', 'weak-6', 'weak-7', 'weak-8', 'weak-9'])
+  })
+
+  it('mixes current failures, leeches, and recovering weak words', () => {
+    const words = Array.from({ length: 12 }, (_, index) => word(`mixed-${index}`))
+    const weakProgress = words.map((item, index) => ({
+      ...createProgress(item.id, now),
+      nextReviewAt: now + day,
+      updatedAt: now - (12 - index) * day,
+      lapses: index < 7 ? 6 : 1,
+      incorrect: index < 7 ? 6 : 1,
+      correct: index < 7 ? 2 : 1,
+      lastRating: index < 4 ? 'unknown' as const : 'known' as const,
+    }))
+
+    const session = chooseWeakRotationSession(words, weakProgress, 10, now)
+    const sessionProgress = session.map((item) => weakProgress.find((entry) => entry.wordId === item.id)!)
+
+    expect(session).toHaveLength(10)
+    expect(sessionProgress.filter((item) => item.lastRating === 'unknown')).toHaveLength(4)
+    expect(sessionProgress.filter(isLeech)).toHaveLength(7)
+    expect(sessionProgress.some((item) => !isLeech(item))).toBe(true)
   })
 
   it('builds a daily plan with review debt and capped new words', () => {

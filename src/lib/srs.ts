@@ -337,6 +337,55 @@ export function chooseLeechRepairSession(words: VocabWord[], progress: WordProgr
     .slice(0, Math.max(0, limit))
 }
 
+export function chooseWeakRotationSession(
+  words: VocabWord[],
+  progress: WordProgress[],
+  limit = 10,
+  now = Date.now(),
+): VocabWord[] {
+  const sessionLimit = Math.max(0, limit)
+  if (!sessionLimit) return []
+
+  const byId = progressMap(progress)
+  const day = localDayKey(now)
+  const candidates = words
+    .filter((word) => {
+      const item = byId.get(word.id)
+      return item ? isWeak(item) : false
+    })
+    .sort((leftWord, rightWord) => {
+      const left = byId.get(leftWord.id)
+      const right = byId.get(rightWord.id)
+      return (left?.updatedAt ?? 0) - (right?.updatedAt ?? 0)
+        || (left?.nextReviewAt ?? 0) - (right?.nextReviewAt ?? 0)
+        || (right?.lapses ?? 0) - (left?.lapses ?? 0)
+        || stableHash(`${day}:${leftWord.id}`) - stableHash(`${day}:${rightWord.id}`)
+    })
+
+  const selected: VocabWord[] = []
+  const selectedIds = new Set<string>()
+  const add = (pool: VocabWord[], count: number) => {
+    for (const word of pool) {
+      if (selected.length >= sessionLimit || count <= 0) break
+      if (selectedIds.has(word.id)) continue
+      selected.push(word)
+      selectedIds.add(word.id)
+      count -= 1
+    }
+  }
+
+  // Reserve room for current failures and persistent leeches, then fill with the
+  // least-recently-practised weak words so the queue cannot freeze on one group.
+  add(candidates.filter((word) => byId.get(word.id)?.lastRating === 'unknown'), Math.ceil(sessionLimit * 0.4))
+  add(candidates.filter((word) => {
+    const item = byId.get(word.id)
+    return item ? isLeech(item) : false
+  }), Math.ceil(sessionLimit * 0.3))
+  add(candidates, sessionLimit)
+
+  return selected
+}
+
 export function chooseQuizSession(words: VocabWord[], progress: WordProgress[], options: DailyPlanOptions): VocabWord[] {
   const now = options.now ?? Date.now()
   const quizSize = Math.max(5, options.quizSize ?? 20)
