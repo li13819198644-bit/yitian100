@@ -7,7 +7,7 @@ import { chooseGrammarQuestions } from '../lib/grammar'
 interface Props {
   progress: GrammarProgress[]
   ready: boolean
-  onAnswer: (id: string, correct: boolean) => Promise<void>
+  onAnswer: (id: string, correct: boolean, selectedOption: number) => Promise<void>
 }
 
 export function GrammarPanel({ progress, ready, onAnswer }: Props) {
@@ -43,7 +43,7 @@ export function GrammarPanel({ progress, ready, onAnswer }: Props) {
     if (!question || saving.current || saved) return
     saving.current = true; setBusy(true); setSelected(choice); setError('')
     try {
-      await onAnswer(question.id, choice === question.answer)
+      await onAnswer(question.id, choice === question.answer, choice)
       setSaved(true)
       if (choice === question.answer) setScore((value) => value + 1)
     } catch {

@@ -3,6 +3,8 @@ import { BarChart3, BookOpen, Check, ChevronRight, Cloud, Download, Home, Notebo
 import clsx from 'clsx'
 import type { AppSettings, AppStats, GrammarProgress, QuizMode, Rating, ReviewMode, Screen, SessionKind, StudyMode, VocabWord, WordProgress } from './types'
 import { GrammarPanel } from './components/GrammarPanel'
+import { DailyStatsPanel } from './components/DailyStatsPanel'
+import { buildDailyReport } from './lib/dailyReport'
 import { grammarQuestions, grammarTopics } from './data/grammar'
 import { recordGrammarAnswer } from './lib/grammar'
 import {
@@ -256,11 +258,12 @@ function App() {
     }
   }
 
-  async function answerGrammar(id: string, correct: boolean) {
+  async function answerGrammar(id: string, correct: boolean, selectedOption: number) {
     const current = await getGrammarProgress()
-    const item = recordGrammarAnswer(id, correct, current.find((entry) => entry.questionId === id))
+    const item = recordGrammarAnswer(id, correct, current.find((entry) => entry.questionId === id), Date.now(), selectedOption)
     const saved = await saveGrammarProgress([item])
     setGrammarProgress(saved)
+    setClockNow(Date.now())
     void syncCloudQuietly()
   }
 
@@ -408,7 +411,7 @@ function App() {
     try {
       const now = Date.now()
       const updated = scheduleReview(progressMap.get(word.id) ?? createProgress(word.id), rating, now)
-      const nextStats = recordStudyResult(stats, word.id, correct, mode, now)
+      const nextStats = recordStudyResult(stats, word.id, correct, mode, now, { rating, session: sessionKind, isNew: !(progressMap.get(word.id)?.seen) })
       // A correct quiz choice should never add a remedial retry.
       const nextIds = insertDelayedRetry(sessionWordIds, activeIndex, word.id, correct ? 'known' : rating)
       await saveProgress(updated)
@@ -629,6 +632,7 @@ function App() {
       schemaVersion: 1,
       app: '一天100词',
       exportedAt: new Date(now).toISOString(),
+      dailyReport: buildDailyReport(words, progress, stats, grammarProgress, now),
       summary: {
         totalWords: words.length,
         learnedWords: learnedIds.size,
@@ -706,6 +710,7 @@ function App() {
         </header>
 
         {screen === 'grammar' && <GrammarPanel progress={grammarProgress} ready={grammarReady} onAnswer={answerGrammar} />}
+        {screen === 'daily' && <DailyStatsPanel report={buildDailyReport(words, progress, stats, grammarProgress, clockNow)} ready={grammarReady} onBack={() => setScreen('home')} />}
 
         {screen === 'home' && (
           <section className="space-y-4">
@@ -740,6 +745,7 @@ function App() {
                 <SecondaryButton onClick={() => startLearnSession({ limit: gentleNewWordCount })} icon={<BookOpen size={20} />} label={`学 ${gentleNewWordCount} 个新词`} />
               )}
               <SecondaryButton onClick={startQuizSession} icon={<BarChart3 size={20} />} label="进入测验" />
+              <SecondaryButton onClick={() => { setClockNow(Date.now()); setFeedback(''); setFeedbackWordId(''); setScreen('daily') }} icon={<BarChart3 size={20} />} label="当天学习统计" />
             </div>
 
             <div className="grid grid-cols-2 gap-3">

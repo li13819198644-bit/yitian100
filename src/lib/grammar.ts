@@ -1,4 +1,4 @@
-import type { GrammarProgress } from '../types'
+import type { GrammarDailyRecord, GrammarProgress } from '../types'
 import { localDateKey } from './studyStats'
 
 export function mergeGrammarProgress(...sources: GrammarProgress[][]): GrammarProgress[] {
@@ -12,7 +12,7 @@ export function mergeGrammarProgress(...sources: GrammarProgress[][]): GrammarPr
   return [...merged.values()]
 }
 
-export function recordGrammarAnswer(questionId: string, correct: boolean, previous?: GrammarProgress, now = Date.now()): GrammarProgress {
+export function recordGrammarAnswer(questionId: string, correct: boolean, previous?: GrammarProgress, now = Date.now(), selectedOption?: number): GrammarProgress {
   const sameDay = previous && localDateKey(new Date(previous.updatedAt)) === localDateKey(new Date(now))
   // Same-day corrections cannot advance the review interval.
   const reviewStage = correct ? (sameDay ? previous.reviewStage : Math.min(4, (previous?.reviewStage ?? 0) + 1)) : 0
@@ -20,11 +20,21 @@ export function recordGrammarAnswer(questionId: string, correct: boolean, previo
   const due = new Date(now)
   due.setDate(due.getDate() + days)
   due.setHours(9, 0, 0, 0)
+  const date = localDateKey(new Date(now))
+  const oldDay = previous?.dailyHistory?.find((entry) => entry.date === date)
+  const wrongOptions = { ...oldDay?.wrongOptions }
+  if (!correct && selectedOption !== undefined) wrongOptions[selectedOption] = (wrongOptions[selectedOption] ?? 0) + 1
+  const day: GrammarDailyRecord = {
+    date, attempts: (oldDay?.attempts ?? 0) + 1, correct: (oldDay?.correct ?? 0) + Number(correct),
+    firstCorrect: oldDay ? oldDay.firstCorrect : sameDay ? null : correct,
+    lastCorrect: correct, partial: oldDay?.partial ?? Boolean(sameDay), wrongOptions,
+  }
   return {
     questionId, attempts: (previous?.attempts ?? 0) + 1,
     correct: (previous?.correct ?? 0) + Number(correct),
     firstCorrect: previous?.firstCorrect ?? correct, lastCorrect: correct,
     reviewStage, nextReviewAt: sameDay && correct && previous.lastCorrect ? previous.nextReviewAt : due.getTime(), updatedAt: now,
+    dailyHistory: [...(previous?.dailyHistory ?? []).filter((entry) => entry.date !== date), day].sort((a, b) => a.date.localeCompare(b.date)).slice(-90),
   }
 }
 

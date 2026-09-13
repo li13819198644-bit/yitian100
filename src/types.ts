@@ -3,7 +3,7 @@ export type ReviewMode = 'choice' | 'advanced'
 
 export type QuizMode = 'en-zh' | 'zh-en' | 'context' | 'spelling' | 'confusion' | 'swipe'
 
-export type Screen = 'home' | 'learn' | 'quiz' | 'review' | 'weak' | 'settings' | 'import' | 'sync' | 'detail' | 'grammar'
+export type Screen = 'home' | 'learn' | 'quiz' | 'review' | 'weak' | 'settings' | 'import' | 'sync' | 'detail' | 'grammar' | 'daily'
 export type SessionKind = 'learn' | 'review' | 'quiz' | 'weak'
 
 export interface VocabWord {
@@ -66,6 +66,30 @@ export interface DailyStudyRecord {
   attempts: number
   correct: number
   firstAnswers: Record<string, { correct: boolean; mode: StudyMode }>
+  wordDetails?: Record<string, DailyWordDetail>
+}
+
+export interface DailyWordDetail {
+  attempts: number
+  correct: number
+  lastCorrect: boolean
+  firstTestAnswer?: { correct: boolean; mode: StudyMode }
+  newWord: boolean | null
+  firstAt: number
+  lastAt: number
+  modes: Partial<Record<StudyMode, { attempts: number; correct: number }>>
+  ratings: Partial<Record<Rating, number>>
+  sessions: Partial<Record<SessionKind, number>>
+}
+
+export interface GrammarDailyRecord {
+  date: string
+  attempts: number
+  correct: number
+  firstCorrect: boolean | null
+  lastCorrect: boolean
+  partial: boolean
+  wrongOptions: Record<string, number>
 }
 
 export interface AppStats {
@@ -96,4 +120,5 @@ export interface GrammarProgress {
   reviewStage: number
   nextReviewAt: number
   updatedAt: number
+  dailyHistory?: GrammarDailyRecord[]
 }
