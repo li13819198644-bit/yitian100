@@ -1,5 +1,6 @@
 import { openDB, type DBSchema } from 'idb'
-import type { AppSettings, AppStats, VocabWord, WordProgress } from '../types'
+import type { AppSettings, AppStats, GrammarProgress, VocabWord, WordProgress } from '../types'
+import { mergeGrammarProgress } from './grammar'
 import { seedWords } from '../data/seedWords'
 import { localDateKey } from './studyStats'
 
@@ -14,7 +15,7 @@ interface WordsDb extends DBSchema {
   }
   meta: {
     key: string
-    value: AppSettings | AppStats
+    value: AppSettings | AppStats | GrammarProgress[]
   }
 }
 
@@ -182,4 +183,22 @@ export async function resetProgress() {
   await db.put('meta', defaultStats(), 'stats')
   writeBackup(progressBackupKey, [])
   writeBackup(statsBackupKey, defaultStats())
+}
+
+export async function getGrammarProgress(): Promise<GrammarProgress[]> {
+  const db = await dbPromise
+  const stored = (await db.get('meta', 'grammar')) as GrammarProgress[] | undefined
+  const merged = mergeGrammarProgress(readBackup<GrammarProgress[]>('yitian100:grammar', []), stored ?? [])
+  return merged
+}
+
+export async function saveGrammarProgress(items: GrammarProgress[]): Promise<GrammarProgress[]> {
+  const db = await dbPromise
+  const tx = db.transaction('meta', 'readwrite')
+  const stored = (await tx.store.get('grammar')) as GrammarProgress[] | undefined
+  const merged = mergeGrammarProgress(readBackup<GrammarProgress[]>('yitian100:grammar', []), stored ?? [], items)
+  await tx.store.put(merged, 'grammar')
+  await tx.done
+  writeBackup('yitian100:grammar', merged)
+  return merged
 }

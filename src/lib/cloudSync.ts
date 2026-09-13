@@ -1,6 +1,6 @@
 import type { SupabaseClient, User } from '@supabase/supabase-js'
 import type { LearningSnapshot } from '../types'
-import { getProgress, getSettings, getStats, saveProgress, saveSettings, saveStats } from './db'
+import { getProgress, getSettings, getStats, saveProgress, saveSettings, saveStats, getGrammarProgress, saveGrammarProgress } from './db'
 
 type SnapshotRow = {
   payload: LearningSnapshot
@@ -67,13 +67,14 @@ export async function signOutFromCloud() {
 }
 
 export async function buildLocalSnapshot(): Promise<LearningSnapshot> {
-  const [progress, settings, stats] = await Promise.all([getProgress(), getSettings(), getStats()])
+  const [progress, settings, stats, grammar] = await Promise.all([getProgress(), getSettings(), getStats(), getGrammarProgress()])
   return {
     schemaVersion: 1,
     updatedAt: Date.now(),
     progress,
     settings,
     stats,
+    grammar,
   }
 }
 
@@ -119,5 +120,6 @@ export async function restoreCloudSnapshot() {
   }
   await saveSettings(snapshot.settings)
   await saveStats(snapshot.stats)
+  if (snapshot.grammar) await saveGrammarProgress(snapshot.grammar)
   return snapshot
 }

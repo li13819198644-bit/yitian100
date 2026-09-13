@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { BarChart3, BookOpen, Check, ChevronRight, Cloud, Download, Home, RotateCcw, Settings, Upload, Volume2, X } from 'lucide-react'
+import { BarChart3, BookOpen, Check, ChevronRight, Cloud, Download, Home, NotebookPen, RotateCcw, Settings, Upload, Volume2, X } from 'lucide-react'
 import clsx from 'clsx'
-import type { AppSettings, AppStats, QuizMode, Rating, ReviewMode, Screen, SessionKind, StudyMode, VocabWord, WordProgress } from './types'
+import type { AppSettings, AppStats, GrammarProgress, QuizMode, Rating, ReviewMode, Screen, SessionKind, StudyMode, VocabWord, WordProgress } from './types'
+import { GrammarPanel } from './components/GrammarPanel'
+import { grammarQuestions, grammarTopics } from './data/grammar'
+import { recordGrammarAnswer } from './lib/grammar'
 import {
   createProgress,
   accuracy,
@@ -21,11 +24,13 @@ import {
   defaultSettings,
   defaultStats,
   getProgress,
+  getGrammarProgress,
   getSettings,
   getStats,
   getWords,
   resetProgress,
   saveProgress,
+  saveGrammarProgress,
   saveSettings,
   saveStats,
   saveWords,
@@ -192,6 +197,8 @@ function App() {
   const [screen, setScreen] = useState<Screen>('home')
   const [words, setWords] = useState<VocabWord[]>([])
   const [progress, setProgress] = useState<WordProgress[]>([])
+  const [grammarProgress, setGrammarProgress] = useState<GrammarProgress[]>([])
+  const [grammarReady, setGrammarReady] = useState(false)
   const [settings, setSettings] = useState<AppSettings>(defaultSettings)
   const [stats, setStats] = useState<AppStats>(blankStats)
   const [activeIndex, setActiveIndex] = useState(0)
@@ -212,16 +219,19 @@ function App() {
   const [clockNow, setClockNow] = useState(Date.now)
 
   async function refresh() {
-    const [nextWords, nextProgress, nextSettings, nextStats] = await Promise.all([
+    const [nextWords, nextProgress, nextSettings, nextStats, nextGrammar] = await Promise.all([
       getWords(),
       getProgress(),
       getSettings(),
       getStats(),
+      getGrammarProgress(),
     ])
     setWords(nextWords)
     setProgress(nextProgress)
     setSettings(nextSettings)
     setStats(nextStats)
+    setGrammarProgress(nextGrammar)
+    setGrammarReady(true)
   }
 
   useEffect(() => {
@@ -244,6 +254,14 @@ function App() {
     } catch {
       setCloudMessage('自动云同步失败，本地进度已保存')
     }
+  }
+
+  async function answerGrammar(id: string, correct: boolean) {
+    const current = await getGrammarProgress()
+    const item = recordGrammarAnswer(id, correct, current.find((entry) => entry.questionId === id))
+    const saved = await saveGrammarProgress([item])
+    setGrammarProgress(saved)
+    void syncCloudQuietly()
   }
 
   const progressMap = useMemo(() => new Map(progress.map((item) => [item.wordId, item])), [progress])
@@ -653,6 +671,12 @@ function App() {
         firstAnswerHistory: '仅记录更新后最近90个学习日；重复纠正不覆盖当天首答，mode区分自评、选择和拼写。',
         forecast: '按本地自然日统计尚未到期的已排程单词；不包含旧积压和未来答错产生的重测。',
       },
+      grammar: {
+        totalQuestions: grammarQuestions.length,
+        progress: grammarProgress,
+        topics: grammarTopics.map((topic) => ({ id: topic.id, title: topic.title, questionIds: topic.questions.map((question) => question.id) })),
+        measurement: '语法独立计数；firstCorrect 是该题第一次作答结果，重复答对不会改写首次正确率。',
+      },
     }
     const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
@@ -673,13 +697,15 @@ function App() {
               <ChevronRight className="ml-2 shrink-0" size={18} />
             </button>
           ) : <p role="status" className="min-w-0 flex-1 rounded-lg bg-stone-950 p-3 text-sm text-white">{feedback}</p> : <div>
-            <p className="text-sm text-stone-500">iPhone 离线背词</p>
-            <h1 className="text-3xl font-semibold tracking-normal">一天100词</h1>
+            {screen !== 'grammar' && <p className="text-sm text-stone-500">iPhone 离线背词</p>}
+            <h1 className={`${screen === 'grammar' ? 'text-2xl' : 'text-3xl'} font-semibold tracking-normal`}>一天100词</h1>
           </div>}
           <button className="icon-button" onClick={() => setScreen('settings')} aria-label="设置">
             <Settings size={22} />
           </button>
         </header>
+
+        {screen === 'grammar' && <GrammarPanel progress={grammarProgress} ready={grammarReady} onAnswer={answerGrammar} />}
 
         {screen === 'home' && (
           <section className="space-y-4">
@@ -842,7 +868,7 @@ function App() {
                 <Download size={18} /> 导出学习报告
               </button>
               <button className="mt-3 flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-white px-4 font-medium text-rose-700 ring-1 ring-rose-200" onClick={async () => { await resetProgress(); await refresh(); void syncCloudQuietly() }}>
-                <RotateCcw size={18} /> 重置学习进度
+                <RotateCcw size={18} /> 重置单词学习进度
               </button>
             </Panel>
           </section>
@@ -923,7 +949,7 @@ function App() {
             <NavButton active={screen === 'learn'} onClick={() => startLearnSession()} icon={<BookOpen size={20} />} label="学习" />
             <NavButton active={screen === 'review'} onClick={() => setScreen('review')} icon={<RotateCcw size={20} />} label="复习" />
             <NavButton active={screen === 'weak'} onClick={() => setScreen('weak')} icon={<X size={20} />} label="弱词" />
-            <NavButton active={screen === 'settings'} onClick={() => setScreen('settings')} icon={<Settings size={20} />} label="设置" />
+            <NavButton active={screen === 'grammar'} onClick={() => { setScreen('grammar'); setFeedback(''); setFeedbackWordId('') }} icon={<NotebookPen size={20} />} label="语法" />
           </div>
         </nav>
       </div>
