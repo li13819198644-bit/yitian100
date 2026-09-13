@@ -45,6 +45,9 @@ export interface WordProgress {
   lastRating?: Rating
   mastered: boolean
   updatedAt: number
+  lastSuccessfulReviewAt?: number
+  practiceDay?: string
+  mistakesToday?: number
 }
 
 export interface AppSettings {
@@ -56,6 +59,15 @@ export interface AppSettings {
   currentLevel: 'B2' | 'C1'
 }
 
+export type StudyMode = 'self' | 'choice' | 'spelling'
+
+export interface DailyStudyRecord {
+  date: string
+  attempts: number
+  correct: number
+  firstAnswers: Record<string, { correct: boolean; mode: StudyMode }>
+}
+
 export interface AppStats {
   todayDate: string
   todaySeen: string[]
@@ -63,6 +75,7 @@ export interface AppStats {
   bestCombo: number
   streak: number
   lastStudyDate?: string
+  dailyHistory?: DailyStudyRecord[]
 }
 
 export interface LearningSnapshot {

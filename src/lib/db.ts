@@ -1,6 +1,7 @@
 import { openDB, type DBSchema } from 'idb'
 import type { AppSettings, AppStats, VocabWord, WordProgress } from '../types'
 import { seedWords } from '../data/seedWords'
+import { localDateKey } from './studyStats'
 
 interface WordsDb extends DBSchema {
   words: {
@@ -67,10 +68,7 @@ function normalizeSettings(settings: Partial<AppSettings>): AppSettings {
 }
 
 export function todayKey(date = new Date()): string {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
+  return localDateKey(date)
 }
 
 export function defaultStats(): AppStats {

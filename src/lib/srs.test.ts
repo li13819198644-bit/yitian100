@@ -18,6 +18,7 @@ import {
   isLeech,
   isMastered,
   isRecovered,
+  isWeakPracticeReady,
   recommendNewWordCount,
   recommendNewWordCountWithWeakDebt,
   scheduleQuizResult,
@@ -44,7 +45,7 @@ function word(id: string): VocabWord {
 describe('spaced repetition', () => {
   it('schedules known words farther out as repetitions grow', () => {
     const first = scheduleReview(createProgress('facilitate', now), 'known', now)
-    const second = scheduleReview(first, 'known', now)
+    const second = scheduleReview(first, 'known', first.nextReviewAt)
 
     expect(first.repetitions).toBe(1)
     expect(second.repetitions).toBe(2)
@@ -395,7 +396,73 @@ describe('spaced repetition', () => {
 
     expect(insertDelayedRetry(base, 0, 'a', 'fuzzy').indexOf('a')).toBe(0)
     expect(insertDelayedRetry(base, 0, 'a', 'fuzzy').lastIndexOf('a')).toBe(9)
-    expect(insertDelayedRetry(base, 0, 'a', 'unknown').filter((id) => id === 'a')).toHaveLength(3)
+    expect(insertDelayedRetry(base, 0, 'a', 'unknown').filter((id) => id === 'a')).toHaveLength(2)
     expect(insertDelayedRetry(base, 0, 'a', 'unknown')[4]).toBe('a')
+  })
+
+  it('finishes a session even if every answer is wrong', () => {
+    let ids = Array.from({ length: 10 }, (_, index) => `word-${index}`)
+    let index = 0
+    while (index < ids.length && index < 100) {
+      ids = insertDelayedRetry(ids, index, ids[index], 'unknown')
+      index += 1
+    }
+    expect(index).toBe(ids.length)
+    expect(ids.length).toBeLessThanOrEqual(20)
+    for (const id of new Set(ids)) expect(ids.filter((item) => item === id).length).toBeLessThanOrEqual(2)
+  })
+
+  it('defers end-of-session failures rather than placing them back to back', () => {
+    expect(insertDelayedRetry(['a'], 0, 'a', 'unknown')).toEqual(['a'])
+    expect(insertDelayedRetry(['a', 'b', 'c'], 0, 'a', 'unknown')).toEqual(['a', 'b', 'c'])
+    expect(insertDelayedRetry(['a', 'b', 'b', 'b'], 0, 'a', 'unknown')).toEqual(['a', 'b', 'b', 'b'])
+  })
+
+  it('removes a queued retry once the word is answered correctly', () => {
+    expect(insertDelayedRetry(['a', 'b', 'c', 'd', 'a'], 0, 'a', 'known')).toEqual(['a', 'b', 'c', 'd'])
+  })
+
+  it('does not manufacture retention or mastery through same-day repeated success', () => {
+    const first = scheduleReview(createProgress('a', now), 'known', now)
+    let current = first
+    for (let index = 1; index <= 10; index++) current = scheduleReview(current, 'known', now + index * 60_000)
+    expect(current.repetitions).toBe(1)
+    expect(current.stability).toBe(first.stability)
+    expect(current.easeFactor).toBe(first.easeFactor)
+    expect(current.nextReviewAt).toBe(first.nextReviewAt)
+    expect(current.correct).toBe(11)
+    expect(isMastered(current)).toBe(false)
+  })
+
+  it('cools down twice-failed words until tomorrow and resumes next day', () => {
+    const first = scheduleReview(createProgress('a', now), 'unknown', now)
+    const second = scheduleReview(first, 'unknown', now + 60_000)
+    const third = scheduleReview(second, 'known', now + 120_000)
+    expect(second.mistakesToday).toBe(2)
+    expect(new Date(second.nextReviewAt).getDate()).not.toBe(new Date(now).getDate())
+    expect(isWeakPracticeReady(second, now + 60_000)).toBe(false)
+    expect(third.nextReviewAt).toBeGreaterThan(now + 12 * 60 * 60_000)
+    const tomorrow = scheduleReview(second, 'known', second.nextReviewAt)
+    expect(tomorrow.mistakesToday).toBe(0)
+  })
+
+  it('does not fill a weak session with words just practised today', () => {
+    const recent = scheduleReview(scheduleReview(createProgress('a', now), 'unknown', now), 'known', now + 60_000)
+    const untouched = { ...recent, wordId: 'b', updatedAt: now - day }
+    expect(chooseWeakRotationSession([word('a'), word('b')], [recent, untouched], 10, now + 120_000).map((item) => item.id)).toEqual(['b'])
+  })
+
+  it('counts tomorrow by local midnight instead of a rolling 24-hour window', () => {
+    const evening = new Date(2026, 8, 13, 23, 50).getTime()
+    const tomorrow = new Date(2026, 8, 14, 0, 10).getTime()
+    const progress = [{ ...createProgress('a', evening), nextReviewAt: tomorrow }]
+    expect(forecastReviewLoad(progress, 2, evening)).toEqual([0, 1])
+  })
+
+  it('does not bypass a twice-failed word cooldown through the quiz entry', () => {
+    const first = scheduleReview(createProgress('a', now), 'unknown', now)
+    const second = scheduleReview(first, 'unknown', now + 60_000)
+    const chosen = chooseQuizSession([word('a'), word('b')], [second], { now: now + 120_000, baseNewWordsPerDay: 100 })
+    expect(chosen.map((item) => item.id)).toEqual(['b'])
   })
 })

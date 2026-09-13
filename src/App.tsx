@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { BarChart3, BookOpen, Check, ChevronRight, Cloud, Download, Home, RotateCcw, Settings, Upload, Volume2, X } from 'lucide-react'
 import clsx from 'clsx'
-import type { AppSettings, AppStats, QuizMode, Rating, ReviewMode, Screen, SessionKind, VocabWord, WordProgress } from './types'
+import type { AppSettings, AppStats, QuizMode, Rating, ReviewMode, Screen, SessionKind, StudyMode, VocabWord, WordProgress } from './types'
 import {
   createProgress,
   accuracy,
@@ -14,9 +14,9 @@ import {
   isLeech,
   isMastered,
   isWeak,
-  scheduleQuizResult,
   scheduleReview,
 } from './lib/srs'
+import { firstAnswerSummary, localDateOffset, recordStudyResult } from './lib/studyStats'
 import {
   defaultSettings,
   defaultStats,
@@ -47,8 +47,6 @@ const actionMap: Record<Rating, { label: string; className: string }> = {
   fuzzy: { label: '模糊', className: 'bg-amber-500 text-white' },
   unknown: { label: '不认识', className: 'bg-rose-600 text-white' },
 }
-
-const dayMs = 24 * 60 * 60 * 1000
 
 function blankStats(): AppStats {
   return defaultStats()
@@ -210,6 +208,8 @@ function App() {
   const [cloudPassword, setCloudPassword] = useState('')
   const [cloudMessage, setCloudMessage] = useState('')
   const [cloudBusy, setCloudBusy] = useState(false)
+  const answering = useRef(false)
+  const [clockNow, setClockNow] = useState(Date.now)
 
   async function refresh() {
     const [nextWords, nextProgress, nextSettings, nextStats] = await Promise.all([
@@ -227,6 +227,13 @@ function App() {
   useEffect(() => {
     refresh()
     getCloudUser().then((user) => setCloudUser(user?.email ?? '')).catch(() => setCloudUser(''))
+    const updateClock = () => setClockNow(Date.now())
+    const timer = window.setInterval(updateClock, 30_000)
+    window.addEventListener('focus', updateClock)
+    return () => {
+      window.clearInterval(timer)
+      window.removeEventListener('focus', updateClock)
+    }
   }, [])
 
   async function syncCloudQuietly() {
@@ -246,8 +253,9 @@ function App() {
     () => buildDailyPlan(words, progress, {
       baseNewWordsPerDay: settings.dailyTarget,
       dailyCapacity: settings.dailyCapacity,
+      now: clockNow,
     }),
-    [words, progress, settings.dailyTarget, settings.dailyCapacity],
+    [words, progress, settings.dailyTarget, settings.dailyCapacity, clockNow],
   )
   const reliefActive = settings.reliefMode && (dailyPlan.reviewDebt >= 30 || dailyPlan.weakDebt >= 20 || dailyPlan.forecastPressure > 0)
   const reliefReviewLimit = reliefActive && dailyPlan.reviewDebt ? Math.min(20, dailyPlan.reviewDebt) : undefined
@@ -261,7 +269,8 @@ function App() {
     const item = progressMap.get(word.id)
     return item ? isWeak(item) : false
   }), [words, progressMap])
-  const reliefActionCount = dailyPlan.reviewDebt ? (reliefReviewLimit ?? dailyPlan.reviewDebt) : Math.min(10, weakWords.length || 10)
+  const weakSessionWords = chooseWeakRotationSession(words, progress, reliefActive ? 10 : 30, clockNow)
+  const reliefActionCount = dailyPlan.reviewDebt ? (reliefReviewLimit ?? dailyPlan.reviewDebt) : weakSessionWords.length
   const unlearnedCount = Math.max(0, words.length - learnedIds.size)
   const gentleNewWordCount = Math.min(10, unlearnedCount)
   // Derive this so existing local/cloud progress benefits from improved criteria
@@ -274,6 +283,7 @@ function App() {
   const progressStudiedToday = progress.filter((item) => todayKey(new Date(item.updatedAt)) === todayKey()).length
   const todayProgress = Math.max(stats.todayDate === todayKey() ? stats.todaySeen.length : 0, progressStudiedToday)
   const todayAccuracy = accuracy(progress)
+  const todayFirstAnswers = firstAnswerSummary(stats.dailyHistory?.find((entry) => entry.date === todayKey()))
   const activeWord = sessionWords[activeIndex]
   const detailWord = detailWordId ? wordMap.get(detailWordId) : undefined
 
@@ -289,6 +299,9 @@ function App() {
     if (settings.reviewMode === 'choice' && (kind === 'review' || kind === 'weak') && nextIndex % 2 === 1) return
     const nextId = nextIds[nextIndex]
     const nextWord = nextId ? wordMap.get(nextId) : undefined
+    // Written recall cards must not reveal their answer through automatic audio.
+    const nextProgress = nextWord ? progressMap.get(nextWord.id) : undefined
+    if (kind === 'weak' && settings.reviewMode === 'advanced' && nextProgress && isLeech(nextProgress) && nextProgress.seen % 3 !== 2) return
     if (nextWord) void speakWord(nextWord.word)
   }
 
@@ -310,11 +323,11 @@ function App() {
     autoSpeakSessionWord(nextWords.map((word) => word.id), 0, 'learn')
   }
 
-  function startReviewSession(nextScreen: Screen = 'learn') {
+  function startReviewSession(nextScreen: Screen = 'learn', limit?: number) {
     const nextWords = chooseReviewSession(words, progress, {
       baseNewWordsPerDay: settings.dailyTarget,
       dailyCapacity: settings.dailyCapacity,
-      reviewCap: reliefReviewLimit,
+      reviewCap: limit ?? reliefReviewLimit,
     })
     if (!nextWords.length) {
       setScreen('review')
@@ -333,16 +346,24 @@ function App() {
       dailyCapacity: settings.dailyCapacity,
       quizSize: reliefActive ? 10 : 20,
     })
+    if (!nextWords.length) {
+      setFeedback('今天先休息，冷却中的词明天再测。')
+      setFeedbackWordId('')
+      setScreen('home')
+      return
+    }
     setSessionWordIds(nextWords.map((word) => word.id))
     setActiveIndex(0)
     setSessionKind('quiz')
     setScreen('quiz')
   }
 
-  function startWeakPracticeSession(nextScreen: Screen = 'learn') {
-    const limit = reliefActive ? 10 : 30
+  function startWeakPracticeSession(nextScreen: Screen = 'learn', requestedLimit?: number) {
+    const limit = requestedLimit ?? (reliefActive ? 10 : 30)
     const nextWords = chooseWeakRotationSession(words, progress, limit)
     if (!nextWords.length) {
+      setFeedback('这批弱词正在间隔休息，稍后再练。单词详情仍可查看。')
+      setFeedbackWordId('')
       setScreen('weak')
       return
     }
@@ -353,64 +374,48 @@ function App() {
     autoSpeakSessionWord(nextWords.map((word) => word.id), 0, 'weak')
   }
 
-  async function rateWord(word: VocabWord, rating: Rating, options: { playNextWord?: boolean; openDetailOnWrong?: boolean } = {}) {
-    const existing = progressMap.get(word.id) ?? createProgress(word.id)
-    const updated = scheduleReview(existing, rating)
-    const nextSessionIds = insertDelayedRetry(sessionWordIds, activeIndex, word.id, rating)
-    if (options.playNextWord !== false && !(rating === 'unknown' && options.openDetailOnWrong)) {
-      autoSpeakSessionWord(nextSessionIds, activeIndex + 1)
-    }
-    await saveProgress(updated)
-
-    const isCorrect = rating !== 'unknown'
-    const seen = new Set(stats.todayDate === todayKey() ? stats.todaySeen : [])
-    seen.add(word.id)
-    const nextStats: AppStats = {
-      ...stats,
-      todayDate: todayKey(),
-      todaySeen: Array.from(seen),
-      combo: isCorrect ? stats.combo + 1 : 0,
-      bestCombo: Math.max(stats.bestCombo, isCorrect ? stats.combo + 1 : stats.combo),
-      streak: stats.lastStudyDate === todayKey() ? stats.streak : Math.max(1, stats.streak),
-      lastStudyDate: todayKey(),
-    }
-    await saveStats(nextStats)
-    void syncCloudQuietly()
-    setSessionWordIds(nextSessionIds)
-    setFeedback(`${word.word}: ${actionMap[rating].label}`)
-    setFeedbackWordId(word.id)
-    setActiveIndex((index) => index + 1)
-    await refresh()
-    if (rating === 'unknown' && options.openDetailOnWrong) {
-      setDetailWordId(word.id)
-      setDetailReturnScreen('learn')
-      setScreen('detail')
-    }
+  async function rateWord(word: VocabWord, rating: Rating, options: { openDetailOnWrong?: boolean } = {}) {
+    const mode: StudyMode = sessionKind === 'learn' ? 'self' : settings.reviewMode === 'choice' ? 'choice'
+      : sessionKind === 'weak' && isLeech(progressMap.get(word.id) ?? createProgress(word.id)) ? 'spelling' : 'self'
+    await recordAnswer(word, rating, rating === 'known', mode, 'learn', Boolean(options.openDetailOnWrong))
   }
 
   async function rateQuizAnswer(word: VocabWord, correct: boolean) {
-    const existing = progressMap.get(word.id) ?? createProgress(word.id)
-    const updated = scheduleQuizResult(existing, correct)
-    await saveProgress(updated)
+    await recordAnswer(word, correct ? 'fuzzy' : 'unknown', correct, quizMode === 'spelling' ? 'spelling' : quizMode === 'swipe' ? 'self' : 'choice', 'quiz', !correct)
+  }
 
-    const seen = new Set(stats.todayDate === todayKey() ? stats.todaySeen : [])
-    seen.add(word.id)
-    const nextStats: AppStats = {
-      ...stats,
-      todayDate: todayKey(),
-      todaySeen: Array.from(seen),
-      combo: correct ? stats.combo + 1 : 0,
-      bestCombo: Math.max(stats.bestCombo, correct ? stats.combo + 1 : stats.combo),
-      streak: stats.lastStudyDate === todayKey() ? stats.streak : Math.max(1, stats.streak),
-      lastStudyDate: todayKey(),
+  async function recordAnswer(word: VocabWord, rating: Rating, correct: boolean, mode: StudyMode, returnScreen: Screen, showWrongDetail: boolean) {
+    if (answering.current) return
+    answering.current = true
+    try {
+      const now = Date.now()
+      const updated = scheduleReview(progressMap.get(word.id) ?? createProgress(word.id), rating, now)
+      const nextStats = recordStudyResult(stats, word.id, correct, mode, now)
+      // A correct quiz choice should never add a remedial retry.
+      const nextIds = insertDelayedRetry(sessionWordIds, activeIndex, word.id, correct ? 'known' : rating)
+      await saveProgress(updated)
+      await saveStats(nextStats)
+      setProgress((items) => [...items.filter((item) => item.wordId !== word.id), updated])
+      setStats(nextStats)
+      setClockNow(now)
+      setSessionWordIds(nextIds)
+      setFeedback(`${word.word}: ${returnScreen === 'quiz' ? correct ? '测验答对' : '测验答错' : actionMap[rating].label}`)
+      setFeedbackWordId(word.id)
+      setActiveIndex(activeIndex + 1)
+      if (!correct && showWrongDetail) {
+        setDetailWordId(word.id)
+        setDetailReturnScreen(returnScreen)
+        setScreen('detail')
+      } else if (returnScreen === 'learn') {
+        autoSpeakSessionWord(nextIds, activeIndex + 1)
+      }
+      void syncCloudQuietly()
+    } catch {
+      setFeedback('保存失败，请刷新后重试；已保存的进度仍保留。')
+      setFeedbackWordId('')
+    } finally {
+      answering.current = false
     }
-    await saveStats(nextStats)
-    void syncCloudQuietly()
-    setSessionWordIds((ids) => insertDelayedRetry(ids, activeIndex, word.id, correct ? 'fuzzy' : 'unknown'))
-    setFeedback(`${word.word}: ${correct ? '测验答对' : '测验答错'}`)
-    setFeedbackWordId(word.id)
-    setActiveIndex((index) => index + 1)
-    await refresh()
   }
 
   function quizPrompt(word: VocabWord) {
@@ -618,11 +623,12 @@ function App() {
         tomorrowReviews: dailyPlan.forecastReviewLoad[1] ?? 0,
         sevenDayPeak: Math.max(0, ...dailyPlan.forecastReviewLoad),
         accuracy: todayAccuracy,
+        todayFirstAnswer: todayFirstAnswers,
         combo: stats.combo,
         streak: stats.streak,
       },
       forecast: dailyPlan.forecastReviewLoad.map((count, index) => ({
-        date: new Date(now + index * dayMs).toISOString().slice(0, 10),
+        date: todayKey(localDateOffset(now, index)),
         dueCount: count,
       })),
       weakWords: weakWords.map((word) => ({
@@ -642,6 +648,11 @@ function App() {
       })),
       settings,
       stats,
+      measurement: {
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        firstAnswerHistory: '仅记录更新后最近90个学习日；重复纠正不覆盖当天首答，mode区分自评、选择和拼写。',
+        forecast: '按本地自然日统计尚未到期的已排程单词；不包含旧积压和未来答错产生的重测。',
+      },
     }
     const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
@@ -655,11 +666,16 @@ function App() {
   return (
     <main className="min-h-dvh bg-[#f7f4ef] text-stone-950">
       <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-4 pb-[calc(136px+env(safe-area-inset-bottom))] pt-[calc(18px+env(safe-area-inset-top))]">
-        <header className="flex items-center justify-between py-2">
-          <div>
+        <header className="flex items-center justify-between gap-3 py-2">
+          {feedback && screen !== 'detail' ? feedbackWordId ? (
+            <button type="button" className="flex min-h-12 min-w-0 flex-1 items-center justify-between rounded-lg bg-stone-950 px-3 py-3 text-left text-sm text-white" onClick={() => openWordDetail(feedbackWordId)} aria-label={`打开上一个单词 ${feedbackWordId} 的详情`}>
+              <span className="min-w-0 break-words">上一个：{feedback}</span>
+              <ChevronRight className="ml-2 shrink-0" size={18} />
+            </button>
+          ) : <p role="status" className="min-w-0 flex-1 rounded-lg bg-stone-950 p-3 text-sm text-white">{feedback}</p> : <div>
             <p className="text-sm text-stone-500">iPhone 离线背词</p>
             <h1 className="text-3xl font-semibold tracking-normal">一天100词</h1>
-          </div>
+          </div>}
           <button className="icon-button" onClick={() => setScreen('settings')} aria-label="设置">
             <Settings size={22} />
           </button>
@@ -676,27 +692,38 @@ function App() {
                 <span className="rounded-full bg-sky-100 px-3 py-1 text-sm font-medium text-sky-800">B2 → C1</span>
               </div>
               <div className="mt-4 h-3 rounded-full bg-stone-100">
-                <div className="h-3 rounded-full bg-emerald-600" style={{ width: `${Math.min(100, (todayProgress / settings.dailyCapacity) * 100)}%` }} />
+                <div className="h-3 rounded-full bg-emerald-600" style={{ width: `${Math.min(100, (todayProgress / (reliefActive ? 20 : Math.max(1, settings.dailyCapacity))) * 100)}%` }} />
               </div>
             </div>
 
             {reliefActive && (
               <div className="rounded-lg bg-emerald-50 p-5 shadow-sm ring-1 ring-emerald-100">
                 <p className="text-sm font-medium text-emerald-800">减负模式</p>
-                <p className="mt-2 text-2xl font-semibold text-stone-950">今天做 {reliefActionCount} 个就停</p>
-                <p className="mt-2 leading-6 text-stone-600">默认先清最该复习的词；如果还有力气，可以只学 10 个新词，不追欠账。</p>
+                <p className="mt-2 text-2xl font-semibold text-stone-950">{todayProgress >= 20 ? '今日 20 词目标已完成' : `今天再做 ${20 - todayProgress} 个就好`}</p>
+                <p className="mt-2 leading-6 text-stone-600">{todayProgress >= 20 ? '今天可以休息了。剩余单词保留在复习队列。' : '每轮少量复习，做完就休息。'}</p>
               </div>
             )}
+
+            <div className="grid gap-3">
+              <PrimaryButton
+                onClick={reliefActive && todayProgress >= 20 ? () => setScreen('review') : dailyPlan.reviewDebt ? () => startReviewSession('learn', reliefActive ? Math.min(reliefActionCount, 20 - todayProgress) : undefined) : recommendedNewCount ? () => startLearnSession() : () => startWeakPracticeSession('learn', reliefActive ? Math.min(reliefActionCount, 20 - todayProgress) : undefined)}
+                icon={<BookOpen size={20} />}
+                label={reliefActive ? todayProgress >= 20 ? '查看复习队列' : reliefActionCount ? `复习 ${Math.min(reliefActionCount, 20 - todayProgress)} 个` : '查看弱词' : dailyPlan.reviewDebt ? '先清复习' : recommendedNewCount ? '学习新词' : '修复弱词'}
+              />
+              {gentleNewWordCount > 0 && (
+                <SecondaryButton onClick={() => startLearnSession({ limit: gentleNewWordCount })} icon={<BookOpen size={20} />} label={`学 ${gentleNewWordCount} 个新词`} />
+              )}
+              <SecondaryButton onClick={startQuizSession} icon={<BarChart3 size={20} />} label="进入测验" />
+            </div>
 
             <div className="grid grid-cols-2 gap-3">
               <Metric label="词库总量" value={words.length} />
               <Metric label="未学新词" value={unlearnedCount} />
-              <Metric label="今日该复习" value={dailyPlan.reviewDebt} />
-              <Metric label="弱词债" value={dailyPlan.weakDebt} />
+              <Metric label="待复习总数" value={dailyPlan.reviewDebt} />
+              <Metric label="今日首答" value={todayFirstAnswers.accuracy === null ? '待记录' : `${todayFirstAnswers.accuracy}% · ${todayFirstAnswers.count}词`} />
               <Metric label="建议新词" value={recommendedNewCount} />
-              <Metric label="明日复习" value={dailyPlan.forecastReviewLoad[1] ?? 0} />
-              <Metric label="7日峰值" value={Math.max(0, ...dailyPlan.forecastReviewLoad)} />
-              <Metric label="正确率" value={`${todayAccuracy}%`} />
+              <Metric label="明日新增到期" value={dailyPlan.forecastReviewLoad[1] ?? 0} />
+              <Metric label="累计答对率" value={`${todayAccuracy}%`} />
               <Metric label="Combo" value={stats.combo} />
               <Metric label="连续学习" value={`${stats.streak} 天`} />
               <Metric label="已掌握" value={mastered} />
@@ -704,23 +731,13 @@ function App() {
               <Metric label="顽固词" value={stubbornWords} />
             </div>
 
-            <div className="grid gap-3">
-              <PrimaryButton
-                onClick={dailyPlan.reviewDebt ? () => startReviewSession('learn') : recommendedNewCount ? () => startLearnSession() : () => startWeakPracticeSession('learn')}
-                icon={<BookOpen size={20} />}
-                label={reliefActive ? `做 ${reliefActionCount} 个就停` : dailyPlan.reviewDebt ? '先清复习' : recommendedNewCount ? '学习新词' : '修复弱词'}
-              />
-              {gentleNewWordCount > 0 && (
-                <SecondaryButton onClick={() => startLearnSession({ limit: gentleNewWordCount })} icon={<BookOpen size={20} />} label={`学 ${gentleNewWordCount} 个新词`} />
-              )}
-              <SecondaryButton onClick={startQuizSession} icon={<BarChart3 size={20} />} label="进入测验" />
-            </div>
           </section>
         )}
 
         {screen === 'learn' && activeWord && activeIndex < sessionWords.length && (
           settings.reviewMode === 'choice' && (sessionKind === 'review' || sessionKind === 'weak') ? (
             <ChoiceReviewCard
+              key={`${activeIndex}:${activeWord.id}`}
               word={activeWord}
               direction={reviewPrompt(activeWord).direction}
               question={reviewPrompt(activeWord).question}
@@ -733,6 +750,7 @@ function App() {
             />
           ) : sessionKind === 'weak' && isLeech(progressMap.get(activeWord.id) ?? createProgress(activeWord.id)) ? (
             <LeechRepairCard
+              key={`${activeIndex}:${activeWord.id}`}
               word={activeWord}
               progress={progressMap.get(activeWord.id)}
               attempt={sessionWordIds.slice(0, activeIndex).filter((id) => id === activeWord.id).length}
@@ -754,11 +772,12 @@ function App() {
         )}
 
         {screen === 'learn' && sessionWords.length > 0 && activeIndex >= sessionWords.length && (
-          <DoneCard title={sessionKind === 'review' ? '复习完成' : sessionKind === 'weak' ? '弱词修复完成' : '今日新词完成'} subtitle={sessionKind === 'review' ? '到期复习已经清完。如果弱词债仍高，先修弱词。' : sessionKind === 'weak' ? '这组高错误词已经重新压了一遍，系统会更谨慎安排。' : '这组新词已经学完。模糊和不认识的词会按间隔回来。'} onRestart={sessionKind === 'review' ? () => startWeakPracticeSession('learn') : sessionKind === 'weak' ? startWeakPracticeSession : () => startLearnSession()} />
+          <DoneCard title="本轮完成" subtitle={`本轮练习 ${new Set(sessionWordIds).size} 个词。${dailyPlan.reviewDebt ? `还有 ${dailyPlan.reviewDebt} 个待复习，可以留到之后。` : '当前到期复习已完成。'}`} onFinish={() => setScreen('home')} onRestart={sessionKind === 'review' ? () => startReviewSession('learn') : sessionKind === 'weak' ? startWeakPracticeSession : () => startLearnSession()} />
         )}
 
         {screen === 'quiz' && activeWord && activeIndex < sessionWords.length && (
           <QuizCard
+            key={`${activeIndex}:${activeWord.id}:${quizMode}`}
             mode={quizMode}
             setMode={setQuizMode}
             word={activeWord}
@@ -769,14 +788,14 @@ function App() {
         )}
 
         {screen === 'quiz' && sessionWords.length > 0 && activeIndex >= sessionWords.length && (
-          <DoneCard title="测验完成" subtitle="本轮测验结束。可以去弱词本看刚才不稳的词。" onRestart={startQuizSession} />
+          <DoneCard title="测验完成" subtitle="本轮测验结束。答错的词已安排复习。" onFinish={() => setScreen('home')} onRestart={startQuizSession} />
         )}
 
         {screen === 'review' && (
           <section className="space-y-3">
             <ReviewModeControl value={settings.reviewMode} onChange={updateReviewMode} />
             <PrimaryButton onClick={() => startReviewSession('learn')} icon={<RotateCcw size={20} />} label={reviewWords.length ? `${settings.reviewMode === 'choice' ? '选择题复习' : '复杂复习'} ${reviewWords.length} 个` : '暂无到期复习'} />
-            <WordList title="复习队列" words={reviewWords} progressMap={progressMap} empty="现在没有到期复习词。" />
+            <WordList title="复习队列" words={reviewWords} progressMap={progressMap} onOpen={openWordDetail} empty="现在没有到期复习词。" />
           </section>
         )}
         {screen === 'weak' && (
@@ -787,8 +806,8 @@ function App() {
                 <p className="mt-1">系统会轮换中文拼写、语境填空和听音拼写，答错后展示辨析与记忆钩子，再延迟重测。</p>
               </div>
             )}
-            <PrimaryButton onClick={() => startWeakPracticeSession('learn')} icon={<RotateCcw size={20} />} label={weakWords.length ? `轮换复习 ${Math.min(reliefActive ? 10 : 30, weakWords.length)} 个弱词` : '暂无弱词'} />
-            <WordList title="弱词本" words={weakWords} progressMap={progressMap} empty="还没有弱词。" />
+            <PrimaryButton disabled={!weakSessionWords.length} onClick={() => startWeakPracticeSession('learn')} icon={<RotateCcw size={20} />} label={weakSessionWords.length ? `轮换复习 ${weakSessionWords.length} 个弱词` : weakWords.length ? '弱词正在间隔休息' : '暂无弱词'} />
+            <WordList title="弱词本" words={weakWords} progressMap={progressMap} onOpen={openWordDetail} empty="还没有弱词。" />
           </section>
         )}
 
@@ -898,20 +917,6 @@ function App() {
           />
         )}
 
-        {feedback && screen !== 'detail' && (feedbackWordId ? (
-          <button
-            type="button"
-            className="fixed left-1/2 top-[calc(14px+env(safe-area-inset-top))] z-20 flex min-h-12 w-[calc(100%-32px)] max-w-sm -translate-x-1/2 items-center justify-between rounded-lg bg-stone-950 px-4 py-3 text-left text-sm text-white shadow-lg"
-            onClick={() => openWordDetail(feedbackWordId)}
-            aria-label={`打开上一个单词 ${feedbackWordId} 的详情`}
-          >
-            <span>上一个：{feedback}</span>
-            <span className="shrink-0 pl-3 text-stone-300">详情 ›</span>
-          </button>
-        ) : (
-          <div className="fixed left-1/2 top-[calc(14px+env(safe-area-inset-top))] z-20 w-[calc(100%-32px)] max-w-sm -translate-x-1/2 rounded-lg bg-stone-950 px-4 py-3 text-center text-sm text-white shadow-lg">{feedback}</div>
-        ))}
-
         <nav className="fixed inset-x-0 bottom-0 z-10 border-t border-stone-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur">
           <div className="mx-auto grid max-w-md grid-cols-5 px-2 py-1">
             <NavButton active={screen === 'home'} onClick={() => setScreen('home')} icon={<Home size={20} />} label="首页" />
@@ -1003,7 +1008,8 @@ function WordDetail({ word, progress, onContinue, continueLabel }: {
       )}
 
       <p className="rounded-lg bg-stone-100 px-4 py-3 text-sm text-stone-600">
-        已复习 {progress?.repetitions ?? 0} 次 · 错误 {progress?.lapses ?? 0} 次 · 稳定度 {(progress?.stability ?? 0).toFixed(1)} 天
+        累计练习 {progress?.seen ?? 0} 次 · 答错 {progress?.incorrect ?? 0} 次
+        {progress && <span className="mt-1 block">下次复习：{new Date(progress.nextReviewAt).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>}
       </p>
 
       <button className="tap-button w-full bg-stone-950 text-white" onClick={onContinue}>
@@ -1057,15 +1063,18 @@ function ChoiceReviewCard({ word, direction, question, answer, choices, position
   onAnswer: (correct: boolean) => void
 }) {
   const [selected, setSelected] = useState('')
+  const answerTimer = useRef<number | undefined>(undefined)
 
   useEffect(() => {
     setSelected('')
+    answerTimer.current = undefined
+    return () => window.clearTimeout(answerTimer.current)
   }, [word.id, direction])
 
   const choose = (choice: string) => {
-    if (selected) return
+    if (selected || answerTimer.current !== undefined) return
     setSelected(choice)
-    window.setTimeout(() => onAnswer(choice === answer), 650)
+    answerTimer.current = window.setTimeout(() => onAnswer(choice === answer), 650)
   }
 
   return (
@@ -1131,7 +1140,7 @@ function LeechRepairCard({ word, progress, attempt, position, total, onResult }:
 }) {
   const [answer, setAnswer] = useState('')
   const [submitted, setSubmitted] = useState(false)
-  const challenge = attempt % 3
+  const challenge = (progress?.seen ?? attempt) % 3
   const normalizedAnswer = answer.trim().toLowerCase()
   const correct = submitted && normalizedAnswer === word.word.toLowerCase()
   const context = maskTargetWord(word.example || word.collocation, word.word)
@@ -1144,6 +1153,7 @@ function LeechRepairCard({ word, progress, attempt, position, total, onResult }:
   const submit = () => {
     if (!answer.trim() || submitted) return
     setSubmitted(true)
+    if (normalizedAnswer !== word.word.toLowerCase()) onResult(false)
   }
 
   return (
@@ -1359,12 +1369,15 @@ function WordCard({ title, word, progress, children }: { title: string; word: Vo
   )
 }
 
-function DoneCard({ title, subtitle, onRestart }: { title: string; subtitle: string; onRestart: () => void }) {
+function DoneCard({ title, subtitle, onRestart, onFinish }: { title: string; subtitle: string; onRestart: () => void; onFinish: () => void }) {
   return (
     <section className="rounded-lg bg-white p-5 text-center shadow-sm ring-1 ring-stone-200">
       <p className="text-3xl font-semibold">{title}</p>
       <p className="mt-3 leading-7 text-stone-600">{subtitle}</p>
-      <button className="mt-6 flex min-h-14 w-full items-center justify-center rounded-lg bg-stone-950 px-5 text-lg font-semibold text-white" onClick={onRestart}>
+      <button className="mt-6 flex min-h-14 w-full items-center justify-center rounded-lg bg-stone-950 px-5 text-lg font-semibold text-white" onClick={onFinish}>
+        今天先到这里
+      </button>
+      <button className="mt-3 flex min-h-12 w-full items-center justify-center text-stone-600" onClick={onRestart}>
         再来一轮
       </button>
     </section>
@@ -1381,17 +1394,24 @@ function QuizCard({ mode, setMode, word, prompt, choices, onAnswer }: {
 }) {
   const [answered, setAnswered] = useState<string>('')
   const [spelling, setSpelling] = useState('')
+  const answerTimer = useRef<number | undefined>(undefined)
   useEffect(() => {
     setAnswered('')
     setSpelling('')
+    answerTimer.current = undefined
+    return () => window.clearTimeout(answerTimer.current)
   }, [word.id, mode])
+  const submitAnswer = (value: string, correct: boolean) => {
+    if (answered || answerTimer.current !== undefined) return
+    setAnswered(value)
+    answerTimer.current = window.setTimeout(() => onAnswer(correct), 650)
+  }
   const submitSpelling = () => {
     if (answered) return
     const normalizedInput = spelling.trim().toLowerCase()
     const normalizedAnswer = prompt.answer.trim().toLowerCase()
     const correct = normalizedInput === normalizedAnswer
-    setAnswered(spelling.trim() || ' ')
-    setTimeout(() => onAnswer(correct), 650)
+    submitAnswer(spelling.trim() || ' ', correct)
   }
 
   return (
@@ -1405,7 +1425,7 @@ function QuizCard({ mode, setMode, word, prompt, choices, onAnswer }: {
           ['confusion', '防偏'],
           ['swipe', '快刷'],
         ].map(([key, label]) => (
-          <button key={key} className={clsx('min-h-11 rounded-lg text-xs font-medium ring-1 ring-stone-200', mode === key ? 'bg-stone-900 text-white' : 'bg-white')} onClick={() => setMode(key as QuizMode)}>
+          <button key={key} disabled={Boolean(answered)} className={clsx('min-h-11 rounded-lg text-xs font-medium ring-1 ring-stone-200', mode === key ? 'bg-stone-900 text-white' : 'bg-white')} onClick={() => setMode(key as QuizMode)}>
             {label}
           </button>
         ))}
@@ -1426,8 +1446,8 @@ function QuizCard({ mode, setMode, word, prompt, choices, onAnswer }: {
         </div>
         {mode === 'swipe' ? (
           <div className="mt-6 grid grid-cols-2 gap-3">
-            <button className="tap-button bg-emerald-600 text-white" onClick={() => onAnswer(true)}><Check size={18} /> 认识</button>
-            <button className="tap-button bg-rose-600 text-white" onClick={() => onAnswer(false)}><X size={18} /> 不认识</button>
+            <button disabled={Boolean(answered)} className="tap-button bg-emerald-600 text-white" onClick={() => submitAnswer('known', true)}><Check size={18} /> 认识</button>
+            <button disabled={Boolean(answered)} className="tap-button bg-rose-600 text-white" onClick={() => submitAnswer('unknown', false)}><X size={18} /> 不认识</button>
           </div>
         ) : mode === 'spelling' ? (
           <div className="mt-6 grid gap-3">
@@ -1457,7 +1477,8 @@ function QuizCard({ mode, setMode, word, prompt, choices, onAnswer }: {
                 <button
                   key={choice}
                   className={clsx('min-h-14 rounded-lg px-4 text-left font-medium ring-1 ring-stone-200', answered && isAnswer && 'bg-emerald-100 text-emerald-900', answered === choice && !isAnswer && 'bg-rose-100 text-rose-900')}
-                  onClick={() => { setAnswered(choice); setTimeout(() => onAnswer(isAnswer), 350) }}
+                  disabled={Boolean(answered)}
+                  onClick={() => submitAnswer(choice, isAnswer)}
                 >
                   {choice}
                 </button>
@@ -1470,7 +1491,7 @@ function QuizCard({ mode, setMode, word, prompt, choices, onAnswer }: {
   )
 }
 
-function WordList({ title, words, progressMap, empty }: { title: string; words: VocabWord[]; progressMap: Map<string, WordProgress>; empty: string }) {
+function WordList({ title, words, progressMap, empty, onOpen }: { title: string; words: VocabWord[]; progressMap: Map<string, WordProgress>; empty: string; onOpen: (id: string) => void }) {
   return (
     <section className="space-y-3">
       <h2 className="text-xl font-semibold">{title}</h2>
@@ -1478,7 +1499,7 @@ function WordList({ title, words, progressMap, empty }: { title: string; words: 
       {words.map((word) => {
         const progress = progressMap.get(word.id)
         return (
-          <div key={word.id} className="rounded-lg bg-white p-4 shadow-sm ring-1 ring-stone-200">
+          <button type="button" key={word.id} onClick={() => onOpen(word.id)} className="block w-full rounded-lg bg-white p-4 text-left shadow-sm ring-1 ring-stone-200" aria-label={`查看 ${word.word} 的详情`}>
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-lg font-semibold">{word.word}</p>
@@ -1486,16 +1507,16 @@ function WordList({ title, words, progressMap, empty }: { title: string; words: 
               </div>
               <ChevronRight className="shrink-0 text-stone-300" size={20} />
             </div>
-            <p className="mt-2 text-xs text-stone-500">EF {progress?.easeFactor.toFixed(2) ?? '2.50'} · 错误 {progress?.incorrect ?? 0}</p>
-          </div>
+            <p className="mt-2 text-xs text-stone-500">{progress?.lastRating === 'unknown' ? '最近未答对' : '等待巩固'} · 累计答错 {progress?.incorrect ?? 0} 次</p>
+          </button>
         )
       })}
     </section>
   )
 }
 
-function PrimaryButton({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick: () => void }) {
-  return <button className="flex min-h-14 items-center justify-center gap-2 rounded-lg bg-stone-950 px-5 text-lg font-semibold text-white" onClick={onClick}>{icon}{label}</button>
+function PrimaryButton({ icon, label, onClick, disabled = false }: { icon: React.ReactNode; label: string; onClick: () => void; disabled?: boolean }) {
+  return <button disabled={disabled} className="flex min-h-14 items-center justify-center gap-2 rounded-lg bg-stone-950 px-5 text-lg font-semibold text-white disabled:opacity-50" onClick={onClick}>{icon}{label}</button>
 }
 
 function SecondaryButton({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick: () => void }) {

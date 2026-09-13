@@ -1,4 +1,5 @@
 import type { Rating, VocabWord, WordProgress } from '../types'
+import { localDateKey, localDateOffset } from './studyStats'
 
 const DAY = 24 * 60 * 60 * 1000
 const MINUTE = 60 * 1000
@@ -83,11 +84,16 @@ export function scheduleReview(progress: WordProgress, rating: Rating, now = Dat
   const wasCorrect = quality >= 3
   const previousStability = progress.stability ?? Math.max(0, progress.repetitions)
   const previousDifficulty = progress.difficultyScore ?? 5
-  const easeFactor = Math.max(
+  const practiceDay = localDateKey(new Date(now))
+  const mistakesToday = (progress.practiceDay === practiceDay ? progress.mistakesToday ?? 0 : 0) + Number(!wasCorrect)
+  const lastSuccess = progress.lastSuccessfulReviewAt
+    ?? (progress.seen > 0 && (progress.lastRating === 'known' || progress.lastRating === 'fuzzy') ? progress.updatedAt : undefined)
+  const sameDaySuccess = lastSuccess !== undefined && localDateKey(new Date(lastSuccess)) === practiceDay
+  let easeFactor = Math.max(
     1.3,
     progress.easeFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02)),
   )
-  const difficultyScore = Math.min(
+  let difficultyScore = Math.min(
     10,
     Math.max(1, previousDifficulty + (rating === 'known' ? -0.35 : rating === 'fuzzy' ? 0.25 : 1.15)),
   )
@@ -122,6 +128,23 @@ export function scheduleReview(progress: WordProgress, rating: Rating, now = Dat
     stability = Math.min(stability, intervalMs / DAY)
   }
 
+  // Short-term repeats are useful practice, but not evidence of another day of retention.
+  if (wasCorrect && sameDaySuccess) {
+    repetitions = Math.max(1, progress.repetitions)
+    easeFactor = progress.easeFactor
+    difficultyScore = previousDifficulty
+    stability = Math.max(0.25, previousStability)
+    intervalMs = progress.lastRating === 'unknown'
+      ? (rating === 'known' ? DAY : 6 * 60 * MINUTE)
+      : Math.max(10 * MINUTE, progress.nextReviewAt - now)
+  }
+
+  if (mistakesToday >= 2) {
+    const tomorrow = localDateOffset(now, 1)
+    tomorrow.setHours(9, 0, 0, 0)
+    intervalMs = Math.max(intervalMs, tomorrow.getTime() - now)
+  }
+
   const seen = progress.seen + 1
   const correct = progress.correct + (wasCorrect ? 1 : 0)
   const incorrect = progress.incorrect + (wasCorrect ? 0 : 1)
@@ -141,6 +164,9 @@ export function scheduleReview(progress: WordProgress, rating: Rating, now = Dat
     mastered: false,
     nextReviewAt: now + intervalMs,
     updatedAt: now,
+    practiceDay,
+    mistakesToday,
+    lastSuccessfulReviewAt: wasCorrect ? now : lastSuccess,
   }
   nextProgress.mastered = isMastered(nextProgress)
   return nextProgress
@@ -255,9 +281,10 @@ export function recommendNewWordCountWithWeakDebt(
 
 export function forecastReviewLoad(progress: WordProgress[], days = 7, now = Date.now()): number[] {
   return Array.from({ length: days }, (_, dayIndex) => {
-    const start = now + dayIndex * DAY
-    const end = start + DAY
-    return progress.filter((item) => item.nextReviewAt >= start && item.nextReviewAt < end).length
+    const start = localDateOffset(now, dayIndex)
+    start.setHours(0, 0, 0, 0)
+    const end = localDateOffset(start.getTime(), 1)
+    return progress.filter((item) => item.nextReviewAt >= Math.max(now, start.getTime()) && item.nextReviewAt < end.getTime()).length
   })
 }
 
@@ -351,7 +378,7 @@ export function chooseWeakRotationSession(
   const candidates = words
     .filter((word) => {
       const item = byId.get(word.id)
-      return item ? isWeak(item) : false
+      return item ? isWeakPracticeReady(item, now) : false
     })
     .sort((leftWord, rightWord) => {
       const left = byId.get(leftWord.id)
@@ -386,8 +413,18 @@ export function chooseWeakRotationSession(
   return selected
 }
 
+export function isWeakPracticeReady(progress: WordProgress, now = Date.now()): boolean {
+  if (!isWeak(progress)) return false
+  const today = localDateKey(new Date(now))
+  if (progress.practiceDay === today && (progress.mistakesToday ?? 0) >= 2) return false
+  return localDateKey(new Date(progress.updatedAt)) !== today || progress.nextReviewAt <= now
+}
+
 export function chooseQuizSession(words: VocabWord[], progress: WordProgress[], options: DailyPlanOptions): VocabWord[] {
   const now = options.now ?? Date.now()
+  const today = localDateKey(new Date(now))
+  const coolingIds = new Set(progress.filter((item) => item.practiceDay === today && (item.mistakesToday ?? 0) >= 2).map((item) => item.wordId))
+  words = words.filter((word) => !coolingIds.has(word.id))
   const quizSize = Math.max(5, options.quizSize ?? 20)
   const byId = progressMap(progress)
   const selected: VocabWord[] = []
@@ -414,9 +451,9 @@ export function chooseQuizSession(words: VocabWord[], progress: WordProgress[], 
         || (right?.incorrect ?? 0) - (left?.incorrect ?? 0)
         || (left?.easeFactor ?? 2.5) - (right?.easeFactor ?? 2.5)
     })
-  const recentlyTouched = words
+  const leastRecentlyTouched = words
     .filter((word) => byId.has(word.id))
-    .sort((a, b) => (byId.get(b.id)?.updatedAt ?? 0) - (byId.get(a.id)?.updatedAt ?? 0))
+    .sort((a, b) => (byId.get(a.id)?.updatedAt ?? 0) - (byId.get(b.id)?.updatedAt ?? 0))
   const stillYoung = words
     .filter((word) => {
       const item = byId.get(word.id)
@@ -426,7 +463,7 @@ export function chooseQuizSession(words: VocabWord[], progress: WordProgress[], 
 
   add(overdue, Math.min(quizSize, Math.max(8, Math.ceil(quizSize * 0.45))))
   add(weak, Math.min(quizSize, Math.max(12, Math.ceil(quizSize * 0.7))))
-  add(recentlyTouched)
+  add(leastRecentlyTouched)
   add(stillYoung)
   add(getNewWords(words, progress, quizSize))
   add(words)
@@ -457,17 +494,18 @@ export function chooseDailyWords(words: VocabWord[], progress: WordProgress[], t
 }
 
 export function insertDelayedRetry(ids: string[], currentIndex: number, wordId: string, rating: Rating): string[] {
-  if (rating === 'known') return ids
-
   const nextIds = ids.filter((id, index) => id !== wordId || index <= currentIndex)
-  const firstGap = rating === 'unknown' ? 3 : 8
-  const firstIndex = Math.min(nextIds.length, currentIndex + firstGap + 1)
-  nextIds.splice(firstIndex, 0, wordId)
-
-  if (rating === 'unknown') {
-    const secondIndex = Math.min(nextIds.length, firstIndex + 7)
-    nextIds.splice(secondIndex, 0, wordId)
-  }
+  const attempts = nextIds.slice(0, currentIndex + 1).filter((id) => id === wordId).length
+  if (rating === 'known' || attempts >= 2) return nextIds
+  const gap = rating === 'unknown' ? 3 : 8
+  const intervening = new Set<string>()
+  const retryIndex = nextIds.findIndex((id, index) => {
+    if (index <= currentIndex) return false
+    intervening.add(id)
+    return intervening.size >= gap
+  })
+  // Do not collapse a missing gap into an immediate end-of-session loop.
+  if (retryIndex >= 0) nextIds.splice(retryIndex + 1, 0, wordId)
 
   return nextIds
 }
