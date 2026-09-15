@@ -1,15 +1,32 @@
 import { describe, expect, it } from 'vitest'
-import { grammarQuestions, grammarTopics } from '../data/grammar'
+import { advancedGrammarTopics, grammarQuestions, grammarTopics } from '../data/grammar'
+import { buildDailyReport } from './dailyReport'
 import { chooseGrammarQuestions, mergeGrammarProgress, recordGrammarAnswer } from './grammar'
 
 const now = new Date(2026, 8, 13, 14).getTime()
 const nextDay = new Date(2026, 8, 14, 9).getTime()
 
 describe('grammar content', () => {
-  it('contains eight topics and forty unique, complete questions', () => {
-    expect(grammarTopics).toHaveLength(8)
-    expect(grammarQuestions).toHaveLength(40)
-    expect(new Set(grammarQuestions.map((q) => q.id)).size).toBe(40)
+  it('retains every original id and gives the expansion separate ids', () => {
+    const oldTopics = ['tense', 'modal', 'conditional', 'relative', 'verb-pattern', 'passive', 'agreement', 'connector']
+    const originalIds = oldTopics.flatMap((id) => Array.from({ length: 5 }, (_, i) => `${id}-${i + 1}`))
+    expect(grammarQuestions.slice(0, 40).map((q) => q.id)).toEqual(originalIds)
+    expect(advancedGrammarTopics.flatMap((topic) => topic.questions)).toHaveLength(40)
+    expect(advancedGrammarTopics.some((topic) => oldTopics.includes(topic.id))).toBe(false)
+  })
+  it('includes a new-topic error and its chosen distractor in daily reports', () => {
+    const q = advancedGrammarTopics[0].questions[0]
+    const choice = (q.answer + 1) % 4
+    const result = recordGrammarAnswer(q.id, false, undefined, now, choice)
+    const report = buildDailyReport([], [], { todayDate: '', todaySeen: [], combo: 0, bestCombo: 0, streak: 0 }, [result], now)
+    expect(report.grammar.uniqueQuestionsRecorded).toBe(1)
+    expect(report.grammar.results[0]).toMatchObject({ topic: advancedGrammarTopics[0].title, sentence: q.sentence, wrongAnswers: [{ answer: q.options[choice], count: 1 }] })
+    expect(chooseGrammarQuestions(grammarQuestions.map((item) => item.id), [result], true, nextDay)).toEqual([q.id])
+  })
+  it('contains sixteen topics and eighty unique, complete questions', () => {
+    expect(grammarTopics).toHaveLength(16)
+    expect(grammarQuestions).toHaveLength(80)
+    expect(new Set(grammarQuestions.map((q) => q.id)).size).toBe(80)
     for (const topic of grammarTopics) {
       expect(topic.questions).toHaveLength(5)
       for (const q of topic.questions) {

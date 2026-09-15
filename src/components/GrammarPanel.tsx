@@ -90,7 +90,7 @@ export function GrammarPanel({ progress, ready, onAnswer }: Props) {
       <button className={command} disabled={!ready} onClick={() => start(false)}>练习 5 题<ChevronRight size={18} /></button>
     </> : <>
       <div className="grid grid-cols-3 border-y border-stone-200 py-4 text-center">
-        <div><p className="text-2xl font-bold">{activeProgress.length}<span className="text-sm font-normal text-stone-500"> / 40</span></p><p className="mt-1 text-xs text-stone-500">已练题目</p></div>
+        <div><p className="text-2xl font-bold">{activeProgress.length}<span className="text-sm font-normal text-stone-500"> / {grammarQuestions.length}</span></p><p className="mt-1 text-xs text-stone-500">已练题目</p></div>
         <div><p className="text-2xl font-bold">{activeProgress.length ? `${Math.round(firstCorrect / activeProgress.length * 100)}%` : '—'}</p><p className="mt-1 text-xs text-stone-500">首次作答正确率</p></div>
         <div><p className="text-2xl font-bold">{due}</p><p className="mt-1 text-xs text-stone-500">到期复习</p></div>
       </div>
