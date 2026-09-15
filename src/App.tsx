@@ -1318,9 +1318,9 @@ function WordCard({ title, word, progress, children }: { title: string; word: Vo
       </div>
       <div className="rounded-lg bg-white p-5 shadow-sm ring-1 ring-stone-200">
         <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-4xl font-semibold">{word.word}</p>
-            <p className="mt-2 text-stone-500">{word.phonetic}</p>
+          <div className="min-w-0 flex-1">
+            <p className="break-words text-4xl font-semibold" style={{ fontSize: word.word.length > 12 ? '1.5rem' : word.word.length > 9 ? '1.875rem' : undefined }}>{word.word}</p>
+            <p className="mt-2 break-words text-stone-500">{word.phonetic}</p>
           </div>
           <button
             className="flex min-h-12 min-w-12 shrink-0 items-center justify-center rounded-full bg-stone-950 text-white shadow-sm"

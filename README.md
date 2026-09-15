@@ -227,6 +227,12 @@ JSON：
 
 ## 结构
 
+### 第九批词库扩充
+
+- 新增 `src/data/generatedBatch9.ts` 中的 100 个独立词条，内置词库共 505 词。沿用原有按日乱序的新词队列，不重置学习进度。
+- 本批手写记忆提示直接发布，避免被旧的通用拆词规则覆盖。字形借用属于助记联想，不作为历史词源。
+- 构词说明参考 [Cambridge 的构词说明](https://dictionary.cambridge.org/us/grammar/british-grammar/word-formation_2)；特殊词源核查参考 Etymonline 的 [overwhelm](https://www.etymonline.com/word/overwhelm)、[livelihood](https://www.etymonline.com/word/livelihood) 和 [thorough](https://www.etymonline.com/word/thorough)。本批例句为原创，等级为应用内学习分组，不是官方 CEFR 认证。
+
 ### 语法板块
 
 - 底部「语法」入口；设置仍可通过右上角齿轮进入。

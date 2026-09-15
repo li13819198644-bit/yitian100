@@ -41,7 +41,7 @@ describe('evilMemoryHooks', () => {
       .map((item) => item.word)
       .filter((word, index, words) => words.indexOf(word) !== index)
 
-    expect(seedWords).toHaveLength(405)
+    expect(seedWords).toHaveLength(505)
     expect(missing).toEqual([])
     expect(duplicateIds).toEqual([])
   })
