@@ -4,6 +4,7 @@ import clsx from 'clsx'
 import type { AppSettings, AppStats, GrammarProgress, QuizMode, Rating, ReviewMode, Screen, SessionKind, StudyMode, VocabWord, WordProgress } from './types'
 import { GrammarPanel } from './components/GrammarPanel'
 import { DailyStatsPanel } from './components/DailyStatsPanel'
+import { SentenceQuiz } from './components/SentenceQuiz'
 import { buildDailyReport } from './lib/dailyReport'
 import { grammarQuestions, grammarTopics } from './data/grammar'
 import { recordGrammarAnswer } from './lib/grammar'
@@ -402,7 +403,7 @@ function App() {
   }
 
   async function rateQuizAnswer(word: VocabWord, correct: boolean) {
-    await recordAnswer(word, correct ? 'fuzzy' : 'unknown', correct, quizMode === 'spelling' ? 'spelling' : quizMode === 'swipe' ? 'self' : 'choice', 'quiz', !correct)
+    await recordAnswer(word, correct ? 'fuzzy' : 'unknown', correct, quizMode === 'sentence' ? 'sentence' : quizMode === 'spelling' ? 'spelling' : quizMode === 'swipe' ? 'self' : 'choice', 'quiz', !correct)
   }
 
   async function recordAnswer(word: VocabWord, rating: Rating, correct: boolean, mode: StudyMode, returnScreen: Screen, showWrongDetail: boolean) {
@@ -440,6 +441,7 @@ function App() {
   }
 
   function quizPrompt(word: VocabWord) {
+    if (quizMode === 'sentence') return { question: `${word.word} · ${word.meaning}`, answer: word.example }
     if (quizMode === 'en-zh') return { question: word.word, answer: word.meaning }
     if (quizMode === 'zh-en') return { question: word.meaning, answer: word.word }
     if (quizMode === 'context') return { question: maskTargetWord(word.example, word.word), answer: word.word }
@@ -465,7 +467,7 @@ function App() {
 
   function choices(word: VocabWord) {
     const answer = quizPrompt(word).answer
-    if (quizMode === 'spelling') return []
+    if (quizMode === 'spelling' || quizMode === 'sentence') return []
     if (quizMode === 'confusion') {
       const traps = [
         '看开头长得像就猜，不管词源核心。',
@@ -1448,7 +1450,7 @@ function QuizCard({ mode, setMode, word, prompt, choices, onAnswer }: {
 
   return (
     <section className="space-y-4">
-      <div className="grid grid-cols-3 gap-1.5">
+      <div className="grid grid-cols-4 gap-1.5" role="tablist" aria-label="测验模式">
         {[
           ['en-zh', '英中'],
           ['zh-en', '中英'],
@@ -1456,16 +1458,17 @@ function QuizCard({ mode, setMode, word, prompt, choices, onAnswer }: {
           ['spelling', '拼写'],
           ['confusion', '防偏'],
           ['swipe', '快刷'],
+          ['sentence', '组句'],
         ].map(([key, label]) => (
-          <button key={key} disabled={Boolean(answered)} className={clsx('min-h-11 rounded-lg text-xs font-medium ring-1 ring-stone-200', mode === key ? 'bg-stone-900 text-white' : 'bg-white')} onClick={() => setMode(key as QuizMode)}>
+          <button key={key} role="tab" aria-selected={mode === key} disabled={Boolean(answered)} className={clsx('min-h-11 rounded-lg text-xs font-medium ring-1 ring-stone-200', mode === key ? 'bg-stone-900 text-white' : 'bg-white')} onClick={() => setMode(key as QuizMode)}>
             {label}
           </button>
         ))}
       </div>
       <div className="rounded-lg bg-white p-5 shadow-sm ring-1 ring-stone-200">
-        <p className="text-sm text-stone-500">{mode === 'swipe' ? '快刷判断' : mode === 'spelling' ? '看中文和搭配，拼出英文' : mode === 'confusion' ? '校正错误联想' : '即时反馈'}</p>
+        <p className="text-sm text-stone-500">{mode === 'sentence' ? '选词组句' : mode === 'swipe' ? '快刷判断' : mode === 'spelling' ? '看中文和搭配，拼出英文' : mode === 'confusion' ? '校正错误联想' : '即时反馈'}</p>
         <div className="mt-4 flex items-start justify-between gap-3">
-          <p className={clsx('whitespace-pre-line font-semibold leading-tight', mode === 'spelling' ? 'text-2xl' : 'text-3xl')}>{prompt.question}</p>
+          <p className={clsx('min-w-0 break-words whitespace-pre-line font-semibold leading-tight', mode === 'sentence' ? 'text-xl' : mode === 'spelling' ? 'text-2xl' : 'text-3xl')}>{prompt.question}</p>
           {(mode === 'en-zh' || mode === 'swipe') && (
             <button
               className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full bg-stone-950 text-white shadow-sm"
@@ -1476,7 +1479,7 @@ function QuizCard({ mode, setMode, word, prompt, choices, onAnswer }: {
             </button>
           )}
         </div>
-        {mode === 'swipe' ? (
+        {mode === 'sentence' ? <SentenceQuiz sentence={word.example} onChecked={() => setAnswered('sentence')} onAnswer={onAnswer} /> : mode === 'swipe' ? (
           <div className="mt-6 grid grid-cols-2 gap-3">
             <button disabled={Boolean(answered)} className="tap-button bg-emerald-600 text-white" onClick={() => submitAnswer('known', true)}><Check size={18} /> 认识</button>
             <button disabled={Boolean(answered)} className="tap-button bg-rose-600 text-white" onClick={() => submitAnswer('unknown', false)}><X size={18} /> 不认识</button>

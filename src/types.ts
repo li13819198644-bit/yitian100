@@ -1,7 +1,7 @@
 export type Rating = 'known' | 'fuzzy' | 'unknown'
 export type ReviewMode = 'choice' | 'advanced'
 
-export type QuizMode = 'en-zh' | 'zh-en' | 'context' | 'spelling' | 'confusion' | 'swipe'
+export type QuizMode = 'en-zh' | 'zh-en' | 'context' | 'spelling' | 'confusion' | 'swipe' | 'sentence'
 
 export type Screen = 'home' | 'learn' | 'quiz' | 'review' | 'weak' | 'settings' | 'import' | 'sync' | 'detail' | 'grammar' | 'daily'
 export type SessionKind = 'learn' | 'review' | 'quiz' | 'weak'
@@ -59,7 +59,7 @@ export interface AppSettings {
   currentLevel: 'B2' | 'C1'
 }
 
-export type StudyMode = 'self' | 'choice' | 'spelling'
+export type StudyMode = 'self' | 'choice' | 'spelling' | 'sentence'
 
 export interface DailyStudyRecord {
   date: string

@@ -41,7 +41,7 @@ export function DailyStatsPanel({ report, ready, onBack }: { report: DailyReport
           <Stat label="测验首答正确率" value={percent(words.objectiveFirstAnswer.accuracy)} />
           <Stat label="错词 · 已记录" value={words.mistakeWordsRecorded} />
         </dl>
-        <p className="mt-4 text-sm text-stone-500">选择首答 {words.firstAnswerByMode.choice.correct}/{words.firstAnswerByMode.choice.count} · 拼写首答 {words.firstAnswerByMode.spelling.correct}/{words.firstAnswerByMode.spelling.count}</p>
+        <p className="mt-4 text-sm text-stone-500">选择首答 {words.firstAnswerByMode.choice.correct}/{words.firstAnswerByMode.choice.count} · 拼写首答 {words.firstAnswerByMode.spelling.correct}/{words.firstAnswerByMode.spelling.count} · 组句首答 {words.firstAnswerByMode.sentence.correct}/{words.firstAnswerByMode.sentence.count}</p>
         <p className="mt-1 text-sm text-stone-500">自评认识 {words.firstAnswerByMode.self.correct}/{words.firstAnswerByMode.self.count}，不计入测验正确率</p>
         {words.detailCoverage === 'partial' && <p className="mt-3 text-sm text-amber-800">今日部分学习发生在更新前，逐词明细不完整{words.unclassifiedWords ? `，${words.unclassifiedWords} 个词无法区分新旧` : ''}。</p>}
       </div>

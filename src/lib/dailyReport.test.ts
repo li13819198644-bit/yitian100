@@ -9,6 +9,14 @@ const base: AppStats = { todayDate: localDateKey(new Date(now)), todaySeen: [], 
 const context = { rating: 'unknown' as const, session: 'learn' as const, isNew: true }
 
 describe('daily report measurements', () => {
+  it('records sentence assembly separately and preserves its first failed attempt', () => {
+    const first = recordStudyResult(base, 'concede', false, 'sentence', now, context)
+    const second = recordStudyResult(first, 'concede', true, 'sentence', now + 1, context)
+    const report = buildDailyReport([], [], second, [], now)
+    expect(report.vocabulary.firstAnswerByMode.sentence).toEqual({ count: 1, correct: 0, accuracy: 0 })
+    expect(report.vocabulary.firstAnswerByMode.choice.count).toBe(0)
+    expect(report.vocabulary.results[0].detail?.modes.sentence).toEqual({ attempts: 2, correct: 1 })
+  })
   it('does not let an earlier self-rating hide the first objective test', () => {
     const self = recordStudyResult(base, 'a', true, 'self', now, context)
     const tested = recordStudyResult(self, 'a', false, 'choice', now + 1, context)

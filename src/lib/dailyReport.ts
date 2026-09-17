@@ -57,7 +57,7 @@ export function buildDailyReport(words: VocabWord[], progress: WordProgress[], s
       attempts: day?.attempts ?? (ids.size ? null : 0),
       correct: day?.correct ?? (ids.size ? null : 0),
       objectiveFirstAnswer: ratio(objective.filter((answer) => answer.correct).length, objective.length),
-      firstAnswerByMode: { choice: modeFirst('choice'), spelling: modeFirst('spelling'), self: modeFirst('self') },
+      firstAnswerByMode: { choice: modeFirst('choice'), spelling: modeFirst('spelling'), sentence: modeFirst('sentence'), self: modeFirst('self') },
       detailedAttempts,
       detailCoverage: detailedAttempts === (day?.attempts ?? 0) && ids.size === firstAnswers.length ? 'complete' : 'partial',
       newWordsRecorded: wordResults.filter((item) => item.detail?.newWord === true).length,
@@ -78,7 +78,8 @@ export function buildDailyReport(words: VocabWord[], progress: WordProgress[], s
     },
     measurement: {
       date: '按设备本地自然日统计；保留最近90个有记录的学习日。',
-      firstAnswer: '每个词或语法题当天第一次作答；之后纠正不改写。测验首答另取该词当天第一次选择或拼写，自评不会占用测验首答；旧记录不足时只代表已记录的首次测验。',
+      firstAnswer: '每个词或语法题当天第一次作答；之后纠正不改写。测验首答另取该词当天第一次选择、拼写或组句，自评不会占用测验首答；旧记录不足时只代表已记录的首次测验。',
+      sentence: '组句按还原参考例句语序计分，不是自由造句语法评分；单独记录为sentence。',
       missingData: '更新前未记录的细节不补造；recorded 字段只计算新记录，null 表示未知，currentProgress 是导出时累计状态，不是当天数据。',
       newWords: '首次记录该词学习进度时记为新词；同日多次作答只算一个词。',
       limitations: '未记录用时或单词实际误选内容，不能据此判断反应速度。语法错选内容从本次更新起记录。',
