@@ -1034,7 +1034,7 @@ function WordDetail({ word, progress, onContinue, continueLabel }: {
 
       {word.evilHook && (
         <div className="rounded-lg bg-fuchsia-50 p-4 ring-1 ring-fuchsia-100">
-          <p className="text-sm font-semibold text-fuchsia-900">邪修记法</p>
+          <p className="text-sm font-semibold text-fuchsia-900">邪修记法 · 联想非词源</p>
           <p className="mt-2 font-medium leading-7 text-fuchsia-950">{word.evilHook}</p>
         </div>
       )}
@@ -1280,7 +1280,7 @@ function LeechRepairCard({ word, progress, attempt, position, total, onResult }:
 
             {word.evilHook && (
               <div className="mt-4 rounded-lg bg-fuchsia-50 p-4 ring-1 ring-fuchsia-100">
-                <p className="text-sm font-semibold text-fuchsia-900">备用记忆钩子</p>
+                <p className="text-sm font-semibold text-fuchsia-900">备用联想 · 非词源</p>
                 <p className="mt-2 leading-7 text-fuchsia-950">{word.evilHook}</p>
               </div>
             )}
@@ -1374,7 +1374,7 @@ function WordCard({ title, word, progress, children }: { title: string; word: Vo
             )}
             {word.evilHook && (
               <div className="mt-4 rounded-lg bg-fuchsia-50 p-4 text-left ring-1 ring-fuchsia-100">
-                <p className="text-sm font-semibold text-fuchsia-900">邪修记法</p>
+                <p className="text-sm font-semibold text-fuchsia-900">邪修记法 · 联想非词源</p>
                 <p className="mt-2 text-base font-medium leading-7 text-fuchsia-950">{word.evilHook}</p>
               </div>
             )}

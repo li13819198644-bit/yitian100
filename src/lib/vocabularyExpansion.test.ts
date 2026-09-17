@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { generatedBatch9 } from '../data/generatedBatch9'
 import { seedWords } from '../data/seedWords'
+import { reviewedRecallHooks } from '../data/reviewedRecallHooks'
 import { createProgress, getNewWords } from './srs'
 
 const newIds = new Set(generatedBatch9.map((word) => word.id))
@@ -15,7 +16,7 @@ describe('the hundred-word expansion', () => {
     for (const word of generatedBatch9) {
       const published = seedWords.filter((item) => item.id === word.id)
       expect(published).toHaveLength(1)
-      expect(published[0].evilHook).toBe(word.evilHook)
+      expect(published[0].evilHook).toBe(reviewedRecallHooks[word.word] ?? word.evilHook)
       expect(word.example).toMatch(new RegExp(`\\b${word.word}\\b`, 'i'))
       expect(word.memoryHook.personalPrompt).toContain('___')
       expect(word.memoryHook.personalPrompt).not.toMatch(new RegExp(`\\b${word.word}\\b`, 'i'))

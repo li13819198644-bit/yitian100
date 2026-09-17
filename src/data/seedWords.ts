@@ -3,6 +3,7 @@ import { buildMemoryHook } from '../lib/memoryHooks'
 import type { DraftWord } from '../lib/vocabQuality'
 import { evilMemoryHooks } from '../lib/evilMemoryHooks'
 import { buildWordShapeHook } from '../lib/wordShapeHooks'
+import { reviewedRecallHooks } from './reviewedRecallHooks'
 import { generatedBatch3 } from './generatedBatch3'
 import { generatedBatch4 } from './generatedBatch4'
 import { generatedBatch5 } from './generatedBatch5'
@@ -142,7 +143,7 @@ function publishDraftWords(draft: DraftWord[], preserveAuthoredHooks = false): V
       ...memoryHook,
       breakdown: nebula ? `${wordOrigin} ${nebula}` : wordOrigin,
     },
-    evilHook: preserveAuthoredHooks ? evilHook : buildWordShapeHook(word, evilHook ?? evilMemoryHooks[word.word]),
+    evilHook: reviewedRecallHooks[word.word] ?? (preserveAuthoredHooks ? evilHook : buildWordShapeHook(word, evilHook ?? evilMemoryHooks[word.word])),
     confusions: confusionNotes[word.word],
   }))
 }

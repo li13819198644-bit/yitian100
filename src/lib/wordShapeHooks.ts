@@ -1,4 +1,5 @@
 import type { VocabWord } from '../types'
+import { reviewedRecallHooks } from '../data/reviewedRecallHooks'
 
 type HookInput = Pick<VocabWord, 'word' | 'meaning'>
 
@@ -367,6 +368,7 @@ function hasWordShapeBridge(word: string, hook: string): boolean {
 
 export function buildWordShapeHook(input: HookInput, fallback?: string): string {
   const word = input.word.toLowerCase()
+  if (reviewedRecallHooks[word]) return reviewedRecallHooks[word]
   const meaning = firstMeaning(input.meaning)
   const special = specialHooks[word]
   if (special) return trimHook(special)
