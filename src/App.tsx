@@ -1029,7 +1029,7 @@ function WordDetail({ word, progress, onContinue, continueLabel }: {
 
       {word.memoryHook && (
         <div className="rounded-lg bg-emerald-50 p-4 ring-1 ring-emerald-100">
-          <p className="text-sm font-semibold text-emerald-900">单词起源</p>
+          <p className="text-sm font-semibold text-emerald-900">{word.memoryHook.breakdown.startsWith('构词与用法：') ? '构词与用法' : '单词起源'}</p>
           <p className="mt-2 font-medium leading-7 text-emerald-950">{word.memoryHook.breakdown}</p>
         </div>
       )}
@@ -1370,7 +1370,7 @@ function WordCard({ title, word, progress, children }: { title: string; word: Vo
             ))}
             {word.memoryHook && (
               <div className="mt-4 rounded-lg bg-emerald-50 p-4 text-left ring-1 ring-emerald-100">
-                <p className="text-sm font-semibold text-emerald-900">单词起源</p>
+                <p className="text-sm font-semibold text-emerald-900">{word.memoryHook.breakdown.startsWith('构词与用法：') ? '构词与用法' : '单词起源'}</p>
                 <p className="mt-2 text-base font-medium leading-7 text-emerald-950">{word.memoryHook.breakdown}</p>
               </div>
             )}

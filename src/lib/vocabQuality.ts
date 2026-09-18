@@ -30,8 +30,8 @@ export function auditDraftWords(existingWords: string[], draft: DraftWord[], exp
     } else {
       issues.push(...auditMemoryHook(key, item.memoryHook))
     }
-    if (!item.wordOrigin?.startsWith('词源：')) {
-      issues.push(`${item.word}: wordOrigin must start with 词源：`)
+    if (!/^(词源：|构词与用法：)/.test(item.wordOrigin ?? '')) {
+      issues.push(`${item.word}: explanation must be labelled 词源： or 构词与用法：`)
     }
     if (!item.collocation.toLowerCase().includes(key)) {
       issues.push(`${item.word}: collocation should include the word`)

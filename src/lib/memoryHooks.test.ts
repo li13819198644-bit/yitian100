@@ -6,6 +6,7 @@ import { generatedBatch6 } from '../data/generatedBatch6'
 import { generatedBatch7 } from '../data/generatedBatch7'
 import { generatedBatch8 } from '../data/generatedBatch8'
 import { generatedBatch9 } from '../data/generatedBatch9'
+import { generatedBatch10 } from '../data/generatedBatch10'
 import { nextBatchDraft } from '../data/nextBatchDraft'
 import { nextBatchDraft2 } from '../data/nextBatchDraft2'
 import { seedWords } from '../data/seedWords'
@@ -24,6 +25,7 @@ const supervisedBatches = [
   { name: 'generatedBatch7', words: generatedBatch7, expectedCount: 100 },
   { name: 'generatedBatch8', words: generatedBatch8, expectedCount: 100 },
   { name: 'generatedBatch9', words: generatedBatch9, expectedCount: 100 },
+  { name: 'generatedBatch10', words: generatedBatch10, expectedCount: 100 },
 ]
 
 describe('memory hooks', () => {
@@ -47,9 +49,9 @@ describe('memory hooks', () => {
     expect(issues).toEqual([])
   })
 
-  it('has a word origin on every learning card', () => {
+  it('has an explicitly labelled origin or usage explanation on every learning card', () => {
     const missing = seedWords
-      .filter((word) => !word.memoryHook?.breakdown.startsWith('词源：'))
+      .filter((word) => !/^(词源：|构词与用法：)/.test(word.memoryHook?.breakdown ?? ''))
       .map((word) => word.word)
 
     expect(missing).toEqual([])
