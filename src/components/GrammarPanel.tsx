@@ -3,6 +3,7 @@ import { ArrowLeft, Check, ChevronRight, RotateCcw, X } from 'lucide-react'
 import { grammarQuestions, grammarTopics } from '../data/grammar'
 import type { GrammarProgress } from '../types'
 import { chooseGrammarQuestions } from '../lib/grammar'
+import { GrammarLibrary } from './GrammarLibrary'
 
 interface Props {
   progress: GrammarProgress[]
@@ -11,6 +12,7 @@ interface Props {
 }
 
 export function GrammarPanel({ progress, ready, onAnswer }: Props) {
+  const [mode, setMode] = useState<'materials' | 'practice'>('materials')
   const [topicId, setTopicId] = useState<string | null>(null)
   const [queue, setQueue] = useState<string[]>([])
   const [index, setIndex] = useState(0)
@@ -55,8 +57,14 @@ export function GrammarPanel({ progress, ready, onAnswer }: Props) {
     setIndex((value) => value + 1); setSelected(null); setSaved(false); scrollTop()
   }
   const command = 'flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-stone-950 px-4 py-3 font-semibold text-white disabled:opacity-50'
+  const modeSwitch = <div className="grid grid-cols-2 gap-1 border-b border-stone-200 pb-3" aria-label="语法板块">
+    {([['materials', '学习资料'], ['practice', '语法练习']] as const).map(([value, label]) => <button key={value} type="button" aria-pressed={mode === value} onClick={() => setMode(value)} className={`min-h-12 rounded-lg font-semibold ${mode === value ? 'bg-stone-950 text-white' : 'bg-white text-stone-700'}`}>{label}</button>)}
+  </div>
+
+  if (mode === 'materials') return <section ref={top} aria-label="语法学习" className="mt-3 space-y-4 scroll-mt-4">{modeSwitch}<GrammarLibrary /></section>
 
   return <section ref={top} aria-label="语法学习" className="mt-3 space-y-4 scroll-mt-4">
+    {!topic && queue.length === 0 && modeSwitch}
     <div className="flex items-center gap-3">
       {(topic || queue.length > 0) && <button className="icon-button shrink-0" aria-label="返回语法专题" title="返回语法专题" disabled={busy || Boolean(error)} onClick={leave}><ArrowLeft size={20} /></button>}
       <div className="min-w-0"><h2 className="text-xl font-bold">{queue.length ? (review ? '语法复习' : topic?.title) : topic?.title ?? '语法'}</h2><p className="mt-1 text-sm text-stone-500">{queue.length ? `本轮 ${Math.min(index + 1, queue.length)} / ${queue.length} 题` : topic?.subtitle ?? '一次 5 题，慢慢积累'}</p></div>
