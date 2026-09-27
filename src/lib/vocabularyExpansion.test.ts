@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { generatedBatch10 } from '../data/generatedBatch10'
+import { batch10Origins } from '../data/batch10Origins'
 import { seedWords } from '../data/seedWords'
 import { reviewedRecallHooks } from '../data/reviewedRecallHooks'
 import { createProgress, getNewWords } from './srs'
@@ -32,22 +33,33 @@ describe('the hundred-word expansion', () => {
     expect(JSON.stringify(progress)).toBe(before)
   })
 
-  it('keeps authored usage explanations separate from invented associations', () => {
+  it('keeps sourced origins, usage explanations and invented associations separate', () => {
+    expect(Object.keys(batch10Origins).sort()).toEqual([...newIds].sort())
     for (const word of generatedBatch10) {
       expect(word.difficulty, word.word).toBeGreaterThanOrEqual(3)
       expect(['B2', 'C1']).toContain(word.level)
-      expect(word.wordOrigin, word.word).toMatch(/^构词与用法：/)
+      expect(word.wordOrigin, word.word).toMatch(/^词源：/)
       expect(word.wordOrigin.length, word.word).toBeGreaterThan(40)
+      expect(word.usageNote?.length, word.word).toBeGreaterThan(30)
+      expect(word.etymologySource).toBe(batch10Origins[word.word].source)
+      expect(word.etymologySource).toMatch(/^https:\/\/www\.etymonline\.com\/word\/[a-z]+$/)
       expect(word.evilHook, word.word).toMatch(/看|借|接/)
       expect(seedWords.find((item) => item.id === word.id)?.memoryHook?.breakdown).toBe(word.wordOrigin)
+      expect(seedWords.find((item) => item.id === word.id)?.usageNote).toBe(word.usageNote)
+      expect(seedWords.find((item) => item.id === word.id)?.etymologySource).toBe(word.etymologySource)
     }
     const entry = (id: string) => generatedBatch10.find((word) => word.id === id)!
-    expect(entry('resign').wordOrigin).toContain('re-sign')
-    expect(entry('sensible').wordOrigin).toContain('sensitive')
-    expect(entry('reimburse').wordOrigin).toContain('refund')
-    expect(entry('correlation').wordOrigin).toContain('相关不等于因果')
+    expect(entry('resign').usageNote).toContain('re-sign')
+    expect(entry('sensible').usageNote).toContain('sensitive')
+    expect(entry('reimburse').usageNote).toContain('refund')
+    expect(entry('correlation').usageNote).toContain('相关不等于因果')
     expect(entry('waive').evilHook).toContain('wave')
-    expect(entry('subtle').wordOrigin).toContain('b 不发音')
+    expect(entry('subtle').usageNote).toContain('b 不发音')
+    expect(entry('intact').wordOrigin).toContain('否定')
+    expect(entry('intact').wordOrigin).toContain('tangere')
+    expect(entry('mortgage').wordOrigin).toContain('gage')
+    expect(entry('blunt').wordOrigin).toContain('不确定')
+    expect(seedWords.every((word) => word.memoryHook?.breakdown.startsWith('词源：'))).toBe(true)
   })
 
   it('removes newly studied words from subsequent new-word sessions', () => {

@@ -983,6 +983,16 @@ function Panel({ title, children }: { title: string; children: React.ReactNode }
   )
 }
 
+function OriginExtras({ word }: { word: VocabWord }) {
+  return <>
+    {word.etymologySource && <a href={word.etymologySource} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex min-h-11 items-center text-sm text-emerald-800 underline underline-offset-4">词源出处 · Etymonline</a>}
+    {word.usageNote && <details className="mt-2 border-t border-emerald-200 pt-1 text-emerald-950">
+      <summary className="min-h-11 cursor-pointer py-3 text-sm font-semibold">用法辨析</summary>
+      <p className="pb-2 leading-7">{word.usageNote}</p>
+    </details>}
+  </>
+}
+
 function WordDetail({ word, progress, onContinue, continueLabel }: {
   word: VocabWord
   progress?: WordProgress
@@ -1031,6 +1041,7 @@ function WordDetail({ word, progress, onContinue, continueLabel }: {
         <div className="rounded-lg bg-emerald-50 p-4 ring-1 ring-emerald-100">
           <p className="text-sm font-semibold text-emerald-900">{word.memoryHook.breakdown.startsWith('构词与用法：') ? '构词与用法' : '单词起源'}</p>
           <p className="mt-2 font-medium leading-7 text-emerald-950">{word.memoryHook.breakdown}</p>
+          <OriginExtras word={word} />
         </div>
       )}
 
@@ -1276,6 +1287,7 @@ function LeechRepairCard({ word, progress, attempt, position, total, onResult }:
                 <p className="text-sm font-semibold text-emerald-900">重新编码</p>
                 <p className="mt-2 font-medium leading-7 text-emerald-950">{word.memoryHook.core}</p>
                 <p className="mt-2 leading-7 text-stone-700">{word.memoryHook.breakdown}</p>
+                <OriginExtras word={word} />
                 <p className="mt-3 rounded-lg bg-white/80 px-3 py-2 text-sm font-semibold text-emerald-900">{word.memoryHook.personalPrompt}</p>
               </div>
             )}
@@ -1372,6 +1384,7 @@ function WordCard({ title, word, progress, children }: { title: string; word: Vo
               <div className="mt-4 rounded-lg bg-emerald-50 p-4 text-left ring-1 ring-emerald-100">
                 <p className="text-sm font-semibold text-emerald-900">{word.memoryHook.breakdown.startsWith('构词与用法：') ? '构词与用法' : '单词起源'}</p>
                 <p className="mt-2 text-base font-medium leading-7 text-emerald-950">{word.memoryHook.breakdown}</p>
+                <OriginExtras word={word} />
               </div>
             )}
             {word.evilHook && (

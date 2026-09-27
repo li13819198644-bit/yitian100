@@ -1,4 +1,5 @@
 import type { DraftWord } from '../lib/vocabQuality'
+import { batch10Origins } from './batch10Origins'
 
 type Row = readonly [string, string, string, string, string, 3 | 4 | 5, 'B2' | 'C1', string, string]
 
@@ -31,7 +32,7 @@ const rows: Row[] = [
   ['entitlement', '/ɪnˈtaɪtəlmənt/', '应享权利；应得额度', 'leave entitlement', 'Your leave entitlement is stated in your employment contract.', 4, 'C1', 'entitlement to something 是依据规则应享有的权利；leave entitlement 指可享的假期额度。a sense of entitlement 可贬指自认理应受优待。', 'entitlement看title头衔：有了员工身份，合同上列出你应享的假期权利。'],
   ['concession', '/kənˈseʃən/', '让步；优惠；特许经营权', 'make a concession', 'The seller agreed to make a concession on the delivery cost.', 4, 'C1', '与 concede 承认、让步同族。make a concession 是让步；concession fares 是优惠票价；商业语境还可指特许经营权。', 'concession接concede肯让步：你肯让一点价，谈判桌上多了一项让步。'],
   ['acquisition', '/ˌækwɪˈzɪʃən/', '获得；收购；获得的事物', 'an acquisition deal', 'The acquisition deal will give the company access to new markets.', 4, 'C1', '是 acquire 获得的名词。同样可用于 skill acquisition 技能习得和公司收购；merger 更强调两家公司合并。', 'acquisition接acquire获得：收购合同签完，对方公司被你获得了。'],
-  ['merger', '/ˈmɜːrdʒər/', '合并；企业合并', 'a proposed merger', 'Employees are worried about job losses after the proposed merger.', 3, 'C1', '由 merge 合并加 -er 构成，表示合并事件，不是做事的人。常搭 merger between two companies；区别于一方买下另一方的 acquisition。', 'merger看merge合并：两家店把招牌并成一个，企业合并了。'],
+  ['merger', '/ˈmɜːrdʒər/', '合并；企业合并', 'a proposed merger', 'Employees are worried about job losses after the proposed merger.', 3, 'C1', '与 merge 合并相关，表示合并事件，不是做事的人。常搭 merger between two companies；区别于一方买下另一方的 acquisition。', 'merger看merge合并：两家店把招牌并成一个，企业合并了。'],
   ['surplus', '/ˈsɜːrpləs/', '盈余；过剩；多余的', 'a budget surplus', 'Higher tax revenue helped the city record a budget surplus.', 4, 'C1', '表示超过需要或支出的剩余部分。budget surplus 是预算盈余，反义是 deficit 赤字；surplus stock 是多余库存。', 'surplus看plus加号：收支相减还有个正号，钱有盈余；货多了也算过剩。'],
   ['expenditure', '/ɪkˈspendɪtʃər/', '支出；开支总额', 'public expenditure', 'The report compares public expenditure on health and education.', 4, 'C1', '常不可数，侧重一定时期或用途的支出总量，比单笔 expense 更正式。常用 expenditure on something。', 'expenditure看spend花钱：把一个月spend出去的钱全加起来，支出总额。'],
   ['overhead', '/ˈoʊvərhed/', '经营间接费用；头顶上方的', 'an overhead cost', 'Office rent is an overhead cost that remains even when sales fall.', 4, 'C1', '本条先学经营费用义，常用 overhead costs、overheads。房租等费用不能直接归到单件产品；不是只要在头顶上的东西都属费用。', 'overhead看over头上+head头：生意不开张，头顶办公室的房租还得交，经营开销。'],
@@ -109,7 +110,9 @@ const rows: Row[] = [
 
 export const generatedBatch10: DraftWord[] = rows.map(([word, phonetic, meaning, collocation, example, difficulty, level, explanation, evilHook]) => ({
   id: word, word, phonetic, meaning, collocation, example, difficulty, level, evilHook,
-  wordOrigin: `构词与用法：${explanation}`,
+  wordOrigin: `词源：${batch10Origins[word].text}`,
+  usageNote: explanation,
+  etymologySource: batch10Origins[word].source,
   memoryHook: {
     core: `${meaning}；常搭 ${collocation}。`,
     image: example,

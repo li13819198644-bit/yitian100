@@ -21,6 +21,8 @@ export interface VocabWord {
     personalPrompt: string
   }
   evilHook?: string
+  usageNote?: string
+  etymologySource?: string
   confusions?: Array<{
     trap: string
     wrongPath: string

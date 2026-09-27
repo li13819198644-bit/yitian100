@@ -30,7 +30,7 @@
 
 - 新增 100 个不重复词条，总词库 605 词。主要用于工作沟通、人际表达、消费金融和新闻阅读；B2/C1 为应用学习分组，不表示所有词义都有统一的官方等级。
 - 选词参考 [Oxford 3000/5000 说明](https://www.oxfordlearnersdictionaries.com/about/wordlists/)及进阶核心词表；不声称这是按语料频率排序的前 100 词。
-- 每条包含音标、中文释义、搭配、原创例句、用法辨析和人工记忆联想。用法说明标为“构词与用法”，不冒充历史词源；近音联想不能代替标准发音。
+- 每条包含音标、中文释义、搭配、原创例句、历史词源、用法辨析和人工记忆联想。最近一批 100 词的词源经 Etymonline 核对并附来源链接；不确定的远源明确标注，不将谐音当词源。用法辨析单独折叠，词源正文随应用离线缓存，外部出处需联网查看。此次补充不改变单词 ID 或学习进度。
 - 重点区别 reimburse/refund、sensible/sensitive、resign/re-sign、imminent/eminent；多义词说明当前词性和语境。
 - 用法核对参考：[discretion](https://dictionary.cambridge.org/dictionary/english/discretion)、[waive](https://dictionary.cambridge.org/us/dictionary/english/waive)、[collateral](https://dictionary.cambridge.org/dictionary/english/collateral)、[sensitive](https://dictionary.cambridge.org/dictionary/english/sensitive)。说明、例句和联想为本项目重新编写。
 - 保留新词乱序及减负设置；更新词库不会重置旧词进度，新增例句也可用于选词组句。
