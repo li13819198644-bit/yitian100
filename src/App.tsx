@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { BarChart3, BookOpen, Check, ChevronRight, Cloud, Download, Home, NotebookPen, RotateCcw, Settings, Upload, Volume2, X } from 'lucide-react'
+import { BarChart3, BookOpen, Check, ChevronRight, Cloud, Download, Headphones, Home, NotebookPen, RotateCcw, Settings, Upload, Volume2, X } from 'lucide-react'
 import clsx from 'clsx'
 import type { AppSettings, AppStats, GrammarProgress, QuizMode, Rating, ReviewMode, Screen, SessionKind, StudyMode, VocabWord, WordProgress } from './types'
 import { GrammarPanel } from './components/GrammarPanel'
 import { DailyStatsPanel } from './components/DailyStatsPanel'
 import { SentenceQuiz } from './components/SentenceQuiz'
+import { ListeningPlayer } from './components/ListeningPlayer'
 import { buildDailyReport } from './lib/dailyReport'
 import { grammarQuestions, grammarTopics } from './data/grammar'
 import { recordGrammarAnswer } from './lib/grammar'
@@ -158,6 +159,7 @@ function waitForEnglishVoice(synthesis: SpeechSynthesis): Promise<SpeechSynthesi
 
 async function speakEnglish(text: string, options: { rate?: number } = {}): Promise<boolean> {
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) return false
+  window.dispatchEvent(new Event('yitian:other-audio'))
   const trimmed = text.trim()
   if (!trimmed) return false
   const synthesis = window.speechSynthesis
@@ -712,6 +714,7 @@ function App() {
         </header>
 
         {screen === 'grammar' && <GrammarPanel progress={grammarProgress} ready={grammarReady} onAnswer={answerGrammar} />}
+        <ListeningPlayer words={words} due={dailyPlan.dueReviewWords} weak={weakWords} learned={words.filter(word => (progressMap.get(word.id)?.seen ?? 0) > 0)} visible={screen === 'listening'} />
         {screen === 'daily' && <DailyStatsPanel report={buildDailyReport(words, progress, stats, grammarProgress, clockNow)} ready={grammarReady} onBack={() => setScreen('home')} />}
 
         {screen === 'home' && (
@@ -747,6 +750,7 @@ function App() {
                 <SecondaryButton onClick={() => startLearnSession({ limit: gentleNewWordCount })} icon={<BookOpen size={20} />} label={`学 ${gentleNewWordCount} 个新词`} />
               )}
               <SecondaryButton onClick={startQuizSession} icon={<BarChart3 size={20} />} label="进入测验" />
+              <SecondaryButton onClick={() => setScreen('listening')} icon={<Headphones size={20} />} label="听词复习 · MP3" />
               <SecondaryButton onClick={() => { setClockNow(Date.now()); setFeedback(''); setFeedbackWordId(''); setScreen('daily') }} icon={<BarChart3 size={20} />} label="当天学习统计" />
             </div>
 

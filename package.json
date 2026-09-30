@@ -9,6 +9,7 @@
     "lint": "oxlint",
     "test": "vitest run",
     "preview": "vite preview",
+    "audio:generate": "node scripts/generate-listening.mjs",
     "ios:sync": "npm run build && cap sync ios",
     "ios:open": "cap open ios",
     "ios:run": "npm run build && cap run ios"

@@ -3,7 +3,7 @@ export type ReviewMode = 'choice' | 'advanced'
 
 export type QuizMode = 'en-zh' | 'zh-en' | 'context' | 'spelling' | 'confusion' | 'swipe' | 'sentence'
 
-export type Screen = 'home' | 'learn' | 'quiz' | 'review' | 'weak' | 'settings' | 'import' | 'sync' | 'detail' | 'grammar' | 'daily'
+export type Screen = 'home' | 'learn' | 'quiz' | 'review' | 'weak' | 'settings' | 'import' | 'sync' | 'detail' | 'grammar' | 'daily' | 'listening'
 export type SessionKind = 'learn' | 'review' | 'quiz' | 'weak'
 
 export interface VocabWord {
