@@ -13,6 +13,7 @@ describe('continuous listening chapters', () => {
     expect(trackAt(starts, 0)).toBe(0)
     expect(trackAt(starts, 10.49)).toBe(0)
     expect(trackAt(starts, 10.5)).toBe(1)
+    expect(trackAt([0, 57.86400000000001], 57.864)).toBe(1)
     expect(trackAt(starts, 30)).toBe(2)
     expect(trackAt([], 0)).toBe(0)
   })
