@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { BarChart3, BookOpen, Check, ChevronRight, Cloud, Download, Headphones, Home, NotebookPen, RotateCcw, Settings, Upload, Volume2, X } from 'lucide-react'
+import { BarChart3, BookOpen, Check, ChevronRight, Cloud, Download, Headphones, Home, NotebookPen, RotateCcw, Scissors, Settings, Upload, Volume2, X } from 'lucide-react'
 import clsx from 'clsx'
 import type { AppSettings, AppStats, GrammarProgress, QuizMode, Rating, ReviewMode, Screen, SessionKind, StudyMode, VocabWord, WordProgress } from './types'
 import { GrammarPanel } from './components/GrammarPanel'
@@ -22,6 +22,7 @@ import {
   isMastered,
   isWeak,
   scheduleReview,
+  setWordExcluded,
 } from './lib/srs'
 import { firstAnswerSummary, localDateOffset, recordStudyResult } from './lib/studyStats'
 import {
@@ -272,7 +273,8 @@ function App() {
 
   const progressMap = useMemo(() => new Map(progress.map((item) => [item.wordId, item])), [progress])
   const wordMap = useMemo(() => new Map(words.map((item) => [item.id, item])), [words])
-  const learnedIds = useMemo(() => new Set(progress.map((item) => item.wordId)), [progress])
+  const excludedWords = useMemo(() => words.filter(word => progressMap.get(word.id)?.excluded), [words, progressMap])
+  const availableWords = useMemo(() => words.filter(word => !progressMap.get(word.id)?.excluded), [words, progressMap])
   const dailyPlan = useMemo(
     () => buildDailyPlan(words, progress, {
       baseNewWordsPerDay: settings.dailyTarget,
@@ -295,7 +297,7 @@ function App() {
   }), [words, progressMap])
   const weakSessionWords = chooseWeakRotationSession(words, progress, reliefActive ? 10 : 30, clockNow)
   const reliefActionCount = dailyPlan.reviewDebt ? (reliefReviewLimit ?? dailyPlan.reviewDebt) : weakSessionWords.length
-  const unlearnedCount = Math.max(0, words.length - learnedIds.size)
+  const unlearnedCount = getNewWords(words, progress).length
   const gentleNewWordCount = Math.min(10, unlearnedCount)
   // Derive this so existing local/cloud progress benefits from improved criteria
   // without requiring a destructive data migration.
@@ -304,12 +306,38 @@ function App() {
     const item = progressMap.get(word.id)
     return item ? isLeech(item) : false
   }).length
-  const progressStudiedToday = progress.filter((item) => todayKey(new Date(item.updatedAt)) === todayKey()).length
+  const progressStudiedToday = progress.filter((item) => item.seen > 0 && todayKey(new Date(item.lastStudiedAt ?? item.updatedAt)) === todayKey()).length
   const todayProgress = Math.max(stats.todayDate === todayKey() ? stats.todaySeen.length : 0, progressStudiedToday)
   const todayAccuracy = accuracy(progress)
   const todayFirstAnswers = firstAnswerSummary(stats.dailyHistory?.find((entry) => entry.date === todayKey()))
   const activeWord = sessionWords[activeIndex]
   const detailWord = detailWordId ? wordMap.get(detailWordId) : undefined
+  const cutTarget = screen === 'detail' ? detailWord : screen === 'learn' || screen === 'quiz' ? activeWord : undefined
+
+  async function changeExcluded(word: VocabWord, excluded: boolean) {
+    if (answering.current) return
+    answering.current = true
+    try {
+      const updated = setWordExcluded(progressMap.get(word.id) ?? createProgress(word.id), excluded)
+      await saveProgress(updated)
+      setProgress(items => [...items.filter(item => item.wordId !== word.id), updated])
+      if (excluded) {
+        window.speechSynthesis?.cancel()
+        const inSession = (screen === 'learn' || screen === 'quiz') && activeWord?.id === word.id
+        const nextIds = sessionWordIds.filter((id, index) => id !== word.id || index < activeIndex || (inSession && index === activeIndex))
+        setSessionWordIds(nextIds)
+        if (inSession) {
+          setActiveIndex(activeIndex + 1)
+          if (screen === 'learn') autoSpeakSessionWord(nextIds, activeIndex + 1)
+        }
+      }
+      setClockNow(Date.now())
+      setFeedback(`${word.word}：${excluded ? '已斩，不再安排学习' : '已恢复学习'}`)
+      setFeedbackWordId(word.id)
+      void syncCloudQuietly()
+    } catch { setFeedback('保存斩词状态失败，请重试。'); setFeedbackWordId('') }
+    finally { answering.current = false }
+  }
 
   function openWordDetail(wordId: string, returnScreen: Screen = screen) {
     if (!wordMap.has(wordId)) return
@@ -409,6 +437,7 @@ function App() {
   }
 
   async function recordAnswer(word: VocabWord, rating: Rating, correct: boolean, mode: StudyMode, returnScreen: Screen, showWrongDetail: boolean) {
+    if (progressMap.get(word.id)?.excluded) return
     if (answering.current) return
     answering.current = true
     try {
@@ -479,7 +508,7 @@ function App() {
       ]
       return [answer, ...traps.filter((trap) => trap !== answer).slice(0, 3)].sort(() => 0.5 - Math.random())
     }
-    const pool = words
+    const pool = availableWords
       .filter((candidate) => candidate.id !== word.id)
       .slice()
       .sort(() => 0.5 - Math.random())
@@ -545,7 +574,7 @@ function App() {
 
   function reviewChoices(word: VocabWord) {
     const prompt = reviewPrompt(word)
-    const candidates = words
+    const candidates = availableWords
       .filter((candidate) => candidate.id !== word.id)
       .slice()
       .sort((left, right) => choiceHash(`${word.id}:${left.id}`) - choiceHash(`${word.id}:${right.id}`))
@@ -630,7 +659,7 @@ function App() {
 
   function exportLearningReport() {
     const now = Date.now()
-    const learnedIds = new Set(progress.map((item) => item.wordId))
+    const learnedIds = new Set(progress.filter(item => item.seen > 0).map((item) => item.wordId))
     const weakIds = new Set(weakWords.map((word) => word.id))
     const report = {
       schemaVersion: 1,
@@ -640,7 +669,8 @@ function App() {
       summary: {
         totalWords: words.length,
         learnedWords: learnedIds.size,
-        unlearnedWords: words.length - learnedIds.size,
+        unlearnedWords: unlearnedCount,
+        excludedWords: excludedWords.length,
         masteredWords: mastered,
         weakWords: weakWords.length,
         stubbornWords,
@@ -712,9 +742,13 @@ function App() {
             <Settings size={22} />
           </button>
         </header>
+        {(cutTarget || (feedbackWordId && progressMap.get(feedbackWordId)?.excluded && screen !== 'detail')) && <div className="mb-2 flex items-center justify-between gap-3">
+          <div>{feedbackWordId && progressMap.get(feedbackWordId)?.excluded && screen !== 'detail' && <button className="flex min-h-11 items-center gap-2 text-sm font-semibold text-emerald-800" onClick={() => { const word = wordMap.get(feedbackWordId); if (word) void changeExcluded(word, false) }}><RotateCcw size={18} />撤销斩词</button>}</div>
+          {cutTarget && <button className="flex min-h-11 items-center gap-2 rounded-lg bg-white px-4 font-semibold text-stone-700 ring-1 ring-stone-200" title={progressMap.get(cutTarget.id)?.excluded ? '恢复学习' : '太简单，不再安排学习'} onClick={() => void changeExcluded(cutTarget, !progressMap.get(cutTarget.id)?.excluded)}>{progressMap.get(cutTarget.id)?.excluded ? <><RotateCcw size={18} />恢复学习</> : <><Scissors size={18} />斩</>}</button>}
+        </div>}
 
         {screen === 'grammar' && <GrammarPanel progress={grammarProgress} ready={grammarReady} onAnswer={answerGrammar} />}
-        <ListeningPlayer words={words} due={dailyPlan.dueReviewWords} weak={weakWords} learned={words.filter(word => (progressMap.get(word.id)?.seen ?? 0) > 0)} visible={screen === 'listening'} />
+        <ListeningPlayer words={availableWords} due={dailyPlan.dueReviewWords} weak={weakWords} learned={availableWords.filter(word => (progressMap.get(word.id)?.seen ?? 0) > 0)} visible={screen === 'listening'} />
         {screen === 'daily' && <DailyStatsPanel report={buildDailyReport(words, progress, stats, grammarProgress, clockNow)} ready={grammarReady} onBack={() => setScreen('home')} />}
 
         {screen === 'home' && (
@@ -883,6 +917,7 @@ function App() {
                 <RotateCcw size={18} /> 重置单词学习进度
               </button>
             </Panel>
+            <details className="border-t border-stone-200 pt-3"><summary className="min-h-12 cursor-pointer py-3 font-semibold">已斩词 · {excludedWords.length}</summary><WordList title="已斩词" words={excludedWords} progressMap={progressMap} onOpen={openWordDetail} empty="还没有斩过单词。" /></details>
           </section>
         )}
 

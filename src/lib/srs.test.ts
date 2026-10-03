@@ -448,7 +448,7 @@ describe('spaced repetition', () => {
 
   it('does not fill a weak session with words just practised today', () => {
     const recent = scheduleReview(scheduleReview(createProgress('a', now), 'unknown', now), 'known', now + 60_000)
-    const untouched = { ...recent, wordId: 'b', updatedAt: now - day }
+    const untouched = { ...recent, wordId: 'b', updatedAt: now - day, lastStudiedAt: now - day }
     expect(chooseWeakRotationSession([word('a'), word('b')], [recent, untouched], 10, now + 120_000).map((item) => item.id)).toEqual(['b'])
   })
 

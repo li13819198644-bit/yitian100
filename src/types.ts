@@ -34,6 +34,8 @@ export interface VocabWord {
 }
 
 export interface WordProgress {
+  excluded?: boolean
+  lastStudiedAt?: number
   wordId: string
   nextReviewAt: number
   repetitions: number

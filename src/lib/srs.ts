@@ -48,6 +48,14 @@ export function qualityFromRating(rating: Rating): number {
   return 1
 }
 
+export function setWordExcluded(progress: WordProgress, excluded: boolean, now = Date.now()): WordProgress {
+  return { ...progress, excluded, lastStudiedAt: progress.lastStudiedAt ?? (progress.seen > 0 ? progress.updatedAt : 0), updatedAt: now }
+}
+
+function isRestoredNew(progress: WordProgress): boolean {
+  return progress.excluded === false && progress.seen === 0
+}
+
 function recoveryIntervalCapMs(lapses: number, repetitions: number, rating: Rating): number | undefined {
   if (lapses < 3 || repetitions >= recoveryRepetitionTarget(lapses)) return undefined
   if (rating === 'fuzzy') {
@@ -80,6 +88,7 @@ export function isMastered(progress: WordProgress): boolean {
 }
 
 export function scheduleReview(progress: WordProgress, rating: Rating, now = Date.now()): WordProgress {
+  if (progress.excluded) return progress
   const quality = qualityFromRating(rating)
   const wasCorrect = quality >= 3
   const previousStability = progress.stability ?? Math.max(0, progress.repetitions)
@@ -87,7 +96,7 @@ export function scheduleReview(progress: WordProgress, rating: Rating, now = Dat
   const practiceDay = localDateKey(new Date(now))
   const mistakesToday = (progress.practiceDay === practiceDay ? progress.mistakesToday ?? 0 : 0) + Number(!wasCorrect)
   const lastSuccess = progress.lastSuccessfulReviewAt
-    ?? (progress.seen > 0 && (progress.lastRating === 'known' || progress.lastRating === 'fuzzy') ? progress.updatedAt : undefined)
+    ?? (progress.seen > 0 && (progress.lastRating === 'known' || progress.lastRating === 'fuzzy') ? progress.lastStudiedAt ?? progress.updatedAt : undefined)
   const sameDaySuccess = lastSuccess !== undefined && localDateKey(new Date(lastSuccess)) === practiceDay
   let easeFactor = Math.max(
     1.3,
@@ -164,6 +173,7 @@ export function scheduleReview(progress: WordProgress, rating: Rating, now = Dat
     mastered: false,
     nextReviewAt: now + intervalMs,
     updatedAt: now,
+    lastStudiedAt: now,
     practiceDay,
     mistakesToday,
     lastSuccessfulReviewAt: wasCorrect ? now : lastSuccess,
@@ -184,6 +194,7 @@ export function accuracy(progress: WordProgress[]): number {
 }
 
 export function isWeak(progress: WordProgress): boolean {
+  if (progress.excluded) return false
   const attempts = progress.correct + progress.incorrect
   if (!attempts || isMastered(progress)) return false
   const accuracy = attempts ? progress.correct / attempts : 1
@@ -198,6 +209,7 @@ export function isWeak(progress: WordProgress): boolean {
 }
 
 export function isLeech(progress: WordProgress): boolean {
+  if (progress.excluded) return false
   const attempts = progress.correct + progress.incorrect
   const accuracy = attempts ? progress.correct / attempts : 1
   return progress.lapses >= 5 || (progress.incorrect >= 4 && accuracy < 0.45)
@@ -212,7 +224,7 @@ export function getDueReviewWords(words: VocabWord[], progress: WordProgress[], 
   return words
     .filter((word) => {
       const item = byId.get(word.id)
-      return item ? item.nextReviewAt <= now : false
+      return item ? !item.excluded && !isRestoredNew(item) && item.nextReviewAt <= now : false
     })
     .sort((a, b) => (byId.get(a.id)?.nextReviewAt ?? 0) - (byId.get(b.id)?.nextReviewAt ?? 0))
 }
@@ -240,7 +252,7 @@ export function getNewWords(
   const byId = progressMap(progress)
   const day = localDayKey(now)
   return words
-    .filter((word) => !byId.has(word.id))
+    .filter((word) => { const item = byId.get(word.id); return !item || isRestoredNew(item) })
     .sort((left, right) => stableHash(`${day}:${left.id}`) - stableHash(`${day}:${right.id}`) || left.id.localeCompare(right.id))
     .slice(0, Math.max(0, limit))
 }
@@ -284,7 +296,7 @@ export function forecastReviewLoad(progress: WordProgress[], days = 7, now = Dat
     const start = localDateOffset(now, dayIndex)
     start.setHours(0, 0, 0, 0)
     const end = localDateOffset(start.getTime(), 1)
-    return progress.filter((item) => item.nextReviewAt >= Math.max(now, start.getTime()) && item.nextReviewAt < end.getTime()).length
+    return progress.filter((item) => !item.excluded && !isRestoredNew(item) && item.nextReviewAt >= Math.max(now, start.getTime()) && item.nextReviewAt < end.getTime()).length
   })
 }
 
@@ -417,10 +429,12 @@ export function isWeakPracticeReady(progress: WordProgress, now = Date.now()): b
   if (!isWeak(progress)) return false
   const today = localDateKey(new Date(now))
   if (progress.practiceDay === today && (progress.mistakesToday ?? 0) >= 2) return false
-  return localDateKey(new Date(progress.updatedAt)) !== today || progress.nextReviewAt <= now
+  return !progress.excluded && (localDateKey(new Date(progress.lastStudiedAt ?? progress.updatedAt)) !== today || progress.nextReviewAt <= now)
 }
 
 export function chooseQuizSession(words: VocabWord[], progress: WordProgress[], options: DailyPlanOptions): VocabWord[] {
+  const excludedIds = new Set(progress.filter(item => item.excluded).map(item => item.wordId))
+  words = words.filter(word => !excludedIds.has(word.id))
   const now = options.now ?? Date.now()
   const today = localDateKey(new Date(now))
   const coolingIds = new Set(progress.filter((item) => item.practiceDay === today && (item.mistakesToday ?? 0) >= 2).map((item) => item.wordId))
@@ -473,10 +487,11 @@ export function chooseQuizSession(words: VocabWord[], progress: WordProgress[], 
 
 export function chooseDailyWords(words: VocabWord[], progress: WordProgress[], target = 100, now = Date.now()): VocabWord[] {
   const byId = new Map(progress.map((item) => [item.wordId, item]))
+  words = words.filter(word => !byId.get(word.id)?.excluded)
   const overdue = words
-    .filter((word) => (byId.get(word.id)?.nextReviewAt ?? 0) <= now && byId.has(word.id))
+    .filter((word) => (byId.get(word.id)?.nextReviewAt ?? 0) <= now && byId.has(word.id) && !isRestoredNew(byId.get(word.id)!))
     .sort((a, b) => (byId.get(a.id)?.nextReviewAt ?? 0) - (byId.get(b.id)?.nextReviewAt ?? 0))
-  const newWords = words.filter((word) => !byId.has(word.id))
+  const newWords = getNewWords(words, progress, target, now)
   const futureWeak = words
     .filter((word) => {
       const item = byId.get(word.id)

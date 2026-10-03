@@ -31,6 +31,13 @@ export function ListeningPlayer({ words, due, weak, learned, visible }: { words:
   const selected = pool.slice(batch * 20, batch * 20 + 20)
   const currentIndex = trackAt(starts, time)
   const current = queue[currentIndex]
+  useEffect(() => {
+    if (!ready || queue.every(word => words.some(item => item.id === word.id))) return
+    audio.current?.pause()
+    setReady(false)
+    setQueue([])
+    setError('词单已变化，请重新载入。')
+  }, [words, queue, ready])
   const seek = useCallback((index: number) => {
     if (!audio.current || !starts.length) return
     const target = starts[Math.max(0, Math.min(starts.length - 1, index))]
