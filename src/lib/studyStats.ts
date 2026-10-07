@@ -1,5 +1,9 @@
 import type { AppStats, DailyStudyRecord, DailyWordDetail, Rating, SessionKind, StudyMode } from '../types'
 
+export function isObjectiveMode(mode: StudyMode) {
+  return mode !== 'self' && mode !== 'recall' && mode !== 'usage' && mode !== 'assisted'
+}
+
 export function localDateKey(date = new Date()): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
@@ -20,7 +24,7 @@ export function recordStudyResult(stats: AppStats, wordId: string, correct: bool
   const old = previous?.wordDetails?.[wordId]
   const modeCount = old?.modes[mode]
   const previousFirst = previous?.firstAnswers[wordId]
-  const firstTestAnswer = old?.firstTestAnswer ?? (previousFirst && previousFirst.mode !== 'self' ? previousFirst : mode !== 'self' ? { correct, mode } : undefined)
+  const firstTestAnswer = old?.firstTestAnswer ?? (previousFirst && isObjectiveMode(previousFirst.mode) ? previousFirst : isObjectiveMode(mode) ? { correct, mode } : undefined)
   const detail: DailyWordDetail = {
     attempts: (old?.attempts ?? 0) + 1,
     correct: (old?.correct ?? 0) + Number(correct),
@@ -39,7 +43,7 @@ export function recordStudyResult(stats: AppStats, wordId: string, correct: bool
     firstAnswers,
     wordDetails: { ...previous?.wordDetails, [wordId]: detail },
   }
-  const combo = correct ? (sameDay ? stats.combo : 0) + 1 : 0
+  const combo = correct && mode !== 'assisted' ? (sameDay ? stats.combo : 0) + 1 : 0
   const yesterday = localDateKey(localDateOffset(now, -1))
   return {
     ...stats,
@@ -55,7 +59,7 @@ export function recordStudyResult(stats: AppStats, wordId: string, correct: bool
 }
 
 export function firstAnswerSummary(record?: DailyStudyRecord) {
-  const answers = Object.values(record?.firstAnswers ?? {})
+  const answers = Object.values(record?.firstAnswers ?? {}).filter((answer) => answer.mode !== 'assisted')
   const correct = answers.filter((answer) => answer.correct).length
   return { count: answers.length, correct, accuracy: answers.length ? Math.round(correct / answers.length * 100) : null }
 }

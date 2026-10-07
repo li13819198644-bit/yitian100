@@ -39,10 +39,14 @@ export function DailyStatsPanel({ report, ready, onBack }: { report: DailyReport
           <Stat label="新学词 · 已记录" value={words.newWordsRecorded} />
           <Stat label="旧词 · 已记录" value={words.oldWordsRecorded} />
           <Stat label="测验首答正确率" value={percent(words.objectiveFirstAnswer.accuracy)} />
+          <Stat label="无提示英文 · 作答" value={`${words.retrievalPractice.production.correct}/${words.retrievalPractice.production.count}`} />
+          <Stat label="提示后答对 · 作答" value={`${words.retrievalPractice.assisted.correct}/${words.retrievalPractice.assisted.count}`} />
+          <Stat label="词义回忆 · 自评" value={`${words.retrievalPractice.recall.correct}/${words.retrievalPractice.recall.count}`} />
+          <Stat label="表达练习 · 自评" value={`${words.retrievalPractice.usage.correct}/${words.retrievalPractice.usage.count}`} />
           <Stat label="错词 · 已记录" value={words.mistakeWordsRecorded} />
         </dl>
         <p className="mt-4 text-sm text-stone-500">选择首答 {words.firstAnswerByMode.choice.correct}/{words.firstAnswerByMode.choice.count} · 拼写首答 {words.firstAnswerByMode.spelling.correct}/{words.firstAnswerByMode.spelling.count} · 组句首答 {words.firstAnswerByMode.sentence.correct}/{words.firstAnswerByMode.sentence.count}</p>
-        <p className="mt-1 text-sm text-stone-500">自评认识 {words.firstAnswerByMode.self.correct}/{words.firstAnswerByMode.self.count}，不计入测验正确率</p>
+        <p className="mt-1 text-sm text-stone-500">自评认识 {words.firstAnswerByMode.self.correct}/{words.firstAnswerByMode.self.count}；词义和表达也是自评，提示作答单独记录，均不计入客观测验正确率。</p>
         {words.detailCoverage === 'partial' && <p className="mt-3 text-sm text-amber-800">今日部分学习发生在更新前，逐词明细不完整{words.unclassifiedWords ? `，${words.unclassifiedWords} 个词无法区分新旧` : ''}。</p>}
       </div>
       <div className="border-b border-stone-200 pb-4">
@@ -61,7 +65,7 @@ export function DailyStatsPanel({ report, ready, onBack }: { report: DailyReport
         <ul className="divide-y divide-stone-200">{words.results.map((item) => <li key={item.id} className="py-3">
           <div className="flex items-start justify-between gap-3"><p className="min-w-0 break-words font-semibold">{item.word}</p><span className="shrink-0 text-sm text-stone-500">{item.detail ? `${item.detail.attempts} 次 · ${item.recordedMistakes} 次未通过` : '明细未记录'}</span></div>
           <p className="mt-1 text-sm text-stone-600">{item.meaning}</p>
-          <p className="mt-1 text-xs text-stone-500">{item.firstAnswer ? `首答${item.firstAnswer.mode === 'self' ? '自评' : ''}：${item.firstAnswer.correct ? '通过' : '未通过'}` : '首答未记录'}{item.detail ? ` · 最近一次：${item.detail.lastCorrect ? '通过' : '未通过'}` : ''}</p>
+          <p className="mt-1 text-xs text-stone-500">{item.firstAnswer ? `首答${item.firstAnswer.mode === 'assisted' ? '提示作答' : ['self', 'recall', 'usage'].includes(item.firstAnswer.mode) ? '自评' : ''}：${item.firstAnswer.correct ? '通过' : '未通过'}` : '首答未记录'}{item.detail ? ` · 最近一次：${item.detail.lastCorrect ? '通过' : '未通过'}` : ''}</p>
         </li>)}</ul>
       </details>}
       {grammar.results.length > 0 && <details className="border-b border-stone-200 pb-4" open>

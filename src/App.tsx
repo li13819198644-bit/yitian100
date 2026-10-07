@@ -4,6 +4,9 @@ import clsx from 'clsx'
 import type { AppSettings, AppStats, GrammarProgress, QuizMode, Rating, ReviewMode, Screen, SessionKind, StudyMode, VocabWord, WordProgress } from './types'
 import { GrammarPanel } from './components/GrammarPanel'
 import { DailyStatsPanel } from './components/DailyStatsPanel'
+import { RecallExercise } from './components/RecallExercise'
+import { UsageExercise } from './components/UsageExercise'
+import { scheduleRetrieval } from './lib/retrieval'
 import { SentenceQuiz } from './components/SentenceQuiz'
 import { ListeningPlayer } from './components/ListeningPlayer'
 import { buildDailyReport } from './lib/dailyReport'
@@ -432,8 +435,8 @@ function App() {
     await recordAnswer(word, rating, rating === 'known', mode, 'learn', Boolean(options.openDetailOnWrong))
   }
 
-  async function rateQuizAnswer(word: VocabWord, correct: boolean) {
-    await recordAnswer(word, correct ? 'fuzzy' : 'unknown', correct, quizMode === 'sentence' ? 'sentence' : quizMode === 'spelling' ? 'spelling' : quizMode === 'swipe' ? 'self' : 'choice', 'quiz', !correct)
+  async function rateQuizAnswer(word: VocabWord, correct: boolean, retrievalMode?: StudyMode) {
+    await recordAnswer(word, correct ? 'fuzzy' : 'unknown', correct, retrievalMode ?? (quizMode === 'usage' ? 'usage' : quizMode === 'sentence' ? 'sentence' : quizMode === 'spelling' ? 'spelling' : quizMode === 'swipe' ? 'self' : 'choice'), 'quiz', !correct)
   }
 
   async function recordAnswer(word: VocabWord, rating: Rating, correct: boolean, mode: StudyMode, returnScreen: Screen, showWrongDetail: boolean) {
@@ -442,8 +445,10 @@ function App() {
     answering.current = true
     try {
       const now = Date.now()
-      const updated = scheduleReview(progressMap.get(word.id) ?? createProgress(word.id), rating, now)
-      const nextStats = recordStudyResult(stats, word.id, correct, mode, now, { rating, session: sessionKind, isNew: !(progressMap.get(word.id)?.seen) })
+      const updated = ['recall', 'production', 'assisted', 'usage'].includes(mode)
+        ? scheduleRetrieval(progressMap.get(word.id) ?? createProgress(word.id), correct, mode, now)
+        : scheduleReview(progressMap.get(word.id) ?? createProgress(word.id), rating, now)
+      const nextStats = recordStudyResult(stats, word.id, correct, mode, now, { rating: updated.lastRating ?? rating, session: sessionKind, isNew: !(progressMap.get(word.id)?.seen) })
       // A correct quiz choice should never add a remedial retry.
       const nextIds = insertDelayedRetry(sessionWordIds, activeIndex, word.id, correct ? 'known' : rating)
       await saveProgress(updated)
@@ -452,7 +457,7 @@ function App() {
       setStats(nextStats)
       setClockNow(now)
       setSessionWordIds(nextIds)
-      setFeedback(`${word.word}: ${returnScreen === 'quiz' ? correct ? '测验答对' : '测验答错' : actionMap[rating].label}`)
+      setFeedback(`${word.word}: ${mode === 'assisted' && correct ? '提示后答对，仍需独立回忆' : returnScreen === 'quiz' ? correct ? '测验答对' : '测验答错' : actionMap[rating].label}`)
       setFeedbackWordId(word.id)
       setActiveIndex(activeIndex + 1)
       if (!correct && showWrongDetail) {
@@ -706,7 +711,7 @@ function App() {
       stats,
       measurement: {
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        firstAnswerHistory: '仅记录更新后最近90个学习日；重复纠正不覆盖当天首答，mode区分自评、选择和拼写。',
+        firstAnswerHistory: '仅记录更新后最近90个学习日；重复纠正不覆盖当天首答，mode区分自评、选择、拼写、组句、无选项词义回忆、无选项英文输入、提示作答及表达自评。',
         forecast: '按本地自然日统计尚未到期的已排程单词；不包含旧积压和未来答错产生的重测。',
       },
       grammar: {
@@ -818,7 +823,7 @@ function App() {
               position={activeIndex + 1}
               total={sessionWords.length}
               onSpeak={() => speakWord(activeWord.word)}
-              onAnswer={(correct) => rateWord(activeWord, correct ? 'known' : 'unknown', { openDetailOnWrong: !correct })}
+              onAnswer={(correct, mode) => recordAnswer(activeWord, correct ? 'known' : 'unknown', correct, mode, 'learn', !correct)}
             />
           ) : sessionKind === 'weak' && isLeech(progressMap.get(activeWord.id) ?? createProgress(activeWord.id)) ? (
             <LeechRepairCard
@@ -855,18 +860,18 @@ function App() {
             word={activeWord}
             prompt={quizPrompt(activeWord)}
             choices={choices(activeWord)}
-            onAnswer={(correct) => rateQuizAnswer(activeWord, correct)}
+            onAnswer={(correct, mode) => rateQuizAnswer(activeWord, correct, mode)}
           />
         )}
 
         {screen === 'quiz' && sessionWords.length > 0 && activeIndex >= sessionWords.length && (
-          <DoneCard title="测验完成" subtitle="本轮测验结束。答错的词已安排复习。" onFinish={() => setScreen('home')} onRestart={startQuizSession} />
+          <DoneCard title="测验完成" subtitle="本轮测验结束。答错和借助提示的词仍需复习。" onFinish={() => setScreen('home')} onRestart={startQuizSession} />
         )}
 
         {screen === 'review' && (
           <section className="space-y-3">
             <ReviewModeControl value={settings.reviewMode} onChange={updateReviewMode} />
-            <PrimaryButton onClick={() => startReviewSession('learn')} icon={<RotateCcw size={20} />} label={reviewWords.length ? `${settings.reviewMode === 'choice' ? '选择题复习' : '复杂复习'} ${reviewWords.length} 个` : '暂无到期复习'} />
+            <PrimaryButton onClick={() => startReviewSession('learn')} icon={<RotateCcw size={20} />} label={reviewWords.length ? `${settings.reviewMode === 'choice' ? '主动回忆复习' : '复杂复习'} ${reviewWords.length} 个` : '暂无到期复习'} />
             <WordList title="复习队列" words={reviewWords} progressMap={progressMap} onOpen={openWordDetail} empty="现在没有到期复习词。" />
           </section>
         )}
@@ -1128,7 +1133,7 @@ function ReviewModeControl({ value, onChange, compact = false }: {
       </div>
       {!compact && (
         <p className="px-3 pb-2 pt-3 text-sm leading-6 text-stone-600">
-          {value === 'choice' ? '全程四选一，无需声音和键盘。' : '使用主动回忆、拼写、语境和听音强化。'}
+          {value === 'choice' ? '先回忆，再核对；想不起来可展开选项。中英回忆需输入单词。' : '使用主动回忆、拼写、语境和听音强化。'}
         </p>
       )}
     </div>
@@ -1136,82 +1141,17 @@ function ReviewModeControl({ value, onChange, compact = false }: {
 }
 
 function ChoiceReviewCard({ word, direction, question, answer, choices, position, total, onSpeak, onAnswer }: {
-  word: VocabWord
-  direction: string
-  question: string
-  answer: string
-  choices: string[]
-  position: number
-  total: number
-  onSpeak: () => void
-  onAnswer: (correct: boolean) => void
+  word: VocabWord; direction: string; question: string; answer: string; choices: string[]
+  position: number; total: number; onSpeak: () => void
+  onAnswer: (correct: boolean, mode: StudyMode) => void
 }) {
-  const [selected, setSelected] = useState('')
-  const answerTimer = useRef<number | undefined>(undefined)
-
-  useEffect(() => {
-    setSelected('')
-    answerTimer.current = undefined
-    return () => window.clearTimeout(answerTimer.current)
-  }, [word.id, direction])
-
-  const choose = (choice: string) => {
-    if (selected || answerTimer.current !== undefined) return
-    setSelected(choice)
-    answerTimer.current = window.setTimeout(() => onAnswer(choice === answer), 650)
-  }
-
-  return (
-    <section className="space-y-4">
-      <div className="flex items-center justify-between text-sm text-stone-500">
-        <span>普通复习 · {position} / {total}</span>
-        <span>{direction}</span>
-      </div>
-      <div className="rounded-lg bg-white p-5 shadow-sm ring-1 ring-stone-200">
-        <p className="text-sm font-medium text-emerald-700">选择正确答案</p>
-        <div className="mt-4 flex items-start justify-between gap-3">
-          <p className="min-w-0 break-words text-3xl font-semibold leading-tight">{question}</p>
-          {(direction === '英 → 中' || selected) && (
-            <button
-              type="button"
-              className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full bg-stone-950 text-white"
-              onClick={onSpeak}
-              aria-label={`朗读 ${word.word}`}
-            >
-              <Volume2 size={19} />
-            </button>
-          )}
-        </div>
-        <div className="mt-6 grid gap-3">
-          {choices.map((choice) => {
-            const isAnswer = choice === answer
-            const isSelected = choice === selected
-            return (
-              <button
-                key={choice}
-                type="button"
-                className={clsx(
-                  'min-h-16 rounded-lg px-4 py-3 text-left font-medium leading-6 ring-1 ring-stone-200 disabled:opacity-100',
-                  selected && isAnswer && 'bg-emerald-100 text-emerald-950 ring-emerald-300',
-                  selected && isSelected && !isAnswer && 'bg-rose-100 text-rose-950 ring-rose-300',
-                  !selected && 'bg-white active:bg-stone-100',
-                )}
-                onClick={() => choose(choice)}
-                disabled={Boolean(selected)}
-              >
-                {choice}
-              </button>
-            )
-          })}
-        </div>
-        {selected && (
-          <p className={clsx('mt-4 rounded-lg px-4 py-3 text-sm font-semibold', selected === answer ? 'bg-emerald-50 text-emerald-800' : 'bg-rose-50 text-rose-800')}>
-            {selected === answer ? '答对，准备下一题' : `答错，正确答案：${answer}`}
-          </p>
-        )}
-      </div>
-    </section>
-  )
+  return <section className="space-y-4">
+    <div className="flex justify-between text-sm text-stone-500"><span>主动复习 · {position} / {total}</span><span>{direction}</span></div>
+    <div className="rounded-lg bg-white p-5 shadow-sm ring-1 ring-stone-200">
+      {direction === '英 → 中' && <button className="icon-button mb-3" onClick={onSpeak} aria-label={`朗读 ${word.word}`}><Volume2 size={19} /></button>}
+      <RecallExercise question={question} answer={answer} choices={choices} english={direction === '中 → 英'} onAnswer={onAnswer} />
+    </div>
+  </section>
 }
 
 function LeechRepairCard({ word, progress, attempt, position, total, onResult }: {
@@ -1476,7 +1416,7 @@ function QuizCard({ mode, setMode, word, prompt, choices, onAnswer }: {
   word: VocabWord
   prompt: { question: string; answer: string }
   choices: string[]
-  onAnswer: (correct: boolean) => void
+  onAnswer: (correct: boolean, mode?: StudyMode) => void
 }) {
   const [answered, setAnswered] = useState<string>('')
   const [spelling, setSpelling] = useState('')
@@ -1511,6 +1451,7 @@ function QuizCard({ mode, setMode, word, prompt, choices, onAnswer }: {
           ['confusion', '防偏'],
           ['swipe', '快刷'],
           ['sentence', '组句'],
+          ['usage', '表达'],
         ].map(([key, label]) => (
           <button key={key} role="tab" aria-selected={mode === key} disabled={Boolean(answered)} className={clsx('min-h-11 rounded-lg text-xs font-medium ring-1 ring-stone-200', mode === key ? 'bg-stone-900 text-white' : 'bg-white')} onClick={() => setMode(key as QuizMode)}>
             {label}
@@ -1518,10 +1459,10 @@ function QuizCard({ mode, setMode, word, prompt, choices, onAnswer }: {
         ))}
       </div>
       <div className="rounded-lg bg-white p-5 shadow-sm ring-1 ring-stone-200">
-        <p className="text-sm text-stone-500">{mode === 'sentence' ? '选词组句' : mode === 'swipe' ? '快刷判断' : mode === 'spelling' ? '看中文和搭配，拼出英文' : mode === 'confusion' ? '校正错误联想' : '即时反馈'}</p>
-        <div className="mt-4 flex items-start justify-between gap-3">
+        <p className="text-sm text-stone-500">{mode === 'usage' ? '表达练习 · 自评' : mode === 'sentence' ? '选词组句' : mode === 'swipe' ? '快刷判断' : mode === 'spelling' ? '看中文和搭配，拼出英文' : mode === 'confusion' ? '校正错误联想' : '即时反馈'}</p>
+        {['sentence', 'swipe', 'spelling'].includes(mode) && <div className="mt-4 flex items-start justify-between gap-3">
           <p className={clsx('min-w-0 break-words whitespace-pre-line font-semibold leading-tight', mode === 'sentence' ? 'text-xl' : mode === 'spelling' ? 'text-2xl' : 'text-3xl')}>{prompt.question}</p>
-          {(mode === 'en-zh' || mode === 'swipe') && (
+          {(mode === 'swipe') && (
             <button
               className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full bg-stone-950 text-white shadow-sm"
               onClick={() => speakWord(word.word)}
@@ -1530,8 +1471,8 @@ function QuizCard({ mode, setMode, word, prompt, choices, onAnswer }: {
               <Volume2 size={19} />
             </button>
           )}
-        </div>
-        {mode === 'sentence' ? <SentenceQuiz sentence={word.example} onChecked={() => setAnswered('sentence')} onAnswer={onAnswer} /> : mode === 'swipe' ? (
+        </div>}
+        {mode === 'usage' ? <UsageExercise word={word.word} meaning={word.meaning} collocation={word.collocation} example={word.example} onRevealed={() => setAnswered('usage')} onAnswer={(correct) => onAnswer(correct, 'usage')} /> : mode === 'sentence' ? <SentenceQuiz sentence={word.example} onChecked={() => setAnswered('sentence')} onAnswer={onAnswer} /> : mode === 'swipe' ? (
           <div className="mt-6 grid grid-cols-2 gap-3">
             <button disabled={Boolean(answered)} className="tap-button bg-emerald-600 text-white" onClick={() => submitAnswer('known', true)}><Check size={18} /> 认识</button>
             <button disabled={Boolean(answered)} className="tap-button bg-rose-600 text-white" onClick={() => submitAnswer('unknown', false)}><X size={18} /> 不认识</button>
@@ -1557,21 +1498,8 @@ function QuizCard({ mode, setMode, word, prompt, choices, onAnswer }: {
             </button>
           </div>
         ) : (
-          <div className="mt-6 grid gap-3">
-            {choices.map((choice) => {
-              const isAnswer = choice === prompt.answer
-              return (
-                <button
-                  key={choice}
-                  className={clsx('min-h-14 rounded-lg px-4 text-left font-medium ring-1 ring-stone-200', answered && isAnswer && 'bg-emerald-100 text-emerald-900', answered === choice && !isAnswer && 'bg-rose-100 text-rose-900')}
-                  disabled={Boolean(answered)}
-                  onClick={() => submitAnswer(choice, isAnswer)}
-                >
-                  {choice}
-                </button>
-              )
-            })}
-          </div>
+          <RecallExercise question={prompt.question} answer={prompt.answer} choices={choices}
+            english={mode === 'zh-en' || mode === 'context'} onRevealed={() => setAnswered('recall')} onAnswer={onAnswer} />
         )}
       </div>
     </section>
