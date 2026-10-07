@@ -436,7 +436,7 @@ function App() {
   }
 
   async function rateQuizAnswer(word: VocabWord, correct: boolean, retrievalMode?: StudyMode) {
-    await recordAnswer(word, correct ? 'fuzzy' : 'unknown', correct, retrievalMode ?? (quizMode === 'usage' ? 'usage' : quizMode === 'sentence' ? 'sentence' : quizMode === 'spelling' ? 'spelling' : quizMode === 'swipe' ? 'self' : 'choice'), 'quiz', !correct)
+    await recordAnswer(word, correct ? retrievalMode === 'self' ? 'known' : 'fuzzy' : 'unknown', correct, retrievalMode ?? (quizMode === 'usage' ? 'usage' : quizMode === 'sentence' ? 'sentence' : quizMode === 'spelling' ? 'spelling' : quizMode === 'swipe' ? 'self' : 'choice'), 'quiz', !correct)
   }
 
   async function recordAnswer(word: VocabWord, rating: Rating, correct: boolean, mode: StudyMode, returnScreen: Screen, showWrongDetail: boolean) {
@@ -834,7 +834,7 @@ function App() {
               position={activeIndex + 1}
               total={sessionWords.length}
               choices={[activeWord.word, ...availableWords.filter((word) => word.id !== activeWord.id).slice(0, 3).map((word) => word.word)].sort((left, right) => choiceHash(`${activeWord.id}:${left}`) - choiceHash(`${activeWord.id}:${right}`))}
-              onResult={(correct, mode) => recordAnswer(activeWord, correct ? 'fuzzy' : 'unknown', correct, mode, 'learn', !correct)}
+              onResult={(correct, mode) => recordAnswer(activeWord, correct ? 'known' : 'unknown', correct, mode, 'learn', !correct)}
             />
           ) : (
             <WordCard title={`${sessionKind === 'review' ? '到期复习' : sessionKind === 'weak' ? '弱词修复' : '新词学习'} · 第 ${Math.floor(activeIndex / 5) + 1} 组 / ${Math.max(1, Math.ceil(sessionWords.length / 5))}`} word={activeWord} progress={progressMap.get(activeWord.id)}>

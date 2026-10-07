@@ -38,6 +38,25 @@ describe('retrieval practice flow', () => {
     click('没想起 / 想错了')
     expect(onAnswer).toHaveBeenCalledExactlyOnceWith(false, 'recall')
   })
+  it('lets a learner mark English as known after checking their mental recall', () => {
+    const onAnswer = vi.fn()
+    const onRevealed = vi.fn()
+    act(() => root.render(<RecallExercise question="推迟" answer="postpone" choices={['postpone', 'prepare']} english onRevealed={onRevealed} onAnswer={onAnswer} />))
+    expect(host.textContent).not.toContain('postpone')
+    click('会')
+    expect(onRevealed).toHaveBeenCalledOnce()
+    expect(host.textContent).toContain('参考答案：postpone')
+    expect(host.querySelector('input, textarea')).toBeNull()
+    expect(onAnswer).not.toHaveBeenCalled()
+    click('确实会，继续'); click('确实会，继续')
+    expect(onAnswer).toHaveBeenCalledExactlyOnceWith(true, 'self')
+  })
+  it('allows an English known claim to be corrected before saving', () => {
+    const onAnswer = vi.fn()
+    act(() => root.render(<RecallExercise question="推迟" answer="postpone" choices={['postpone', 'prepare']} english onAnswer={onAnswer} />))
+    click('会'); click('想错了，需要复习')
+    expect(onAnswer).toHaveBeenCalledExactlyOnceWith(false, 'self')
+  })
   it('uses only English choices and records recognition rather than independent production', () => {
     const onAnswer = vi.fn()
     act(() => root.render(<RecallExercise question="推迟" answer="postpone" choices={['postpone', 'prepare']} english onAnswer={onAnswer} />))
@@ -53,7 +72,7 @@ describe('retrieval practice flow', () => {
   it('preserves the assisted marker when choosing English after requesting a hint', () => {
     const onAnswer = vi.fn()
     act(() => root.render(<RecallExercise question="推迟" answer="postpone" choices={['postpone', 'prepare']} english onAnswer={onAnswer} />))
-    click('想不起来，展开选项'); click('postpone'); click('保存并继续')
+    click('不会，展开选项'); click('postpone'); click('保存并继续')
     expect(onAnswer).toHaveBeenCalledExactlyOnceWith(true, 'assisted')
   })
   it('shows the correct English answer for a wrong choice without requiring typing', () => {
