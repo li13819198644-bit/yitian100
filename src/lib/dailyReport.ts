@@ -84,7 +84,7 @@ export function buildDailyReport(words: VocabWord[], progress: WordProgress[], s
     measurement: {
       date: '按设备本地自然日统计；保留最近90个有记录的学习日。',
       firstAnswer: '每个词或语法题当天第一次作答；之后纠正不改写。测验首答另取该词当天第一次选择、拼写或组句，自评词义、表达自评及提示作答不会占用测验首答；旧记录不足时只代表已记录的首次测验。',
-      retrieval: 'recall 为无选项词义回忆自评；production 为无选项英文输入；assisted 为展开选项后的作答；usage 为自由表达自评。提示答对不提高记忆强度；recall、assisted、usage 不计入客观测验正确率。retrievalPractice 为各模式作答次数，含同日重复，不等于长期掌握率。',
+      retrieval: 'recall 为无选项词义回忆自评；choice 为英文选词辨认；production 保留旧版无选项英文输入记录；assisted 为主动选择需要提示后的作答；usage 为心里表达自评。提示答对不提高记忆强度；recall、assisted、usage 不计入客观测验正确率。retrievalPractice 为各模式作答次数，含同日重复，不等于长期掌握率。',
       sentence: '组句按还原参考例句语序计分，不是自由造句语法评分；单独记录为sentence。',
       missingData: '更新前未记录的细节不补造；recorded 字段只计算新记录，null 表示未知，currentProgress 是导出时累计状态，不是当天数据。',
       newWords: '首次记录该词学习进度时记为新词；同日多次作答只算一个词。',

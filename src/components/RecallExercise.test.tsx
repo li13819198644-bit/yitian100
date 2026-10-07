@@ -16,14 +16,6 @@ function click(text: string) {
   expect(button, text).toBeDefined()
   act(() => button!.click())
 }
-function type(selector: string, value: string) {
-  const element = host.querySelector(selector) as HTMLInputElement | HTMLTextAreaElement
-  const prototype = element instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype
-  act(() => {
-    Object.getOwnPropertyDescriptor(prototype, 'value')!.set!.call(element, value)
-    element.dispatchEvent(new Event('input', { bubbles: true }))
-  })
-}
 describe('retrieval practice flow', () => {
   it('hides options initially and records a hinted success only on continuation', () => {
     const onAnswer = vi.fn()
@@ -46,42 +38,47 @@ describe('retrieval practice flow', () => {
     click('没想起 / 想错了')
     expect(onAnswer).toHaveBeenCalledExactlyOnceWith(false, 'recall')
   })
-  it('checks independent English input with normalization and waits for continuation', () => {
+  it('uses only English choices and records recognition rather than independent production', () => {
     const onAnswer = vi.fn()
-    act(() => root.render(<RecallExercise question="推迟" answer="postpone" choices={[]} english onAnswer={onAnswer} />))
+    act(() => root.render(<RecallExercise question="推迟" answer="postpone" choices={['postpone', 'prepare']} english onAnswer={onAnswer} />))
+    expect(host.querySelector('input, textarea, form')).toBeNull()
     expect(host.textContent).not.toContain('postpone')
-    type('input', ' Postpone ')
-    act(() => host.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })))
-    expect(host.textContent).toContain('独立回忆正确')
+    click('展开英文选项')
+    expect(host.querySelector('input, textarea, form')).toBeNull()
+    click('postpone')
     expect(onAnswer).not.toHaveBeenCalled()
     click('保存并继续')
-    expect(onAnswer).toHaveBeenCalledExactlyOnceWith(true, 'production')
+    expect(onAnswer).toHaveBeenCalledExactlyOnceWith(true, 'choice')
   })
-  it('shows the correct answer for an independent miss', () => {
+  it('preserves the assisted marker when choosing English after requesting a hint', () => {
     const onAnswer = vi.fn()
-    act(() => root.render(<RecallExercise question="推迟" answer="postpone" choices={[]} english onAnswer={onAnswer} />))
-    type('input', 'prepare'); click('检查答案')
+    act(() => root.render(<RecallExercise question="推迟" answer="postpone" choices={['postpone', 'prepare']} english onAnswer={onAnswer} />))
+    click('想不起来，展开选项'); click('postpone'); click('保存并继续')
+    expect(onAnswer).toHaveBeenCalledExactlyOnceWith(true, 'assisted')
+  })
+  it('shows the correct English answer for a wrong choice without requiring typing', () => {
+    const onAnswer = vi.fn()
+    act(() => root.render(<RecallExercise question="推迟" answer="postpone" choices={['postpone', 'prepare']} english onAnswer={onAnswer} />))
+    click('展开英文选项'); click('prepare')
     expect(host.textContent).toContain('参考答案：postpone')
+    expect(host.querySelector('input, textarea')).toBeNull()
     click('保存并继续')
-    expect(onAnswer).toHaveBeenCalledExactlyOnceWith(false, 'production')
+    expect(onAnswer).toHaveBeenCalledExactlyOnceWith(false, 'choice')
   })
-  it('allows a personal sentence that differs from the reference, explicitly as self-assessment', () => {
+  it('supports mental expression self-assessment without a text field', () => {
     const onAnswer = vi.fn()
     act(() => root.render(<UsageExercise word="postpone" meaning="推迟" collocation="postpone the meeting" example="We postponed the meeting." onAnswer={onAnswer} />))
-    type('textarea', 'Can we postpone our trip until Friday?')
-    click('查看搭配和参考例句')
-    expect(host.textContent).toContain('不是自动语法评分')
-    click('我已独立写出，并核对了用法')
-    expect(onAnswer).toHaveBeenCalledExactlyOnceWith(true)
-  })
-  it('does not award successful expression to an empty draft', () => {
-    const onAnswer = vi.fn()
-    act(() => root.render(<UsageExercise word="postpone" meaning="推迟" collocation="postpone the meeting" example="We postponed the meeting." onAnswer={onAnswer} />))
+    expect(host.querySelector('input, textarea')).toBeNull()
     expect(host.textContent).not.toContain('We postponed')
     click('查看搭配和参考例句')
-    click('我已独立写出，并核对了用法')
-    expect(onAnswer).not.toHaveBeenCalled()
-    click('需要再练 / 不确定')
+    expect(host.textContent).toContain('不是自动语法评分')
+    click('我已在心里表达，并核对了用法')
+    expect(onAnswer).toHaveBeenCalledExactlyOnceWith(true)
+  })
+  it('allows uncertainty in mental expression to be recorded as needing practice', () => {
+    const onAnswer = vi.fn()
+    act(() => root.render(<UsageExercise word="postpone" meaning="推迟" collocation="postpone the meeting" example="We postponed the meeting." onAnswer={onAnswer} />))
+    click('查看搭配和参考例句'); click('需要再练 / 不确定')
     expect(onAnswer).toHaveBeenCalledExactlyOnceWith(false)
   })
 })

@@ -34,6 +34,10 @@ describe('independent retrieval versus assisted answers', () => {
     expect(repeat.repetitions).toBe(1)
     expect(repeat.stability).toBe(first.stability)
   })
+  it('records correct recognition conservatively without awarding mastery', () => {
+    const old = { ...createProgress('a', now), repetitions: 5, stability: 30, easeFactor: 2.5 }
+    expect(scheduleRetrieval(old, true, 'choice', now)).toMatchObject({ lastRating: 'fuzzy', mastered: false })
+  })
   it('reports hints, recall self-ratings, production and usage separately', () => {
     let stats = recordStudyResult(base, 'a', true, 'assisted', now)
     expect(firstAnswerSummary(stats.dailyHistory?.[0]).count).toBe(0)

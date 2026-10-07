@@ -445,7 +445,7 @@ function App() {
     answering.current = true
     try {
       const now = Date.now()
-      const updated = ['recall', 'production', 'assisted', 'usage'].includes(mode)
+      const updated = ['recall', 'production', 'assisted', 'usage', 'choice'].includes(mode)
         ? scheduleRetrieval(progressMap.get(word.id) ?? createProgress(word.id), correct, mode, now)
         : scheduleReview(progressMap.get(word.id) ?? createProgress(word.id), rating, now)
       const nextStats = recordStudyResult(stats, word.id, correct, mode, now, { rating: updated.lastRating ?? rating, session: sessionKind, isNew: !(progressMap.get(word.id)?.seen) })
@@ -457,7 +457,7 @@ function App() {
       setStats(nextStats)
       setClockNow(now)
       setSessionWordIds(nextIds)
-      setFeedback(`${word.word}: ${mode === 'assisted' && correct ? '提示后答对，仍需独立回忆' : returnScreen === 'quiz' ? correct ? '测验答对' : '测验答错' : actionMap[rating].label}`)
+      setFeedback(`${word.word}: ${mode === 'assisted' && correct ? '提示后答对，仍需独立回忆' : returnScreen === 'quiz' ? correct ? '测验答对' : '测验答错' : actionMap[updated.lastRating ?? rating].label}`)
       setFeedbackWordId(word.id)
       setActiveIndex(activeIndex + 1)
       if (!correct && showWrongDetail) {
@@ -503,7 +503,7 @@ function App() {
 
   function choices(word: VocabWord) {
     const answer = quizPrompt(word).answer
-    if (quizMode === 'spelling' || quizMode === 'sentence') return []
+    if (quizMode === 'sentence' || quizMode === 'usage') return []
     if (quizMode === 'confusion') {
       const traps = [
         '看开头长得像就猜，不管词源核心。',
@@ -518,7 +518,7 @@ function App() {
       .slice()
       .sort(() => 0.5 - Math.random())
       .slice(0, 3)
-      .map((candidate) => (quizMode === 'zh-en' || quizMode === 'context' ? candidate.word : candidate.meaning))
+      .map((candidate) => (quizMode === 'zh-en' || quizMode === 'context' || quizMode === 'spelling' ? candidate.word : candidate.meaning))
     return [answer, ...pool].sort(() => 0.5 - Math.random())
   }
 
@@ -833,7 +833,8 @@ function App() {
               attempt={sessionWordIds.slice(0, activeIndex).filter((id) => id === activeWord.id).length}
               position={activeIndex + 1}
               total={sessionWords.length}
-              onResult={(correct) => rateWord(activeWord, correct ? 'known' : 'unknown', { openDetailOnWrong: !correct })}
+              choices={[activeWord.word, ...availableWords.filter((word) => word.id !== activeWord.id).slice(0, 3).map((word) => word.word)].sort((left, right) => choiceHash(`${activeWord.id}:${left}`) - choiceHash(`${activeWord.id}:${right}`))}
+              onResult={(correct, mode) => recordAnswer(activeWord, correct ? 'fuzzy' : 'unknown', correct, mode, 'learn', !correct)}
             />
           ) : (
             <WordCard title={`${sessionKind === 'review' ? '到期复习' : sessionKind === 'weak' ? '弱词修复' : '新词学习'} · 第 ${Math.floor(activeIndex / 5) + 1} 组 / ${Math.max(1, Math.ceil(sessionWords.length / 5))}`} word={activeWord} progress={progressMap.get(activeWord.id)}>
@@ -880,7 +881,7 @@ function App() {
             {settings.reviewMode === 'advanced' && stubbornWords > 0 && (
               <div className="rounded-lg bg-fuchsia-50 p-4 text-sm leading-6 text-fuchsia-950 ring-1 ring-fuchsia-100">
                 <p className="font-semibold">{stubbornWords} 个顽固词将使用专项修复</p>
-                <p className="mt-1">系统会轮换中文拼写、语境填空和听音拼写，答错后展示辨析与记忆钩子，再延迟重测。</p>
+                <p className="mt-1">系统会轮换中文选词、语境选词和听音选词，全部点击作答；答错后查看单词详情，再延迟重测。</p>
               </div>
             )}
             <PrimaryButton disabled={!weakSessionWords.length} onClick={() => startWeakPracticeSession('learn')} icon={<RotateCcw size={20} />} label={weakSessionWords.length ? `轮换复习 ${weakSessionWords.length} 个弱词` : weakWords.length ? '弱词正在间隔休息' : '暂无弱词'} />
@@ -1133,7 +1134,7 @@ function ReviewModeControl({ value, onChange, compact = false }: {
       </div>
       {!compact && (
         <p className="px-3 pb-2 pt-3 text-sm leading-6 text-stone-600">
-          {value === 'choice' ? '先回忆，再核对；想不起来可展开选项。中英回忆需输入单词。' : '使用主动回忆、拼写、语境和听音强化。'}
+          {value === 'choice' ? '先回忆，再核对；想不起来可展开选项。中英也通过选项作答，无需键盘。' : '使用主动回忆、辨词、语境和听音强化，无需键盘。'}
         </p>
       )}
     </div>
@@ -1154,146 +1155,19 @@ function ChoiceReviewCard({ word, direction, question, answer, choices, position
   </section>
 }
 
-function LeechRepairCard({ word, progress, attempt, position, total, onResult }: {
-  word: VocabWord
-  progress?: WordProgress
-  attempt: number
-  position: number
-  total: number
-  onResult: (correct: boolean) => void
+function LeechRepairCard({ word, progress, attempt, position, total, choices, onResult }: {
+  word: VocabWord; progress?: WordProgress; attempt: number; position: number; total: number
+  choices: string[]; onResult: (correct: boolean, mode: StudyMode) => void
 }) {
-  const [answer, setAnswer] = useState('')
-  const [submitted, setSubmitted] = useState(false)
   const challenge = (progress?.seen ?? attempt) % 3
-  const normalizedAnswer = answer.trim().toLowerCase()
-  const correct = submitted && normalizedAnswer === word.word.toLowerCase()
-  const context = maskTargetWord(word.example || word.collocation, word.word)
-
-  useEffect(() => {
-    setAnswer('')
-    setSubmitted(false)
-  }, [word.id, attempt])
-
-  const submit = () => {
-    if (!answer.trim() || submitted) return
-    setSubmitted(true)
-    if (normalizedAnswer !== word.word.toLowerCase()) onResult(false)
-  }
-
-  return (
-    <section className="space-y-4">
-      <div className="flex items-center justify-between text-sm text-stone-500">
-        <span>顽固词专项 · {position} / {total}</span>
-        <span>已错 {progress?.lapses ?? 0} 次</span>
-      </div>
-
-      <div className="rounded-lg bg-white p-5 shadow-sm ring-1 ring-fuchsia-200">
-        <div className="flex items-center justify-between gap-3">
-          <span className="rounded-full bg-fuchsia-100 px-3 py-1 text-sm font-semibold text-fuchsia-900">
-            {challenge === 0 ? '中文 → 拼写' : challenge === 1 ? '语境填空' : '听音拼写'}
-          </span>
-          <span className="text-sm text-stone-500">自动判分</span>
-        </div>
-
-        {!submitted && (
-          <>
-            {challenge === 0 && (
-              <div className="mt-6">
-                <p className="text-2xl font-semibold leading-9">{word.meaning}</p>
-                <p className="mt-3 leading-7 text-stone-600">搭配提示：{maskTargetWord(word.collocation, word.word)}</p>
-              </div>
-            )}
-            {challenge === 1 && (
-              <div className="mt-6">
-                <p className="whitespace-pre-line text-xl font-semibold leading-8">{context || word.meaning}</p>
-                <p className="mt-3 text-stone-600">根据语境补出完整英文单词。</p>
-              </div>
-            )}
-            {challenge === 2 && (
-              <div className="mt-6 rounded-lg bg-sky-50 p-5 text-center ring-1 ring-sky-100">
-                <button className="mx-auto flex min-h-14 items-center justify-center gap-2 rounded-full bg-stone-950 px-6 font-semibold text-white" onClick={() => speakWord(word.word)}>
-                  <Volume2 size={21} /> 播放发音
-                </button>
-                <p className="mt-3 text-sm text-stone-600">只听声音，不看单词，把听到的词拼出来。</p>
-              </div>
-            )}
-
-            <div className="mt-6 grid gap-3">
-              <input
-                className="min-h-14 rounded-lg border border-stone-300 bg-stone-50 px-4 text-xl font-semibold outline-none focus:border-fuchsia-600"
-                value={answer}
-                onChange={(event) => setAnswer(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') submit()
-                }}
-                autoCapitalize="none"
-                autoCorrect="off"
-                autoComplete="off"
-                spellCheck={false}
-                placeholder="输入完整英文单词"
-                autoFocus
-              />
-              <button className="tap-button bg-stone-950 text-white disabled:bg-stone-300" onClick={submit} disabled={!answer.trim()}>
-                提交答案
-              </button>
-            </div>
-          </>
-        )}
-
-        {submitted && (
-          <>
-            <div className={clsx('mt-6 rounded-lg p-4 ring-1', correct ? 'bg-emerald-50 text-emerald-950 ring-emerald-200' : 'bg-rose-50 text-rose-950 ring-rose-200')}>
-              <p className="text-sm font-semibold">{correct ? '答对了：这次形成一次有效提取' : `答错了：你写的是 ${answer.trim()}`}</p>
-              <div className="mt-2 flex items-center justify-between gap-3">
-                <p className="text-3xl font-semibold">{word.word}</p>
-                <button className="flex min-h-11 min-w-11 items-center justify-center rounded-full bg-white text-stone-950 ring-1 ring-stone-200" onClick={() => speakWord(word.word)} aria-label={`朗读 ${word.word}`}>
-                  <Volume2 size={19} />
-                </button>
-              </div>
-              <p className="mt-2 text-lg font-medium">{word.meaning}</p>
-            </div>
-
-            {word.confusions?.map((confusion) => (
-              <div key={confusion.trap} className="mt-4 rounded-lg bg-rose-50 p-4 ring-1 ring-rose-100">
-                <p className="text-sm font-semibold text-rose-900">先切断错误联想：{confusion.trap}</p>
-                <p className="mt-2 leading-7 text-stone-800">{confusion.correction}</p>
-                <p className="mt-3 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-rose-900">新线索：{confusion.cue}</p>
-              </div>
-            ))}
-
-            {word.memoryHook && (
-              <div className="mt-4 rounded-lg bg-emerald-50 p-4 ring-1 ring-emerald-100">
-                <p className="text-sm font-semibold text-emerald-900">重新编码</p>
-                <p className="mt-2 font-medium leading-7 text-emerald-950">{word.memoryHook.core}</p>
-                <p className="mt-2 leading-7 text-stone-700">{word.memoryHook.breakdown}</p>
-                <OriginExtras word={word} />
-                <p className="mt-3 rounded-lg bg-white/80 px-3 py-2 text-sm font-semibold text-emerald-900">{word.memoryHook.personalPrompt}</p>
-              </div>
-            )}
-
-            {word.evilHook && (
-              <div className="mt-4 rounded-lg bg-fuchsia-50 p-4 ring-1 ring-fuchsia-100">
-                <p className="text-sm font-semibold text-fuchsia-900">备用联想 · 非词源</p>
-                <p className="mt-2 leading-7 text-fuchsia-950">{word.evilHook}</p>
-              </div>
-            )}
-
-            {!correct && <p className="mt-4 text-sm leading-6 text-stone-600">系统会隔开几张卡后换一种题型再次测试；这次不会计作“认识”。</p>}
-          </>
-        )}
-      </div>
-
-      {submitted && (
-        <div className="fixed inset-x-0 bottom-[calc(52px+env(safe-area-inset-bottom))] z-20 border-t border-stone-200 bg-[#f7f4ef]/95 py-2 backdrop-blur">
-          <div className="mx-auto w-full max-w-md px-4">
-            <button className={clsx('tap-button w-full text-white', correct ? 'bg-emerald-700' : 'bg-stone-950')} onClick={() => onResult(correct)}>
-              {correct ? '答对，继续' : '看完线索，稍后重测'}
-            </button>
-          </div>
-        </div>
-      )}
-    </section>
-  )
+  const question = challenge === 1 ? maskTargetWord(word.example || word.collocation, word.word) : word.meaning
+  return <section className="space-y-4">
+    <div className="flex justify-between text-sm text-stone-500"><span>顽固词专项 · {position} / {total}</span><span>已错 {progress?.lapses ?? 0} 次</span></div>
+    <div className="rounded-lg bg-white p-5 ring-1 ring-fuchsia-200">
+      {challenge === 2 && <button className="tap-button mb-3 bg-stone-100" onClick={() => speakWord(word.word)}><Volume2 size={19} />播放发音</button>}
+      <RecallExercise question={question || word.meaning} answer={word.word} choices={choices} english onAnswer={onResult} />
+    </div>
+  </section>
 }
 
 function WordCard({ title, word, progress, children }: { title: string; word: VocabWord; progress?: WordProgress; children: React.ReactNode }) {
@@ -1419,11 +1293,10 @@ function QuizCard({ mode, setMode, word, prompt, choices, onAnswer }: {
   onAnswer: (correct: boolean, mode?: StudyMode) => void
 }) {
   const [answered, setAnswered] = useState<string>('')
-  const [spelling, setSpelling] = useState('')
+
   const answerTimer = useRef<number | undefined>(undefined)
   useEffect(() => {
     setAnswered('')
-    setSpelling('')
     answerTimer.current = undefined
     return () => window.clearTimeout(answerTimer.current)
   }, [word.id, mode])
@@ -1432,13 +1305,7 @@ function QuizCard({ mode, setMode, word, prompt, choices, onAnswer }: {
     setAnswered(value)
     answerTimer.current = window.setTimeout(() => onAnswer(correct), 650)
   }
-  const submitSpelling = () => {
-    if (answered) return
-    const normalizedInput = spelling.trim().toLowerCase()
-    const normalizedAnswer = prompt.answer.trim().toLowerCase()
-    const correct = normalizedInput === normalizedAnswer
-    submitAnswer(spelling.trim() || ' ', correct)
-  }
+
 
   return (
     <section className="space-y-4">
@@ -1447,7 +1314,7 @@ function QuizCard({ mode, setMode, word, prompt, choices, onAnswer }: {
           ['en-zh', '英中'],
           ['zh-en', '中英'],
           ['context', '填空'],
-          ['spelling', '拼写'],
+          ['spelling', '辨词'],
           ['confusion', '防偏'],
           ['swipe', '快刷'],
           ['sentence', '组句'],
@@ -1459,8 +1326,8 @@ function QuizCard({ mode, setMode, word, prompt, choices, onAnswer }: {
         ))}
       </div>
       <div className="rounded-lg bg-white p-5 shadow-sm ring-1 ring-stone-200">
-        <p className="text-sm text-stone-500">{mode === 'usage' ? '表达练习 · 自评' : mode === 'sentence' ? '选词组句' : mode === 'swipe' ? '快刷判断' : mode === 'spelling' ? '看中文和搭配，拼出英文' : mode === 'confusion' ? '校正错误联想' : '即时反馈'}</p>
-        {['sentence', 'swipe', 'spelling'].includes(mode) && <div className="mt-4 flex items-start justify-between gap-3">
+        <p className="text-sm text-stone-500">{mode === 'usage' ? '表达练习 · 自评' : mode === 'sentence' ? '选词组句' : mode === 'swipe' ? '快刷判断' : mode === 'spelling' ? '看中文和搭配，选择英文' : mode === 'confusion' ? '校正错误联想' : '即时反馈'}</p>
+        {['sentence', 'swipe'].includes(mode) && <div className="mt-4 flex items-start justify-between gap-3">
           <p className={clsx('min-w-0 break-words whitespace-pre-line font-semibold leading-tight', mode === 'sentence' ? 'text-xl' : mode === 'spelling' ? 'text-2xl' : 'text-3xl')}>{prompt.question}</p>
           {(mode === 'swipe') && (
             <button
@@ -1477,29 +1344,9 @@ function QuizCard({ mode, setMode, word, prompt, choices, onAnswer }: {
             <button disabled={Boolean(answered)} className="tap-button bg-emerald-600 text-white" onClick={() => submitAnswer('known', true)}><Check size={18} /> 认识</button>
             <button disabled={Boolean(answered)} className="tap-button bg-rose-600 text-white" onClick={() => submitAnswer('unknown', false)}><X size={18} /> 不认识</button>
           </div>
-        ) : mode === 'spelling' ? (
-          <div className="mt-6 grid gap-3">
-            <input
-              className={clsx('min-h-14 rounded-lg border border-stone-200 bg-stone-50 px-4 text-xl font-semibold outline-none focus:border-stone-900', answered && answered.trim().toLowerCase() === prompt.answer.toLowerCase() && 'border-emerald-300 bg-emerald-50', answered && answered.trim().toLowerCase() !== prompt.answer.toLowerCase() && 'border-rose-300 bg-rose-50')}
-              value={spelling}
-              onChange={(event) => setSpelling(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') submitSpelling()
-              }}
-              autoCapitalize="none"
-              autoCorrect="off"
-              spellCheck={false}
-              placeholder="输入英文单词"
-              disabled={Boolean(answered)}
-            />
-            {answered && <p className="rounded-lg bg-stone-100 px-4 py-3 text-sm font-medium text-stone-700">正确拼写：{prompt.answer}</p>}
-            <button className="tap-button bg-stone-950 text-white disabled:bg-stone-300" onClick={submitSpelling} disabled={!spelling.trim() || Boolean(answered)}>
-              提交拼写
-            </button>
-          </div>
         ) : (
           <RecallExercise question={prompt.question} answer={prompt.answer} choices={choices}
-            english={mode === 'zh-en' || mode === 'context'} onRevealed={() => setAnswered('recall')} onAnswer={onAnswer} />
+            english={mode === 'zh-en' || mode === 'context' || mode === 'spelling'} onRevealed={() => setAnswered('recall')} onAnswer={onAnswer} />
         )}
       </div>
     </section>

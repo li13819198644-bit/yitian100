@@ -39,7 +39,7 @@ export function DailyStatsPanel({ report, ready, onBack }: { report: DailyReport
           <Stat label="新学词 · 已记录" value={words.newWordsRecorded} />
           <Stat label="旧词 · 已记录" value={words.oldWordsRecorded} />
           <Stat label="测验首答正确率" value={percent(words.objectiveFirstAnswer.accuracy)} />
-          <Stat label="无提示英文 · 作答" value={`${words.retrievalPractice.production.correct}/${words.retrievalPractice.production.count}`} />
+          <Stat label="旧版英文输入 · 作答" value={`${words.retrievalPractice.production.correct}/${words.retrievalPractice.production.count}`} />
           <Stat label="提示后答对 · 作答" value={`${words.retrievalPractice.assisted.correct}/${words.retrievalPractice.assisted.count}`} />
           <Stat label="词义回忆 · 自评" value={`${words.retrievalPractice.recall.correct}/${words.retrievalPractice.recall.count}`} />
           <Stat label="表达练习 · 自评" value={`${words.retrievalPractice.usage.correct}/${words.retrievalPractice.usage.count}`} />
