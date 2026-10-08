@@ -6,6 +6,7 @@ import { GrammarPanel } from './components/GrammarPanel'
 import { DailyStatsPanel } from './components/DailyStatsPanel'
 import { RecallExercise } from './components/RecallExercise'
 import { UsageExercise } from './components/UsageExercise'
+import { useQuickAnswer, type AnswerHandler } from './lib/useQuickAnswer'
 import { scheduleRetrieval } from './lib/retrieval'
 import { SentenceQuiz } from './components/SentenceQuiz'
 import { ListeningPlayer } from './components/ListeningPlayer'
@@ -56,9 +57,9 @@ import {
 } from './lib/cloudSync'
 
 const actionMap: Record<Rating, { label: string; className: string }> = {
-  known: { label: '认识', className: 'bg-emerald-600 text-white' },
+  known: { label: '会', className: 'bg-emerald-600 text-white' },
   fuzzy: { label: '模糊', className: 'bg-amber-500 text-white' },
-  unknown: { label: '不认识', className: 'bg-rose-600 text-white' },
+  unknown: { label: '不会', className: 'bg-rose-600 text-white' },
 }
 
 function blankStats(): AppStats {
@@ -429,19 +430,19 @@ function App() {
     autoSpeakSessionWord(nextWords.map((word) => word.id), 0, 'weak')
   }
 
-  async function rateWord(word: VocabWord, rating: Rating, options: { openDetailOnWrong?: boolean } = {}) {
+  async function rateWord(word: VocabWord, rating: Rating) {
     const mode: StudyMode = sessionKind === 'learn' ? 'self' : settings.reviewMode === 'choice' ? 'choice'
       : sessionKind === 'weak' && isLeech(progressMap.get(word.id) ?? createProgress(word.id)) ? 'spelling' : 'self'
-    await recordAnswer(word, rating, rating === 'known', mode, 'learn', Boolean(options.openDetailOnWrong))
+    return recordAnswer(word, rating, rating === 'known', mode, 'learn')
   }
 
   async function rateQuizAnswer(word: VocabWord, correct: boolean, retrievalMode?: StudyMode) {
-    await recordAnswer(word, correct ? retrievalMode === 'self' ? 'known' : 'fuzzy' : 'unknown', correct, retrievalMode ?? (quizMode === 'usage' ? 'usage' : quizMode === 'sentence' ? 'sentence' : quizMode === 'spelling' ? 'spelling' : quizMode === 'swipe' ? 'self' : 'choice'), 'quiz', !correct)
+    return recordAnswer(word, correct ? retrievalMode === 'self' ? 'known' : 'fuzzy' : 'unknown', correct, retrievalMode ?? (quizMode === 'usage' ? 'usage' : quizMode === 'sentence' ? 'sentence' : quizMode === 'spelling' ? 'spelling' : quizMode === 'swipe' ? 'self' : 'choice'), 'quiz')
   }
 
-  async function recordAnswer(word: VocabWord, rating: Rating, correct: boolean, mode: StudyMode, returnScreen: Screen, showWrongDetail: boolean) {
-    if (progressMap.get(word.id)?.excluded) return
-    if (answering.current) return
+  async function recordAnswer(word: VocabWord, rating: Rating, correct: boolean, mode: StudyMode, returnScreen: Screen) {
+    if (progressMap.get(word.id)?.excluded) return false
+    if (answering.current) return false
     answering.current = true
     try {
       const now = Date.now()
@@ -460,17 +461,15 @@ function App() {
       setFeedback(`${word.word}: ${mode === 'assisted' && correct ? '提示后答对，仍需独立回忆' : returnScreen === 'quiz' ? correct ? '测验答对' : '测验答错' : actionMap[updated.lastRating ?? rating].label}`)
       setFeedbackWordId(word.id)
       setActiveIndex(activeIndex + 1)
-      if (!correct && showWrongDetail) {
-        setDetailWordId(word.id)
-        setDetailReturnScreen(returnScreen)
-        setScreen('detail')
-      } else if (returnScreen === 'learn') {
+      if (returnScreen === 'learn') {
         autoSpeakSessionWord(nextIds, activeIndex + 1)
       }
       void syncCloudQuietly()
+      return true
     } catch {
       setFeedback('保存失败，请刷新后重试；已保存的进度仍保留。')
       setFeedbackWordId('')
+      return false
     } finally {
       answering.current = false
     }
@@ -823,7 +822,7 @@ function App() {
               position={activeIndex + 1}
               total={sessionWords.length}
               onSpeak={() => speakWord(activeWord.word)}
-              onAnswer={(correct, mode) => recordAnswer(activeWord, correct ? 'known' : 'unknown', correct, mode, 'learn', !correct)}
+              onAnswer={(correct, mode) => recordAnswer(activeWord, correct ? 'known' : 'unknown', correct, mode, 'learn')}
             />
           ) : sessionKind === 'weak' && isLeech(progressMap.get(activeWord.id) ?? createProgress(activeWord.id)) ? (
             <LeechRepairCard
@@ -834,13 +833,13 @@ function App() {
               position={activeIndex + 1}
               total={sessionWords.length}
               choices={[activeWord.word, ...availableWords.filter((word) => word.id !== activeWord.id).slice(0, 3).map((word) => word.word)].sort((left, right) => choiceHash(`${activeWord.id}:${left}`) - choiceHash(`${activeWord.id}:${right}`))}
-              onResult={(correct, mode) => recordAnswer(activeWord, correct ? 'known' : 'unknown', correct, mode, 'learn', !correct)}
+              onResult={(correct, mode) => recordAnswer(activeWord, correct ? 'known' : 'unknown', correct, mode, 'learn')}
             />
           ) : (
             <WordCard title={`${sessionKind === 'review' ? '到期复习' : sessionKind === 'weak' ? '弱词修复' : '新词学习'} · 第 ${Math.floor(activeIndex / 5) + 1} 组 / ${Math.max(1, Math.ceil(sessionWords.length / 5))}`} word={activeWord} progress={progressMap.get(activeWord.id)}>
               <div className="grid grid-cols-3 gap-2">
                 {(Object.keys(actionMap) as Rating[]).map((rating) => (
-                  <button key={rating} className={clsx('tap-button', actionMap[rating].className)} onClick={() => rateWord(activeWord, rating, { openDetailOnWrong: rating === 'unknown' && (sessionKind === 'review' || sessionKind === 'weak') })}>
+                  <button key={rating} className={clsx('tap-button', actionMap[rating].className)} onClick={() => rateWord(activeWord, rating)}>
                     {actionMap[rating].label}
                   </button>
                 ))}
@@ -881,7 +880,7 @@ function App() {
             {settings.reviewMode === 'advanced' && stubbornWords > 0 && (
               <div className="rounded-lg bg-fuchsia-50 p-4 text-sm leading-6 text-fuchsia-950 ring-1 ring-fuchsia-100">
                 <p className="font-semibold">{stubbornWords} 个顽固词将使用专项修复</p>
-                <p className="mt-1">系统会轮换中文选词、语境选词和听音选词，全部点击作答；答错后查看单词详情，再延迟重测。</p>
+                <p className="mt-1">系统会轮换中文选词、语境选词和听音选词，全部点击作答；答错显示正确答案后自动继续，再延迟重测。</p>
               </div>
             )}
             <PrimaryButton disabled={!weakSessionWords.length} onClick={() => startWeakPracticeSession('learn')} icon={<RotateCcw size={20} />} label={weakSessionWords.length ? `轮换复习 ${weakSessionWords.length} 个弱词` : weakWords.length ? '弱词正在间隔休息' : '暂无弱词'} />
@@ -1134,7 +1133,7 @@ function ReviewModeControl({ value, onChange, compact = false }: {
       </div>
       {!compact && (
         <p className="px-3 pb-2 pt-3 text-sm leading-6 text-stone-600">
-          {value === 'choice' ? '先回忆，再核对；想不起来可展开选项。中英也通过选项作答，无需键盘。' : '使用主动回忆、辨词、语境和听音强化，无需键盘。'}
+          {value === 'choice' ? '直接选答案，或点会 / 不会，自动进入下一词。无需键盘。' : '使用词卡、语境和听音练习，直接作答，无需键盘。'}
         </p>
       )}
     </div>
@@ -1144,7 +1143,7 @@ function ReviewModeControl({ value, onChange, compact = false }: {
 function ChoiceReviewCard({ word, direction, question, answer, choices, position, total, onSpeak, onAnswer }: {
   word: VocabWord; direction: string; question: string; answer: string; choices: string[]
   position: number; total: number; onSpeak: () => void
-  onAnswer: (correct: boolean, mode: StudyMode) => void
+  onAnswer: AnswerHandler
 }) {
   return <section className="space-y-4">
     <div className="flex justify-between text-sm text-stone-500"><span>主动复习 · {position} / {total}</span><span>{direction}</span></div>
@@ -1157,7 +1156,7 @@ function ChoiceReviewCard({ word, direction, question, answer, choices, position
 
 function LeechRepairCard({ word, progress, attempt, position, total, choices, onResult }: {
   word: VocabWord; progress?: WordProgress; attempt: number; position: number; total: number
-  choices: string[]; onResult: (correct: boolean, mode: StudyMode) => void
+  choices: string[]; onResult: AnswerHandler
 }) {
   const challenge = (progress?.seen ?? attempt) % 3
   const question = challenge === 1 ? maskTargetWord(word.example || word.collocation, word.word) : word.meaning
@@ -1171,102 +1170,29 @@ function LeechRepairCard({ word, progress, attempt, position, total, choices, on
 }
 
 function WordCard({ title, word, progress, children }: { title: string; word: VocabWord; progress?: WordProgress; children: React.ReactNode }) {
-  const [revealed, setRevealed] = useState(false)
-
-  useEffect(() => {
-    setRevealed(false)
-  }, [word.id])
-
-  return (
-    <section className="space-y-4">
-      <div className="flex items-center justify-between text-sm text-stone-500">
-        <span>{title}</span>
-        <span>难度 {word.difficulty} · {word.level}</span>
+  return <section className="space-y-4">
+    <div className="flex justify-between text-sm text-stone-500"><span>{title}</span><span>{word.level}</span></div>
+    <div className="rounded-lg bg-white p-5 shadow-sm ring-1 ring-stone-200">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0"><p className="break-words text-3xl font-semibold">{word.word}</p><p className="mt-2 text-stone-500">{word.phonetic}</p></div>
+        <button className="icon-button" onClick={() => speakWord(word.word)} aria-label={`朗读 ${word.word}`}><Volume2 size={21} /></button>
       </div>
-      <div className="rounded-lg bg-white p-5 shadow-sm ring-1 ring-stone-200">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <p className="break-words text-4xl font-semibold" style={{ fontSize: word.word.length > 12 ? '1.5rem' : word.word.length > 9 ? '1.875rem' : undefined }}>{word.word}</p>
-            <p className="mt-2 break-words text-stone-500">{word.phonetic}</p>
-          </div>
-          <button
-            className="flex min-h-12 min-w-12 shrink-0 items-center justify-center rounded-full bg-stone-950 text-white shadow-sm"
-            onClick={() => speakWord(word.word)}
-            aria-label={`朗读 ${word.word}`}
-          >
-            <Volume2 size={21} />
-          </button>
-        </div>
-        {!revealed ? (
-          <div className="mt-6 space-y-4 rounded-lg bg-amber-50 p-4 text-left ring-1 ring-amber-100">
-            <p className="text-sm font-semibold text-amber-900">先主动回忆，别急着看答案</p>
-            <div className="space-y-3 text-stone-800">
-              <p>1. 说出中文核心意思。</p>
-              <p>2. 说一个常见搭配。</p>
-              <p>3. 口头造一个很短的句子。</p>
-            </div>
-            <p className="text-sm leading-6 text-stone-600">这是 retrieval practice：先提取，再反馈，比反复看解释更能形成长期记忆。</p>
-          </div>
-        ) : (
-          <>
-            <p className="mt-5 text-2xl font-medium">{word.meaning}</p>
-            <div className="mt-5 space-y-3 rounded-lg bg-stone-50 p-4 text-left">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="font-medium">{word.collocation}</p>
-                  <p className="mt-3 leading-7 text-stone-600">{word.example}</p>
-                </div>
-                <button
-                  className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full bg-white text-stone-900 ring-1 ring-stone-200"
-                  onClick={() => speakEnglish(word.example || word.collocation, { rate: 0.82 })}
-                  aria-label="朗读例句"
-                >
-                  <Volume2 size={19} />
-                </button>
-              </div>
-            </div>
-            {word.confusions?.map((confusion) => (
-              <div key={confusion.trap} className="mt-4 rounded-lg bg-rose-50 p-4 text-left ring-1 ring-rose-100">
-                <p className="text-sm font-semibold text-rose-900">容易误想：{confusion.trap}</p>
-                <p className="mt-2 text-sm leading-6 text-rose-950">{confusion.wrongPath}</p>
-                <p className="mt-3 text-base font-medium leading-7 text-stone-950">{confusion.correction}</p>
-                <p className="mt-3 rounded-lg bg-white/75 px-3 py-2 text-sm font-semibold text-rose-900">{confusion.cue}</p>
-              </div>
-            ))}
-            {word.memoryHook && (
-              <div className="mt-4 rounded-lg bg-emerald-50 p-4 text-left ring-1 ring-emerald-100">
-                <p className="text-sm font-semibold text-emerald-900">{word.memoryHook.breakdown.startsWith('构词与用法：') ? '构词与用法' : '单词起源'}</p>
-                <p className="mt-2 text-base font-medium leading-7 text-emerald-950">{word.memoryHook.breakdown}</p>
-                <OriginExtras word={word} />
-              </div>
-            )}
-            {word.evilHook && (
-              <div className="mt-4 rounded-lg bg-fuchsia-50 p-4 text-left ring-1 ring-fuchsia-100">
-                <p className="text-sm font-semibold text-fuchsia-900">邪修记法 · 联想非词源</p>
-                <p className="mt-2 text-base font-medium leading-7 text-fuchsia-950">{word.evilHook}</p>
-              </div>
-            )}
-            <p className="mt-4 text-sm text-stone-500">
-              复习 {progress?.repetitions ?? 0} 次 · 稳定度 {(progress?.stability ?? 0).toFixed(1)} 天 · 错误 {progress?.lapses ?? 0}
-            </p>
-          </>
-        )}
-      </div>
-      {!revealed ? (
-        <div className="fixed inset-x-0 bottom-[calc(52px+env(safe-area-inset-bottom))] z-20 border-t border-stone-200 bg-[#f7f4ef]/95 py-2 backdrop-blur">
-          <div className="mx-auto w-full max-w-md px-4">
-            <button className="tap-button w-full bg-stone-950 text-white" onClick={() => setRevealed(true)}>
-              显示答案
-            </button>
-          </div>
-        </div>
-      ) : children && (
-        <div className="fixed inset-x-0 bottom-[calc(52px+env(safe-area-inset-bottom))] z-20 border-t border-stone-200 bg-[#f7f4ef]/95 py-2 backdrop-blur">
-          <div className="mx-auto w-full max-w-md px-4">{children}</div>
-        </div>
-      )}
-    </section>
-  )
+      <p className="mt-4 text-xl font-medium">{word.meaning}</p>
+      <p className="mt-4 font-medium">{word.collocation}</p>
+      <p className="mt-2 leading-7 text-stone-600">{word.example}</p>
+      <details className="mt-4 text-sm">
+        <summary className="min-h-11 cursor-pointer py-3">词源与记法</summary>
+        {word.confusions?.map((confusion) => <p className="mb-3 leading-7" key={confusion.trap}>{confusion.correction}</p>)}
+        {word.memoryHook && <p className="leading-7">{word.memoryHook.breakdown}</p>}
+        <OriginExtras word={word} />
+        {word.evilHook && <p className="mt-3 leading-7">{word.evilHook}</p>}
+        <p className="mt-3 text-stone-500">复习 {progress?.repetitions ?? 0} 次 · 错误 {progress?.lapses ?? 0}</p>
+      </details>
+    </div>
+    <div className="fixed inset-x-0 bottom-[calc(52px+env(safe-area-inset-bottom))] z-20 border-t border-stone-200 bg-[#f7f4ef]/95 py-2 backdrop-blur">
+      <div className="mx-auto w-full max-w-md px-4">{children}</div>
+    </div>
+  </section>
 }
 
 function DoneCard({ title, subtitle, onRestart, onFinish }: { title: string; subtitle: string; onRestart: () => void; onFinish: () => void }) {
@@ -1290,41 +1216,22 @@ function QuizCard({ mode, setMode, word, prompt, choices, onAnswer }: {
   word: VocabWord
   prompt: { question: string; answer: string }
   choices: string[]
-  onAnswer: (correct: boolean, mode?: StudyMode) => void
+  onAnswer: (correct: boolean, mode?: StudyMode) => void | boolean | Promise<void | boolean>
 }) {
   const [answered, setAnswered] = useState<string>('')
 
-  const answerTimer = useRef<number | undefined>(undefined)
-  useEffect(() => {
-    setAnswered('')
-    answerTimer.current = undefined
-    return () => window.clearTimeout(answerTimer.current)
-  }, [word.id, mode])
-  const submitAnswer = (value: string, correct: boolean) => {
-    if (answered || answerTimer.current !== undefined) return
-    setAnswered(value)
-    answerTimer.current = window.setTimeout(() => onAnswer(correct), 650)
-  }
+  const quick = useQuickAnswer((correct, mode) => onAnswer(correct, mode), () => setAnswered('swipe'))
+  const tabs = [['en-zh', '英中'], ['zh-en', '中英'], ['context', '填空'], ['spelling', '辨词'], ['confusion', '防偏'], ['swipe', '快刷'], ['sentence', '组句'], ['usage', '表达']]
+  const tab = ([key, label]: string[]) => <button key={key} role="tab" aria-selected={mode === key} disabled={Boolean(answered)} className={clsx('min-h-11 rounded-lg text-xs font-medium ring-1 ring-stone-200', mode === key ? 'bg-stone-900 text-white' : 'bg-white')} onClick={() => setMode(key as QuizMode)}>{label}</button>
 
 
   return (
     <section className="space-y-4">
-      <div className="grid grid-cols-4 gap-1.5" role="tablist" aria-label="测验模式">
-        {[
-          ['en-zh', '英中'],
-          ['zh-en', '中英'],
-          ['context', '填空'],
-          ['spelling', '辨词'],
-          ['confusion', '防偏'],
-          ['swipe', '快刷'],
-          ['sentence', '组句'],
-          ['usage', '表达'],
-        ].map(([key, label]) => (
-          <button key={key} role="tab" aria-selected={mode === key} disabled={Boolean(answered)} className={clsx('min-h-11 rounded-lg text-xs font-medium ring-1 ring-stone-200', mode === key ? 'bg-stone-900 text-white' : 'bg-white')} onClick={() => setMode(key as QuizMode)}>
-            {label}
-          </button>
-        ))}
-      </div>
+      <div className="grid grid-cols-2 gap-2" role="tablist" aria-label="测验模式">{tabs.slice(0, 2).map(tab)}</div>
+      <details className="text-sm text-stone-500">
+        <summary className="min-h-11 cursor-pointer py-3">更多练习{!['en-zh', 'zh-en'].includes(mode) ? ` · ${tabs.find(([key]) => key === mode)?.[1]}` : ''}</summary>
+        <div className="grid grid-cols-3 gap-2" role="tablist" aria-label="更多测验模式">{tabs.slice(2).map(tab)}</div>
+      </details>
       <div className="rounded-lg bg-white p-5 shadow-sm ring-1 ring-stone-200">
         <p className="text-sm text-stone-500">{mode === 'usage' ? '表达练习 · 自评' : mode === 'sentence' ? '选词组句' : mode === 'swipe' ? '快刷判断' : mode === 'spelling' ? '看中文和搭配，选择英文' : mode === 'confusion' ? '校正错误联想' : '即时反馈'}</p>
         {['sentence', 'swipe'].includes(mode) && <div className="mt-4 flex items-start justify-between gap-3">
@@ -1339,15 +1246,16 @@ function QuizCard({ mode, setMode, word, prompt, choices, onAnswer }: {
             </button>
           )}
         </div>}
-        {mode === 'usage' ? <UsageExercise word={word.word} meaning={word.meaning} collocation={word.collocation} example={word.example} onRevealed={() => setAnswered('usage')} onAnswer={(correct) => onAnswer(correct, 'usage')} /> : mode === 'sentence' ? <SentenceQuiz sentence={word.example} onChecked={() => setAnswered('sentence')} onAnswer={onAnswer} /> : mode === 'swipe' ? (
+        {mode === 'usage' ? <UsageExercise word={word.word} meaning={word.meaning} collocation={word.collocation} example={word.example} onAnswered={() => setAnswered('usage')} onAnswer={(correct) => onAnswer(correct, 'usage')} /> : mode === 'sentence' ? <SentenceQuiz sentence={word.example} onChecked={() => setAnswered('sentence')} onAnswer={onAnswer} /> : mode === 'swipe' ? (
           <div className="mt-6 grid grid-cols-2 gap-3">
-            <button disabled={Boolean(answered)} className="tap-button bg-emerald-600 text-white" onClick={() => submitAnswer('known', true)}><Check size={18} /> 认识</button>
-            <button disabled={Boolean(answered)} className="tap-button bg-rose-600 text-white" onClick={() => submitAnswer('unknown', false)}><X size={18} /> 不认识</button>
+            <button disabled={quick.result !== null} className="tap-button bg-emerald-600 text-white" onClick={() => quick.submit(true, 'self')}><Check size={18} /> 会</button>
+            <button disabled={quick.result !== null} className="tap-button bg-rose-600 text-white" onClick={() => quick.submit(false, 'self')}><X size={18} /> 不会</button>
           </div>
         ) : (
           <RecallExercise question={prompt.question} answer={prompt.answer} choices={choices}
-            english={mode === 'zh-en' || mode === 'context' || mode === 'spelling'} onRevealed={() => setAnswered('recall')} onAnswer={onAnswer} />
+            english={mode === 'zh-en' || mode === 'context' || mode === 'spelling'} onAnswered={() => setAnswered('recall')} onAnswer={onAnswer} />
         )}
+        {quick.error && <p role="alert" className="mt-3 text-rose-800">{quick.error}</p>}
       </div>
     </section>
   )
