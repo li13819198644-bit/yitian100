@@ -1,4 +1,4 @@
-import type { AppStats, DailyStudyRecord, DailyWordDetail, Rating, SessionKind, StudyMode } from '../types'
+import type { AppStats, DailyStudyRecord, DailyWordDetail, Rating, ReviewObservation, SessionKind, StudyMode } from '../types'
 
 export function isObjectiveMode(mode: StudyMode) {
   return mode !== 'self' && mode !== 'recall' && mode !== 'usage' && mode !== 'assisted'
@@ -14,7 +14,7 @@ export function localDateOffset(now: number, days: number): Date {
   return date
 }
 
-export function recordStudyResult(stats: AppStats, wordId: string, correct: boolean, mode: StudyMode, now = Date.now(), context?: { rating: Rating; session: SessionKind; isNew: boolean }): AppStats {
+export function recordStudyResult(stats: AppStats, wordId: string, correct: boolean, mode: StudyMode, now = Date.now(), context?: { rating: Rating; session: SessionKind; isNew: boolean; observation?: ReviewObservation; leechCount?: number }): AppStats {
   const today = localDateKey(new Date(now))
   const sameDay = stats.todayDate === today
   const previous = stats.dailyHistory?.find((entry) => entry.date === today)
@@ -26,10 +26,16 @@ export function recordStudyResult(stats: AppStats, wordId: string, correct: bool
   const previousFirst = previous?.firstAnswers[wordId]
   const firstTestAnswer = old?.firstTestAnswer ?? (previousFirst && isObjectiveMode(previousFirst.mode) ? previousFirst : isObjectiveMode(mode) ? { correct, mode } : undefined)
   const detail: DailyWordDetail = {
+    ...(old?.events ? { events: old.events } : {}),
+    ...(context?.observation ? { events: [...(old?.events ?? []), { ...context.observation, at: now, rating: context.rating, correct, mode }] } : {}),
     attempts: (old?.attempts ?? 0) + 1,
     correct: (old?.correct ?? 0) + Number(correct),
     lastCorrect: correct,
     firstTestAnswer,
+    ...(old?.observedFirstByMode || context?.observation ? { observedFirstByMode: {
+      ...old?.observedFirstByMode,
+      ...(context?.observation && !modeCount ? { [mode]: { correct } } : {}),
+    } } : {}),
     newWord: old ? old.newWord : previous?.firstAnswers[wordId] ? null : context?.isNew ?? null,
     firstAt: old?.firstAt ?? now, lastAt: now,
     modes: { ...old?.modes, [mode]: { attempts: (modeCount?.attempts ?? 0) + 1, correct: (modeCount?.correct ?? 0) + Number(correct) } },
@@ -38,6 +44,7 @@ export function recordStudyResult(stats: AppStats, wordId: string, correct: bool
   }
   const record: DailyStudyRecord = {
     date: today,
+    ...(context?.leechCount !== undefined ? { leechSnapshot: { at: now, count: context.leechCount } } : previous?.leechSnapshot ? { leechSnapshot: previous.leechSnapshot } : {}),
     attempts: (previous?.attempts ?? 0) + 1,
     correct: (previous?.correct ?? 0) + Number(correct),
     firstAnswers,

@@ -88,10 +88,10 @@ export async function ensureSeedData() {
   await Promise.all(seedWords.map((word) => tx.store.put(word)))
   await tx.done
   if (!(await db.get('meta', 'settings'))) {
-    await db.put('meta', defaultSettings, 'settings')
+    await db.put('meta', normalizeSettings(readBackup(settingsBackupKey, defaultSettings)), 'settings')
   }
   if (!(await db.get('meta', 'stats'))) {
-    await db.put('meta', defaultStats(), 'stats')
+    await db.put('meta', readBackup(statsBackupKey, defaultStats()), 'stats')
   }
 }
 

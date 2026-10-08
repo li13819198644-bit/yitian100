@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { BarChart3, BookOpen, ChevronRight, Cloud, Download, Headphones, Home, NotebookPen, RotateCcw, Scissors, Settings, Upload, Volume2, X } from 'lucide-react'
 import clsx from 'clsx'
-import type { AppSettings, AppStats, GrammarProgress, Screen, SessionKind, VocabWord, WordProgress } from './types'
+import type { AppSettings, AppStats, GrammarProgress, Rating, ReviewReason, Screen, SessionKind, VocabWord, WordProgress } from './types'
 import { GrammarPanel } from './components/GrammarPanel'
 import { DailyStatsPanel } from './components/DailyStatsPanel'
+import { makeObservation } from './lib/memoryEvidence'
+import { TargetedReview } from './components/TargetedReview'
 import { WordRecallCard } from './components/WordRecallCard'
 import { ListeningPlayer } from './components/ListeningPlayer'
 import { buildDailyReport } from './lib/dailyReport'
@@ -196,6 +198,7 @@ function App() {
   const [cloudMessage, setCloudMessage] = useState('')
   const [cloudBusy, setCloudBusy] = useState(false)
   const answering = useRef(false)
+  const explanationsViewed = useRef(new Map<string, number>())
   const [clockNow, setClockNow] = useState(Date.now)
 
   async function refresh() {
@@ -280,8 +283,13 @@ function App() {
     const item = progressMap.get(word.id)
     return item ? isLeech(item) : false
   }).length
-  const progressStudiedToday = progress.filter((item) => item.seen > 0 && todayKey(new Date(item.lastStudiedAt ?? item.updatedAt)) === todayKey()).length
-  const todayProgress = Math.max(stats.todayDate === todayKey() ? stats.todaySeen.length : 0, progressStudiedToday)
+  const todayWordIds = new Set(stats.todayDate === todayKey() ? stats.todaySeen : [])
+  for (const item of progress) {
+    // Legacy updatedAt may represent a review; a new explanation marker does not.
+    const lastStudy = item.lastStudiedAt ?? (item.lastExplanationAt === item.updatedAt ? undefined : item.updatedAt)
+    if (item.seen > 0 && lastStudy !== undefined && todayKey(new Date(lastStudy)) === todayKey()) todayWordIds.add(item.wordId)
+  }
+  const todayProgress = todayWordIds.size
   const todayAccuracy = accuracy(progress)
   const todayFirstAnswers = firstAnswerSummary(stats.dailyHistory?.find((entry) => entry.date === todayKey()))
   const activeWord = sessionWords[activeIndex]
@@ -313,8 +321,21 @@ function App() {
     finally { answering.current = false }
   }
 
-  function openWordDetail(wordId: string, returnScreen: Screen = screen) {
-    if (!wordMap.has(wordId)) return
+  async function openWordDetail(wordId: string, returnScreen: Screen = screen) {
+    if (!wordMap.has(wordId) || answering.current) return
+    const now = Date.now()
+    explanationsViewed.current.set(wordId, now)
+    const old = progressMap.get(wordId)
+    if (old) {
+      answering.current = true
+      try {
+        const updated = { ...old, lastExplanationAt: now, updatedAt: now }
+        await saveProgress(updated)
+        setProgress((items) => [...items.filter((item) => item.wordId !== wordId), updated])
+        void syncCloudQuietly()
+      } catch { setFeedback('详情浏览标记未保存，本次仍按提示练习处理。') }
+      finally { answering.current = false }
+    }
     setDetailWordId(wordId)
     setDetailReturnScreen(returnScreen === 'detail' ? 'home' : returnScreen)
     setScreen('detail')
@@ -396,14 +417,20 @@ function App() {
     autoSpeakSessionWord(nextWords.map((word) => word.id), 0, 'weak')
   }
 
-  async function rateWord(word: VocabWord, rating: 'known' | 'unknown', returnScreen: 'learn' | 'quiz') {
+  async function rateWord(word: VocabWord, rating: Rating, returnScreen: 'learn' | 'quiz', responseDurationMs: number | null) {
     if (progressMap.get(word.id)?.excluded || answering.current) return false
     answering.current = true
     try {
       const now = Date.now()
       const correct = rating === 'known'
-      const updated = scheduleReview(progressMap.get(word.id) ?? createProgress(word.id), rating, now)
-      const nextStats = recordStudyResult(stats, word.id, correct, 'self', now, { rating, session: sessionKind, isNew: !(progressMap.get(word.id)?.seen) })
+      const saved = progressMap.get(word.id)
+      const explanationAt = Math.max(saved?.lastExplanationAt ?? 0, explanationsViewed.current.get(word.id) ?? 0)
+      const previous = explanationAt ? { ...(saved ?? createProgress(word.id)), lastExplanationAt: explanationAt } : saved
+      const first = !Object.hasOwn(stats.dailyHistory?.find((entry) => entry.date === todayKey())?.firstAnswers ?? {}, word.id)
+      const observation = makeObservation(previous, now, first, responseDurationMs)
+      const updated = scheduleReview(previous ?? createProgress(word.id), rating, now, observation)
+      if (rating === 'unknown') updated.lastExplanationAt = now
+      const nextStats = recordStudyResult(stats, word.id, correct, 'self', now, { rating, session: sessionKind, isNew: !(progressMap.get(word.id)?.seen), observation, leechCount: [...progress.filter((item) => item.wordId !== word.id), updated].filter((item) => !item.excluded && wordMap.has(item.wordId) && isWeak(item) && isLeech(item)).length })
       const nextIds = insertDelayedRetry(sessionWordIds, activeIndex, word.id, rating)
       await saveProgress(updated)
       await saveStats(nextStats)
@@ -411,10 +438,10 @@ function App() {
       setStats(nextStats)
       setClockNow(now)
       setSessionWordIds(nextIds)
-      setFeedback(`${word.word}: ${correct ? '会' : '不会，已安排复习'}`)
+      setFeedback(`${word.word}: ${rating === 'known' ? '会' : rating === 'fuzzy' ? '模糊，继续巩固' : '不会，已安排复习'}`)
       setFeedbackWordId(word.id)
       setActiveIndex(activeIndex + 1)
-      if (!correct) {
+      if (rating === 'unknown') {
         setDetailWordId(word.id)
         setDetailReturnScreen(returnScreen)
         setScreen('detail')
@@ -428,6 +455,20 @@ function App() {
       setFeedbackWordId('')
       return false
     } finally { answering.current = false }
+  }
+
+  async function markIntervention(word: VocabWord, reason: ReviewReason) {
+    const old = progressMap.get(word.id)
+    if (!old || old.excluded || answering.current) return false
+    answering.current = true
+    try {
+      const now = Date.now()
+      const updated = { ...old, intervention: { reason, reviewedAt: now }, lastExplanationAt: now, updatedAt: now }
+      await saveProgress(updated)
+      setProgress((items) => [...items.filter((item) => item.wordId !== word.id), updated])
+      void syncCloudQuietly()
+      return true
+    } catch { return false } finally { answering.current = false }
   }
 
   async function importFile(file?: File) {
@@ -588,6 +629,7 @@ function App() {
       settings,
       stats,
       measurement: {
+        mastery: 'summary.masteredWords 为旧字段，代表排程巩固词数；不是客观验证掌握。回忆、跨天和7天保持证据见 dailyReport.memoryDiagnostics。',
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         firstAnswerHistory: '仅记录更新后最近90个学习日；重复纠正不覆盖当天首答，mode区分自评、选择、拼写、组句、无选项词义回忆、无选项英文输入、提示作答及表达自评。',
         forecast: '按本地自然日统计尚未到期的已排程单词；不包含旧积压和未来答错产生的重测。',
@@ -639,7 +681,7 @@ function App() {
             <div className="rounded-lg bg-white p-5 shadow-sm ring-1 ring-stone-200">
               <div className="flex items-end justify-between">
                 <div>
-                  <p className="text-sm text-stone-500">今日练习量</p>
+                  <p className="text-sm text-stone-500">今日练习词数</p>
                   <p className="mt-1 text-4xl font-semibold">{todayProgress}</p>
                 </div>
                 <span className="rounded-full bg-sky-100 px-3 py-1 text-sm font-medium text-sky-800">B2 → C1</span>
@@ -666,6 +708,7 @@ function App() {
               {gentleNewWordCount > 0 && (
                 <SecondaryButton onClick={() => startLearnSession({ limit: gentleNewWordCount })} icon={<BookOpen size={20} />} label={`学 ${gentleNewWordCount} 个新词`} />
               )}
+              {recommendedNewCount === 0 && unlearnedCount > 0 && <SecondaryButton onClick={() => startLearnSession({ limit: 5 })} icon={<BookOpen size={20} />} label="自主学习 5 个新词" />}
               <SecondaryButton onClick={startQuizSession} icon={<BarChart3 size={20} />} label="单词回忆" />
               <SecondaryButton onClick={() => setScreen('listening')} icon={<Headphones size={20} />} label="听词复习 · MP3" />
               <SecondaryButton onClick={() => { setClockNow(Date.now()); setFeedback(''); setFeedbackWordId(''); setScreen('daily') }} icon={<BarChart3 size={20} />} label="当天学习统计" />
@@ -681,7 +724,7 @@ function App() {
               <Metric label="累计答对率" value={`${todayAccuracy}%`} />
               <Metric label="Combo" value={stats.combo} />
               <Metric label="连续学习" value={`${stats.streak} 天`} />
-              <Metric label="已掌握" value={mastered} />
+              <Metric label="排程巩固词" value={mastered} />
               <Metric label="弱词" value={weakWords.length} />
               <Metric label="顽固词" value={stubbornWords} />
             </div>
@@ -693,7 +736,7 @@ function App() {
           <WordRecallCard key={`${activeIndex}:${activeWord.id}`} word={activeWord}
             title={sessionKind === 'learn' ? '新词学习' : sessionKind === 'weak' ? '弱词复习' : '到期复习'}
             position={activeIndex + 1} total={sessionWords.length}
-            onRate={(rating) => rateWord(activeWord, rating, 'learn')} />
+            onRate={(rating, timing) => rateWord(activeWord, rating, 'learn', timing.responseDurationMs)} />
         )}
 
         {screen === 'learn' && sessionWords.length > 0 && activeIndex >= sessionWords.length && (
@@ -703,7 +746,7 @@ function App() {
         {screen === 'quiz' && activeWord && activeIndex < sessionWords.length && (
           <WordRecallCard key={`${activeIndex}:${activeWord.id}`} word={activeWord} title="单词回忆"
             position={activeIndex + 1} total={sessionWords.length}
-            onRate={(rating) => rateWord(activeWord, rating, 'quiz')} />
+            onRate={(rating, timing) => rateWord(activeWord, rating, 'quiz', timing.responseDurationMs)} />
         )}
 
         {screen === 'quiz' && sessionWords.length > 0 && activeIndex >= sessionWords.length && (
@@ -817,6 +860,7 @@ function App() {
           <WordDetail
             word={detailWord}
             progress={progressMap.get(detailWord.id)}
+            onReviewed={(reason) => markIntervention(detailWord, reason)}
             onContinue={continueFromWordDetail}
             continueLabel={detailReturnScreen === 'learn' || detailReturnScreen === 'quiz' ? '继续下一个词' : '返回上一页'}
           />
@@ -864,11 +908,12 @@ function OriginExtras({ word }: { word: VocabWord }) {
   </>
 }
 
-function WordDetail({ word, progress, onContinue, continueLabel }: {
+function WordDetail({ word, progress, onContinue, continueLabel, onReviewed }: {
   word: VocabWord
   progress?: WordProgress
   onContinue: () => void
   continueLabel: string
+  onReviewed: (reason: ReviewReason) => Promise<boolean>
 }) {
   return (
     <section className="space-y-4">
@@ -898,6 +943,8 @@ function WordDetail({ word, progress, onContinue, continueLabel }: {
           </div>
         </div>
       </div>
+
+      <TargetedReview word={word} progress={progress} onReviewed={onReviewed} />
 
       {word.confusions?.map((confusion) => (
         <div key={confusion.trap} className="rounded-lg bg-rose-50 p-4 ring-1 ring-rose-100">

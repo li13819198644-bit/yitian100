@@ -34,14 +34,15 @@ describe('word → reveal → known or unknown', () => {
     await click('postpone')
     expect(host.textContent).toContain(word.meaning)
     expect(onRate).not.toHaveBeenCalled()
-    expect([...host.querySelectorAll('button')].map((button) => button.textContent)).toEqual(['postpone', '会', '不会'])
+    expect([...host.querySelectorAll('button')].filter((button) => !button.closest('details')).map((button) => button.textContent)).toEqual(['postpone', '会', '不会'])
+    expect(host.querySelector('details')?.open).toBe(false)
     await click('会')
-    expect(onRate).toHaveBeenCalledExactlyOnceWith('known')
+    expect(onRate).toHaveBeenCalledExactlyOnceWith('known', { responseDurationMs: expect.any(Number) })
   })
   it('records unknown immediately after the rating tap', async () => {
     const onRate = render()
     await click('postpone'); await click('不会')
-    expect(onRate).toHaveBeenCalledExactlyOnceWith('unknown')
+    expect(onRate).toHaveBeenCalledExactlyOnceWith('unknown', { responseDurationMs: expect.any(Number) })
   })
   it('blocks duplicate taps while saving', async () => {
     const onRate = vi.fn(() => new Promise<boolean>(() => {}))
@@ -66,5 +67,22 @@ describe('word → reveal → known or unknown', () => {
     expect(host.querySelector('[role=alert]')).not.toBeNull()
     await click('不会')
     expect(onRate).toHaveBeenCalledTimes(2)
+  })
+  it('allows an optional fuzzy self-rating without typing', async () => {
+    const onRate = render()
+    await click('postpone')
+    const details = host.querySelector('details')!
+    details.open = true
+    await click('模糊')
+    expect(onRate).toHaveBeenCalledExactlyOnceWith('fuzzy', { responseDurationMs: expect.any(Number) })
+    expect(host.querySelector('input, textarea')).toBeNull()
+  })
+  it('does not interpret time spent in the background as response speed', async () => {
+    const onRate = render()
+    vi.spyOn(document, 'hidden', 'get').mockReturnValueOnce(true)
+    document.dispatchEvent(new Event('visibilitychange'))
+    await click('postpone'); await click('会')
+    expect(onRate).toHaveBeenCalledExactlyOnceWith('known', { responseDurationMs: null })
+    vi.restoreAllMocks()
   })
 })

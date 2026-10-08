@@ -1,4 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { seedWords } from '../data/seedWords'
+import { createProgress, scheduleReview } from './srs'
+import { makeObservation } from './memoryEvidence'
+import { localDateKey, recordStudyResult } from './studyStats'
 
 const mocks = vi.hoisted(() => ({
   getProgress: vi.fn(), getSettings: vi.fn(), getStats: vi.fn(), getGrammarProgress: vi.fn(),
@@ -46,5 +50,27 @@ describe('grammar cloud snapshot compatibility', () => {
     const { restoreCloudSnapshot } = await import('./cloudSync')
     await restoreCloudSnapshot()
     expect(mocks.saveGrammarProgress).not.toHaveBeenCalled()
+  })
+  it('JSON-round-trips additive recall evidence, all IDs, exclusions, settings and historical modes', async () => {
+    const now = new Date(2026, 9, 7, 12).getTime()
+    const observation = makeObservation(undefined, now, true, 500)
+    const progress = seedWords.map((word, index) => index === 0
+      ? { ...scheduleReview(createProgress(word.id, now), 'unknown', now, observation), excluded: true }
+      : { ...createProgress(word.id, now), seen: 1 })
+    let stats = { todayDate: localDateKey(new Date(now)), todaySeen: [] as string[], combo: 0, bestCombo: 0, streak: 0 }
+    stats = recordStudyResult(stats, progress[0].wordId, false, 'self', now, { rating: 'unknown', session: 'learn', isNew: true, observation })
+    for (const mode of ['choice', 'spelling', 'sentence', 'assisted'] as const) stats = recordStudyResult(stats, progress[1].wordId, true, mode, now)
+    const settings = { dailyTarget: 200, dailyCapacity: 200 }
+    mocks.getProgress.mockResolvedValue(progress); mocks.getStats.mockResolvedValue(stats); mocks.getSettings.mockResolvedValue(settings)
+    const { uploadLocalSnapshot, restoreCloudSnapshot } = await import('./cloudSync')
+    const snapshot = JSON.parse(JSON.stringify(await uploadLocalSnapshot()))
+    mocks.maybeSingle.mockResolvedValue({ data: { payload: snapshot }, error: null })
+    await restoreCloudSnapshot()
+    expect(mocks.saveProgress).toHaveBeenCalledTimes(605)
+    expect(mocks.saveProgress).toHaveBeenCalledWith(progress[0])
+    expect(snapshot.progress.map((item: { wordId: string }) => item.wordId)).toEqual(seedWords.map((word) => word.id))
+    expect(mocks.saveStats).toHaveBeenCalledWith(stats)
+    expect(mocks.saveSettings).toHaveBeenCalledWith(settings)
+    expect(mocks.saveGrammarProgress).toHaveBeenCalledWith(grammar)
   })
 })

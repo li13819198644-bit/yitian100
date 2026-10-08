@@ -31,7 +31,39 @@ export interface VocabWord {
   level: 'B2' | 'C1'
 }
 
+export type EvaluationSource = 'recognition' | 'selfReportedRecall' | 'verifiedRecall'
+export type ReviewReason = 'meaning' | 'usage' | 'confusion' | 'form'
+export interface EvidenceCount { attempts: number; successes: number }
+export interface ReviewObservation {
+  hintUsed: boolean | null
+  responseDurationMs: number | null
+  intervalSinceLastReview: number | null
+  evaluationSource: EvaluationSource | null
+  firstAttemptOfDay: boolean | null
+  shortTermPractice: boolean
+}
+export interface StudyEvent extends ReviewObservation {
+  at: number; rating: Rating; correct: boolean; mode: StudyMode
+}
+export interface MemoryEvidence {
+  version: 1
+  recognition: EvidenceCount
+  selfReportedRecall: EvidenceCount
+  verifiedRecall: EvidenceCount
+  retention: { selfReportedRecall: EvidenceCount; verifiedRecall: EvidenceCount }
+  sevenDayRetention: { selfReportedRecall: EvidenceCount; verifiedRecall: EvidenceCount }
+  failureDays: string[]
+  lastIndependentAt?: number
+  lastVerifiedAt?: number
+  lastVerifiedCorrect?: boolean
+}
+export interface InterventionRecord { reason: ReviewReason; reviewedAt: number }
+
 export interface WordProgress {
+  lastExplanationAt?: number
+  evidence?: MemoryEvidence
+  intervention?: InterventionRecord
+  lastObservation?: ReviewObservation
   excluded?: boolean
   lastStudiedAt?: number
   wordId: string
@@ -68,6 +100,7 @@ export interface DailyStudyRecord {
   attempts: number
   correct: number
   firstAnswers: Record<string, { correct: boolean; mode: StudyMode }>
+  leechSnapshot?: { at: number; count: number }
   wordDetails?: Record<string, DailyWordDetail>
 }
 
@@ -81,6 +114,8 @@ export interface DailyWordDetail {
   lastAt: number
   modes: Partial<Record<StudyMode, { attempts: number; correct: number }>>
   ratings: Partial<Record<Rating, number>>
+  observedFirstByMode?: Partial<Record<StudyMode, { correct: boolean }>>
+  events?: StudyEvent[]
   sessions: Partial<Record<SessionKind, number>>
 }
 

@@ -6,8 +6,10 @@ export function DailyStatsPanel({ report, ready, onBack }: { report: DailyReport
   const [message, setMessage] = useState('')
   const [sharing, setSharing] = useState(false)
   const words = report.vocabulary
+  const diagnostics = report.memoryDiagnostics
   const grammar = report.grammar
-  const percent = (value: number | null) => value === null ? '未记录' : `${value}%`
+  const percent = (value: number | null) => value === null ? '未知' : `${value}%`
+  const trial = (value: { successes: number; attempts: number; accuracy: number | null }) => value.attempts ? `${value.successes}/${value.attempts} · ${percent(value.accuracy)}` : '未知'
   async function share() {
     setMessage('')
     const file = dailyReportFile(report)
@@ -32,6 +34,24 @@ export function DailyStatsPanel({ report, ready, onBack }: { report: DailyReport
     {message && <p role="status" className="text-sm text-stone-600">{message}</p>}
     {!ready ? <p role="status">正在读取学习记录…</p> : <>
       <div className="border-y border-stone-200 py-4">
+        <h3 className="mb-4 text-lg font-bold">回忆证据与保持</h3>
+        <dl className="grid grid-cols-2 gap-4">
+          <Stat label="辨认 · 首答" value={trial(diagnostics.recognition)} />
+          <Stat label="无提示回忆 · 自评首答" value={trial(diagnostics.selfReportedRecall)} />
+          <Stat label="客观验证 · 首答" value={diagnostics.verifiedRecall.attempts ? trial(diagnostics.verifiedRecall) : '缺乏证据'} />
+          <Stat label="跨天保持 · 自评" value={trial(diagnostics.crossDay.selfReportedRecall)} />
+          <Stat label="跨天保持 · 客观验证" value={diagnostics.crossDay.verifiedRecall.attempts ? trial(diagnostics.crossDay.verifiedRecall) : '缺乏证据'} />
+          <Stat label="7天间隔 · 自评" value={trial(diagnostics.sevenDay.selfReportedRecall)} />
+          <Stat label="7天间隔 · 客观验证" value={diagnostics.sevenDay.verifiedRecall.attempts ? trial(diagnostics.sevenDay.verifiedRecall) : '缺乏证据'} />
+          <Stat label="过期积压" value={diagnostics.overdueBacklog} />
+          <Stat label="顽固词 · 当前" value={diagnostics.leeches.currentCount} />
+          <Stat label="顽固词变化" value={diagnostics.leeches.change === null ? '未知' : `${diagnostics.leeches.change > 0 ? '+' : ''}${diagnostics.leeches.change}`} />
+        </dl>
+        <p className="mt-4 text-sm text-stone-500">排程巩固词 {diagnostics.schedulingConsolidatedWords}，是复习规则的判断；当前快速词卡与深度自评都不提供客观验证。</p>
+        <p className="mt-2 text-sm text-stone-500">{diagnostics.coverage.statement}</p>
+        {diagnostics.coverage.attemptsWithMissingEvents > 0 && <p className="mt-2 text-sm text-amber-800">{diagnostics.coverage.attemptsWithMissingEvents} 次历史作答缺少事件字段，不补造证据。</p>}
+      </div>
+      <div className="border-y border-stone-200 py-4">
         <h3 className="mb-4 text-lg font-bold">单词</h3>
         <dl className="grid grid-cols-2 gap-x-4 gap-y-5">
           <Stat label="练习词数" value={words.uniqueWords} />
@@ -45,7 +65,8 @@ export function DailyStatsPanel({ report, ready, onBack }: { report: DailyReport
           <Stat label="表达练习 · 自评" value={`${words.retrievalPractice.usage.correct}/${words.retrievalPractice.usage.count}`} />
           <Stat label="错词 · 已记录" value={words.mistakeWordsRecorded} />
         </dl>
-        <p className="mt-4 text-sm text-stone-500">选择首答 {words.firstAnswerByMode.choice.correct}/{words.firstAnswerByMode.choice.count} · 拼写首答 {words.firstAnswerByMode.spelling.correct}/{words.firstAnswerByMode.spelling.count} · 组句首答 {words.firstAnswerByMode.sentence.correct}/{words.firstAnswerByMode.sentence.count}</p>
+        <details className="mt-4 text-sm text-stone-500"><summary className="min-h-11 cursor-pointer py-3">新记录按题型首答</summary><ul>{([['self', '快速自评'], ['choice', '选择'], ['recall', '词义回忆自评'], ['production', '旧版英文输入'], ['spelling', '拼写'], ['sentence', '组句'], ['assisted', '提示后作答'], ['usage', '表达自评']] as const).map(([mode, label]) => <li key={mode} className="py-1">{label}：{words.observedFirstAnswerByMode[mode].count ? `${words.observedFirstAnswerByMode[mode].correct}/${words.observedFirstAnswerByMode[mode].count} · ${percent(words.observedFirstAnswerByMode[mode].accuracy)}` : '未知'}</li>)}</ul></details>
+        <p className="mt-2 text-sm text-stone-500">历史首测：选择首答 {words.firstAnswerByMode.choice.correct}/{words.firstAnswerByMode.choice.count} · 拼写首答 {words.firstAnswerByMode.spelling.correct}/{words.firstAnswerByMode.spelling.count} · 组句首答 {words.firstAnswerByMode.sentence.correct}/{words.firstAnswerByMode.sentence.count}</p>
         <p className="mt-1 text-sm text-stone-500">自评认识 {words.firstAnswerByMode.self.correct}/{words.firstAnswerByMode.self.count}；词义和表达也是自评，提示作答单独记录，均不计入客观测验正确率。</p>
         {words.detailCoverage === 'partial' && <p className="mt-3 text-sm text-amber-800">今日部分学习发生在更新前，逐词明细不完整{words.unclassifiedWords ? `，${words.unclassifiedWords} 个词无法区分新旧` : ''}。</p>}
       </div>

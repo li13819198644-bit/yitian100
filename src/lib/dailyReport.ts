@@ -1,4 +1,6 @@
 import type { AppStats, GrammarProgress, StudyMode, VocabWord, WordProgress } from '../types'
+import { evidenceSummary } from './memoryEvidence'
+import { memoryDiagnostics } from './memoryDiagnostics'
 import { grammarQuestions, grammarTopics } from '../data/grammar'
 import { isObjectiveMode, localDateKey } from './studyStats'
 
@@ -21,6 +23,7 @@ export function buildDailyReport(words: VocabWord[], progress: WordProgress[], s
       recordedMistakes: detail ? detail.attempts - detail.correct : null,
       detail,
       currentProgress: progressMap.get(id) ?? null,
+      memoryEvidence: evidenceSummary(progressMap.get(id)),
     }
   }).sort((a, b) => (b.recordedMistakes ?? -1) - (a.recordedMistakes ?? -1) || a.word.localeCompare(b.word))
   const firstAnswers = Object.values(day?.firstAnswers ?? {})
@@ -52,7 +55,12 @@ export function buildDailyReport(words: VocabWord[], progress: WordProgress[], s
   return {
     schemaVersion: 1, reportType: 'daily-learning', app: '一天100词', date,
     exportedAt: new Date(now).toISOString(), timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    memoryDiagnostics: memoryDiagnostics(words, progress, stats, now),
     vocabulary: {
+      observedFirstAnswerByMode: Object.fromEntries((['self', 'choice', 'recall', 'production', 'spelling', 'sentence', 'assisted', 'usage'] as const).map((mode) => {
+        const answers = wordResults.flatMap((item) => item.detail?.observedFirstByMode?.[mode] ? [item.detail.observedFirstByMode[mode]!] : [])
+        return [mode, ratio(answers.filter((answer) => answer.correct).length, answers.length)]
+      })) as Record<StudyMode, ReturnType<typeof ratio>>,
       retrievalPractice: Object.fromEntries((['recall', 'production', 'assisted', 'usage'] as const).map((mode) => {
         const attempts = wordResults.reduce((sum, item) => sum + (item.detail?.modes[mode]?.attempts ?? 0), 0)
         const correct = wordResults.reduce((sum, item) => sum + (item.detail?.modes[mode]?.correct ?? 0), 0)
@@ -88,7 +96,10 @@ export function buildDailyReport(words: VocabWord[], progress: WordProgress[], s
       sentence: '组句按还原参考例句语序计分，不是自由造句语法评分；单独记录为sentence。',
       missingData: '更新前未记录的细节不补造；recorded 字段只计算新记录，null 表示未知，currentProgress 是导出时累计状态，不是当天数据。',
       newWords: '首次记录该词学习进度时记为新词；同日多次作答只算一个词。',
-      limitations: '未记录用时或单词实际误选内容，不能据此判断反应速度。语法错选内容从本次更新起记录。',
+      evidence: 'mastered 是排程巩固条件，不是客观掌握证据；stability 为规则使用的天数尺度，difficultyScore 为1至10的调度难度，均未经个人记忆模型校准。新字段采用可选字段，旧数据及云快照不反推。',
+      timing: 'responseDurationMs 为词卡出现至点击揭示的时间，不是客观作答速度；发生切后台时留为null。intervalSinceLastReview 从已记录的lastStudiedAt及之后的解释浏览时间计算，无lastStudiedAt为null；浏览解释会重新起算间隔。',
+      practiceDay: 'practiceDay/mistakesToday 记录最近发生练习的日期与当日错误数；不学习时保持旧日期属于预期行为。只有practiceDay等于当前本地日期时才用于当日冷却。',
+      limitations: '未记录实际误选内容；当前揭示式词卡只有自评，没有客观验证。深度自评仍不是客观验证，不能以此声称记忆提升。',
     },
   }
 }

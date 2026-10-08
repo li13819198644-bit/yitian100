@@ -1,4 +1,5 @@
-import type { Rating, VocabWord, WordProgress } from '../types'
+import type { Rating, ReviewObservation, VocabWord, WordProgress } from '../types'
+import { updateMemoryEvidence } from './memoryEvidence'
 import { localDateKey, localDateOffset } from './studyStats'
 
 const DAY = 24 * 60 * 60 * 1000
@@ -79,7 +80,9 @@ export function isRecovered(progress: WordProgress): boolean {
     || (progress.lastRating === 'known' && progress.repetitions >= recoveryRepetitionTarget(progress.lapses))
 }
 
+/** Scheduling consolidation only; never proof of objectively verified recall. */
 export function isMastered(progress: WordProgress): boolean {
+  if (progress.lastObservation && (progress.lastObservation.hintUsed || progress.lastObservation.shortTermPractice || progress.lastObservation.evaluationSource === 'recognition')) return false
   return progress.repetitions >= 4
     && progress.stability >= 14
     && progress.easeFactor >= 2.2
@@ -87,7 +90,7 @@ export function isMastered(progress: WordProgress): boolean {
     && isRecovered(progress)
 }
 
-export function scheduleReview(progress: WordProgress, rating: Rating, now = Date.now()): WordProgress {
+export function scheduleReview(progress: WordProgress, rating: Rating, now = Date.now(), observation?: ReviewObservation): WordProgress {
   if (progress.excluded) return progress
   const quality = qualityFromRating(rating)
   const wasCorrect = quality >= 3
@@ -148,6 +151,14 @@ export function scheduleReview(progress: WordProgress, rating: Rating, now = Dat
       : Math.max(10 * MINUTE, progress.nextReviewAt - now)
   }
 
+  if (wasCorrect && observation && (observation.hintUsed || observation.shortTermPractice || observation.evaluationSource === 'recognition')) {
+    repetitions = progress.repetitions
+    easeFactor = progress.easeFactor
+    difficultyScore = previousDifficulty
+    stability = previousStability
+    if (!sameDaySuccess || observation.hintUsed || observation.evaluationSource === 'recognition') intervalMs = 6 * 60 * MINUTE
+  }
+
   if (mistakesToday >= 2) {
     const tomorrow = localDateOffset(now, 1)
     tomorrow.setHours(9, 0, 0, 0)
@@ -160,6 +171,7 @@ export function scheduleReview(progress: WordProgress, rating: Rating, now = Dat
 
   const nextProgress: WordProgress = {
     ...progress,
+    ...(observation ? { lastObservation: observation, evidence: updateMemoryEvidence(progress, rating, observation, now) } : {}),
     repetitions,
     easeFactor,
     stability,
@@ -183,7 +195,11 @@ export function scheduleReview(progress: WordProgress, rating: Rating, now = Dat
 }
 
 export function scheduleQuizResult(progress: WordProgress, correct: boolean, now = Date.now()): WordProgress {
-  return scheduleReview(progress, correct ? 'fuzzy' : 'unknown', now)
+  return scheduleReview(progress, correct ? 'fuzzy' : 'unknown', now, {
+    evaluationSource: 'recognition', hintUsed: false, shortTermPractice: false,
+    responseDurationMs: null, intervalSinceLastReview: progress.lastStudiedAt === undefined ? null : now - progress.lastStudiedAt,
+    firstAttemptOfDay: null,
+  })
 }
 
 export function accuracy(progress: WordProgress[]): number {
@@ -219,6 +235,11 @@ function progressMap(progress: WordProgress[]): Map<string, WordProgress> {
   return new Map(progress.map((item) => [item.wordId, item]))
 }
 
+export function reviewRisk(progress: WordProgress, now: number): number {
+  return Number(progress.lastRating === 'unknown') * 4 + Number(isLeech(progress)) * 2
+    + Math.min(10, progress.lapses) / 5 + Math.max(0, now - progress.nextReviewAt) / DAY / Math.max(1, progress.stability)
+}
+
 export function getDueReviewWords(words: VocabWord[], progress: WordProgress[], now = Date.now()): VocabWord[] {
   const byId = progressMap(progress)
   return words
@@ -226,7 +247,8 @@ export function getDueReviewWords(words: VocabWord[], progress: WordProgress[], 
       const item = byId.get(word.id)
       return item ? !item.excluded && !isRestoredNew(item) && item.nextReviewAt <= now : false
     })
-    .sort((a, b) => (byId.get(a.id)?.nextReviewAt ?? 0) - (byId.get(b.id)?.nextReviewAt ?? 0))
+    .sort((a, b) => reviewRisk(byId.get(b.id)!, now) - reviewRisk(byId.get(a.id)!, now)
+      || (byId.get(a.id)?.nextReviewAt ?? 0) - (byId.get(b.id)?.nextReviewAt ?? 0))
 }
 
 function localDayKey(now: number): string {
