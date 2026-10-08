@@ -1,4 +1,5 @@
 import type { VocabWord } from '../types'
+import { buildWordBreakdown } from '../lib/wordBreakdown'
 import { buildMemoryHook } from '../lib/memoryHooks'
 import type { DraftWord } from '../lib/vocabQuality'
 import { evilMemoryHooks } from '../lib/evilMemoryHooks'
@@ -161,4 +162,4 @@ export const seedWords: VocabWord[] = [
   ...publishDraftWords(generatedBatch8),
   ...publishDraftWords(generatedBatch9, true),
   ...publishDraftWords(generatedBatch10, true),
-]
+].map((word) => ({ ...word, wordBreakdown: buildWordBreakdown(word) }))

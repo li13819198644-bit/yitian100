@@ -21,7 +21,8 @@ describe('focused intervention and review priority', () => {
     expect(interventionText(word, 'meaning')).toContain('不是用证据证明责任不存在')
     expect(interventionText(word, 'usage')).toContain('repudiate responsibility')
     for (const term of ['deny', 'reject', 'refute', 'repudiate', '用理由或证据反驳']) expect(interventionText(word, 'confusion')).toContain(term)
-    expect(interventionText(word, 'form')).toBe(word.memoryHook?.breakdown)
+    expect(interventionText(word, 'form')).toContain('repu + di + ate')
+    expect(interventionText(word, 'form')).toContain('仅按字形分块')
   })
   it('prioritizes high-risk due words under a 263-word backlog and still permits five new words', () => {
     const words = seedWords.slice(0, 273)

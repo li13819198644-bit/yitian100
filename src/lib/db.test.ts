@@ -34,6 +34,9 @@ describe('additive offline storage compatibility', () => {
     const grammar = [{ questionId: 'tense-1', attempts: 1, correct: 0, firstCorrect: false, lastCorrect: false, reviewStage: 0, nextReviewAt: now + 1000, updatedAt: now }]
     await db.saveGrammarProgress(grammar)
     expect((await db.getWords()).map((word) => word.id).sort()).toEqual(seedWords.map((word) => word.id).sort())
+    const viable = seedWords.find((word) => word.word === 'viable')!
+    await db.saveWords([{ ...viable, wordBreakdown: undefined }])
+    expect((await db.getWords()).find((word) => word.word === 'viable')?.wordBreakdown?.parts[0].meaning).toContain('生命')
     expect(await db.getProgress()).toEqual(expect.arrayContaining(progress))
     expect(await db.getProgress()).toHaveLength(605)
     expect(evidenceSummary((await db.getProgress())[0]).verifiedRecall).toBeNull()

@@ -6,6 +6,7 @@ import { GrammarPanel } from './components/GrammarPanel'
 import { DailyStatsPanel } from './components/DailyStatsPanel'
 import { makeObservation } from './lib/memoryEvidence'
 import { TargetedReview } from './components/TargetedReview'
+import { WordBreakdownPanel } from './components/WordBreakdownPanel'
 import { WordRecallCard } from './components/WordRecallCard'
 import { ListeningPlayer } from './components/ListeningPlayer'
 import { buildDailyReport } from './lib/dailyReport'
@@ -933,7 +934,9 @@ function WordDetail({ word, progress, onContinue, continueLabel, onReviewed }: {
           </button>
         </div>
         <p className="mt-5 text-2xl font-semibold leading-9">{word.meaning}</p>
-        <div className="mt-5 border-t border-stone-200 pt-4">
+        <WordBreakdownPanel word={word} />
+        <details className="mt-5 border-t border-stone-200 pt-1">
+          <summary className="min-h-11 cursor-pointer py-3 font-semibold">原搭配与例句</summary>
           <p className="font-semibold">{word.collocation}</p>
           <div className="mt-3 flex items-start justify-between gap-3">
             <p className="leading-7 text-stone-600">{word.example}</p>
@@ -941,11 +944,14 @@ function WordDetail({ word, progress, onContinue, continueLabel, onReviewed }: {
               <Volume2 size={19} />
             </button>
           </div>
-        </div>
+        </details>
       </div>
 
       <TargetedReview word={word} progress={progress} onReviewed={onReviewed} />
 
+      <details className="rounded-lg bg-white p-4 ring-1 ring-stone-200">
+        <summary className="min-h-11 cursor-pointer py-3 font-semibold">更多记法与词源</summary>
+        <div className="mt-2 space-y-4">
       {word.confusions?.map((confusion) => (
         <div key={confusion.trap} className="rounded-lg bg-rose-50 p-4 ring-1 ring-rose-100">
           <p className="text-sm font-semibold text-rose-900">容易误想：{confusion.trap}</p>
@@ -969,6 +975,8 @@ function WordDetail({ word, progress, onContinue, continueLabel, onReviewed }: {
           <p className="mt-2 font-medium leading-7 text-fuchsia-950">{word.evilHook}</p>
         </div>
       )}
+        </div>
+      </details>
 
       <p className="rounded-lg bg-stone-100 px-4 py-3 text-sm text-stone-600">
         累计练习 {progress?.seen ?? 0} 次 · 答错 {progress?.incorrect ?? 0} 次

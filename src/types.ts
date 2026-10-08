@@ -4,6 +4,14 @@ export type ReviewMode = 'choice' | 'advanced'
 export type Screen = 'home' | 'learn' | 'quiz' | 'review' | 'weak' | 'settings' | 'import' | 'sync' | 'detail' | 'grammar' | 'daily' | 'listening'
 export type SessionKind = 'learn' | 'review' | 'quiz' | 'weak'
 
+export interface WordBreakdown {
+  kind: 'formation' | 'historical' | 'spelling' | 'whole'
+  parts: Array<{ text: string; meaning?: string }>
+  bridge: string
+  cue: string
+  note?: string
+}
+
 export interface VocabWord {
   id: string
   word: string
@@ -21,6 +29,7 @@ export interface VocabWord {
   evilHook?: string
   usageNote?: string
   etymologySource?: string
+  wordBreakdown?: WordBreakdown
   confusions?: Array<{
     trap: string
     wrongPath: string

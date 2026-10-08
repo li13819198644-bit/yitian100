@@ -1,5 +1,6 @@
 import type { ReviewReason, VocabWord, WordProgress } from '../types'
 import { isLeech } from './srs'
+import { buildWordBreakdown } from './wordBreakdown'
 
 export function needsIntervention(progress?: WordProgress): boolean {
   return Boolean(progress && !progress.excluded && ((progress.evidence?.failureDays.length ?? 0) >= 2 || isLeech(progress)))
@@ -13,5 +14,7 @@ export function interventionText(word: VocabWord, reason: ReviewReason): string 
   if (reason === 'meaning') return `${word.word}：${word.meaning}。${word.collocation ? `先用 ${word.collocation} 把意思连起来。` : '只抓住当前核心含义。'}`
   if (reason === 'usage') return word.usageNote || [word.collocation, word.example].filter(Boolean).join(' · ') || '此词暂无搭配资料，可先看当前释义。'
   if (reason === 'confusion') return word.confusions?.[0]?.correction || word.usageNote || '暂无经核对的专门辨析；先回到本词的核心含义，不编造近义词区别。'
-  return word.memoryHook?.breakdown || `看清 ${word.word} 的字形，再联系当前释义。暂无词源资料，不把拼写联想当作词源。`
+  const breakdown = word.wordBreakdown ?? buildWordBreakdown(word)
+  const parts = breakdown.parts.map((part) => part.meaning ? `${part.text}（${part.meaning}）` : part.text).join(' + ')
+  return `${parts}。${breakdown.bridge}${breakdown.note ?? ''}`
 }

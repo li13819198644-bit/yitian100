@@ -174,4 +174,17 @@ describe('actual session navigation', () => {
     const metric = [...host.querySelectorAll('p')].find((item) => item.textContent === '今日练习词数')
     expect(metric?.parentElement?.textContent).toBe('今日练习词数2')
   })
+  it('puts the memory bridge in unknown details while keeping long references optional', async () => {
+    await mount(); await start('学习')
+    expect(host.querySelector('[aria-label="拆开记"]')).toBeNull()
+    await click('alpha'); await click('不会')
+    expect(host.querySelector('[aria-label="拆开记"]')?.textContent).toContain('first phrase')
+    const references = [...host.querySelectorAll('details')].find((item) => item.querySelector('summary')?.textContent === '更多记法与词源')!
+    expect(references.open).toBe(false)
+    const example = [...host.querySelectorAll('details')].find((item) => item.querySelector('summary')?.textContent === '原搭配与例句')!
+    expect(example.open).toBe(false)
+    await click('继续下一个词')
+    expectHidden(fixture.words[1])
+    expect(fixture.saveStats).toHaveBeenCalledOnce()
+  })
 })
