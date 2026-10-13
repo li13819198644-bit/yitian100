@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { BarChart3, BookOpen, ChevronRight, Cloud, Download, Headphones, Home, NotebookPen, RotateCcw, Scissors, Settings, Upload, Volume2, X } from 'lucide-react'
 import clsx from 'clsx'
+import { reliefPlan, RELIEF_TARGET } from './lib/relief'
 import type { AppSettings, AppStats, GrammarProgress, Screen, SessionKind, VocabWord, WordProgress } from './types'
 import { GrammarPanel } from './components/GrammarPanel'
 import { DailyStatsPanel } from './components/DailyStatsPanel'
 import { WordRecallCard } from './components/WordRecallCard'
+import { WordMeaning } from './components/WordMeaning'
 import { ListeningPlayer } from './components/ListeningPlayer'
 import { buildDailyReport } from './lib/dailyReport'
 import { grammarQuestions, grammarTopics } from './data/grammar'
@@ -257,20 +259,19 @@ function App() {
     }),
     [words, progress, settings.dailyTarget, settings.dailyCapacity, clockNow],
   )
-  const reliefActive = settings.reliefMode && (dailyPlan.reviewDebt >= 30 || dailyPlan.weakDebt >= 20 || dailyPlan.forecastPressure > 0)
-  const reliefReviewLimit = reliefActive && dailyPlan.reviewDebt ? Math.min(20, dailyPlan.reviewDebt) : undefined
+  const reliefActive = settings.reliefMode
+  const relief = reliefPlan(words, progress, stats, clockNow)
   const recommendedNewCount = reliefActive ? 0 : dailyPlan.recommendedNewCount
   const sessionWords = useMemo(
     () => sessionWordIds.map((id) => wordMap.get(id)).filter((word): word is VocabWord => Boolean(word)),
     [sessionWordIds, wordMap],
   )
-  const reviewWords = reliefReviewLimit ? dailyPlan.dueReviewWords.slice(0, reliefReviewLimit) : dailyPlan.dueReviewWords
+  const reviewWords = reliefActive ? relief.words : dailyPlan.dueReviewWords
   const weakWords = useMemo(() => words.filter((word) => {
     const item = progressMap.get(word.id)
     return item ? isWeak(item) : false
   }), [words, progressMap])
-  const weakSessionWords = chooseWeakRotationSession(words, progress, reliefActive ? 10 : 30, clockNow)
-  const reliefActionCount = dailyPlan.reviewDebt ? (reliefReviewLimit ?? dailyPlan.reviewDebt) : weakSessionWords.length
+  const weakSessionWords = reliefActive ? relief.words : chooseWeakRotationSession(words, progress, 30, clockNow)
   const unlearnedCount = getNewWords(words, progress).length
   const gentleNewWordCount = Math.min(10, unlearnedCount)
   // Derive this so existing local/cloud progress benefits from improved criteria
@@ -328,6 +329,7 @@ function App() {
   }
 
   function startLearnSession(options: { limit?: number } = {}) {
+    if (reliefActive) { startReliefSession(); return }
     const target = options.limit ?? settings.dailyTarget
     // Reaching this function is an explicit request to learn new words. Daily
     // load recommendations may show zero, but they must not disable this action.
@@ -346,10 +348,11 @@ function App() {
   }
 
   function startReviewSession(nextScreen: Screen = 'learn', limit?: number) {
+    if (reliefActive) { startReliefSession(); return }
     const nextWords = chooseReviewSession(words, progress, {
       baseNewWordsPerDay: settings.dailyTarget,
       dailyCapacity: settings.dailyCapacity,
-      reviewCap: limit ?? reliefReviewLimit,
+      reviewCap: limit,
     })
     if (!nextWords.length) {
       setScreen('review')
@@ -363,6 +366,7 @@ function App() {
   }
 
   function startQuizSession() {
+    if (reliefActive) { startReliefSession(); return }
     const nextWords = chooseQuizSession(words, progress, {
       baseNewWordsPerDay: settings.dailyTarget,
       dailyCapacity: settings.dailyCapacity,
@@ -381,6 +385,7 @@ function App() {
   }
 
   function startWeakPracticeSession(nextScreen: Screen = 'learn', requestedLimit?: number) {
+    if (reliefActive) { startReliefSession(); return }
     const limit = requestedLimit ?? (reliefActive ? 10 : 30)
     const nextWords = chooseWeakRotationSession(words, progress, limit)
     if (!nextWords.length) {
@@ -396,6 +401,22 @@ function App() {
     autoSpeakSessionWord(nextWords.map((word) => word.id), 0, 'weak')
   }
 
+  function startReliefSession() {
+    const plan = reliefPlan(words, progress, stats)
+    if (!plan.words.length) {
+      setFeedback(plan.done ? '今日已完成，今天先到这里。' : '今日安排已完成，剩余词留到之后。')
+      setFeedbackWordId('')
+      setScreen('home')
+      return
+    }
+    const ids = plan.words.map(w => w.id)
+    setSessionWordIds(ids)
+    setActiveIndex(0)
+    setSessionKind('review')
+    setScreen('learn')
+    autoSpeakSessionWord(ids, 0, 'review')
+  }
+
   async function rateWord(word: VocabWord, rating: 'known' | 'unknown', returnScreen: 'learn' | 'quiz') {
     if (progressMap.get(word.id)?.excluded || answering.current) return false
     answering.current = true
@@ -404,7 +425,9 @@ function App() {
       const correct = rating === 'known'
       const updated = scheduleReview(progressMap.get(word.id) ?? createProgress(word.id), rating, now)
       const nextStats = recordStudyResult(stats, word.id, correct, 'self', now, { rating, session: sessionKind, isNew: !(progressMap.get(word.id)?.seen) })
-      const nextIds = insertDelayedRetry(sessionWordIds, activeIndex, word.id, rating)
+      const nextIds = reliefActive && nextStats.todaySeen.length >= RELIEF_TARGET
+        ? sessionWordIds.slice(0, activeIndex + 1)
+        : insertDelayedRetry(sessionWordIds, activeIndex, word.id, rating)
       await saveProgress(updated)
       await saveStats(nextStats)
       setProgress((items) => [...items.filter((item) => item.wordId !== word.id), updated])
@@ -640,38 +663,39 @@ function App() {
               <div className="flex items-end justify-between">
                 <div>
                   <p className="text-sm text-stone-500">今日练习量</p>
-                  <p className="mt-1 text-4xl font-semibold">{todayProgress}</p>
+                  <p className="mt-1 text-4xl font-semibold">{todayProgress}{reliefActive ? ' / 15' : ''}</p>
                 </div>
                 <span className="rounded-full bg-sky-100 px-3 py-1 text-sm font-medium text-sky-800">B2 → C1</span>
               </div>
               <div className="mt-4 h-3 rounded-full bg-stone-100">
-                <div className="h-3 rounded-full bg-emerald-600" style={{ width: `${Math.min(100, (todayProgress / (reliefActive ? 20 : Math.max(1, settings.dailyCapacity))) * 100)}%` }} />
+                <div className="h-3 rounded-full bg-emerald-600" style={{ width: `${Math.min(100, (todayProgress / (reliefActive ? RELIEF_TARGET : Math.max(1, settings.dailyCapacity))) * 100)}%` }} />
               </div>
             </div>
 
             {reliefActive && (
               <div className="rounded-lg bg-emerald-50 p-5 shadow-sm ring-1 ring-emerald-100">
                 <p className="text-sm font-medium text-emerald-800">减负模式</p>
-                <p className="mt-2 text-2xl font-semibold text-stone-950">{todayProgress >= 20 ? '今日 20 词目标已完成' : `今天再做 ${20 - todayProgress} 个就好`}</p>
-                <p className="mt-2 leading-6 text-stone-600">{todayProgress >= 20 ? '今天可以休息了。剩余单词保留在复习队列。' : '每轮少量复习，做完就休息。'}</p>
+                <p className="mt-2 text-2xl font-semibold text-stone-950">{relief.done || !relief.words.length ? '今日安排已完成' : `今天最多再做 ${relief.remaining} 个`}</p>
+                <p className="mt-2 leading-6 text-stone-600">新词已暂停。{relief.done || !relief.words.length ? '今天先到这里，剩余单词留到之后。' : '今天只做一小轮，不用补齐积压。'}</p>
               </div>
             )}
 
             <div className="grid gap-3">
               <PrimaryButton
-                onClick={reliefActive && todayProgress >= 20 ? () => setScreen('review') : dailyPlan.reviewDebt ? () => startReviewSession('learn', reliefActive ? Math.min(reliefActionCount, 20 - todayProgress) : undefined) : recommendedNewCount ? () => startLearnSession() : () => startWeakPracticeSession('learn', reliefActive ? Math.min(reliefActionCount, 20 - todayProgress) : undefined)}
+                disabled={reliefActive && !relief.words.length}
+                onClick={reliefActive ? startReliefSession : dailyPlan.reviewDebt ? () => startReviewSession('learn') : recommendedNewCount ? () => startLearnSession() : () => startWeakPracticeSession('learn')}
                 icon={<BookOpen size={20} />}
-                label={reliefActive ? todayProgress >= 20 ? '查看复习队列' : reliefActionCount ? `复习 ${Math.min(reliefActionCount, 20 - todayProgress)} 个` : '查看弱词' : dailyPlan.reviewDebt ? '先清复习' : recommendedNewCount ? '学习新词' : '修复弱词'}
+                label={reliefActive ? relief.words.length ? `复习 ${relief.words.length} 个` : '今天先到这里' : dailyPlan.reviewDebt ? '先清复习' : recommendedNewCount ? '学习新词' : '修复弱词'}
               />
-              {gentleNewWordCount > 0 && (
+              {!reliefActive && gentleNewWordCount > 0 && (
                 <SecondaryButton onClick={() => startLearnSession({ limit: gentleNewWordCount })} icon={<BookOpen size={20} />} label={`学 ${gentleNewWordCount} 个新词`} />
               )}
-              <SecondaryButton onClick={startQuizSession} icon={<BarChart3 size={20} />} label="单词回忆" />
+              {!reliefActive && <SecondaryButton onClick={startQuizSession} icon={<BarChart3 size={20} />} label="单词回忆" />}
               <SecondaryButton onClick={() => setScreen('listening')} icon={<Headphones size={20} />} label="听词复习 · MP3" />
               <SecondaryButton onClick={() => { setClockNow(Date.now()); setFeedback(''); setFeedbackWordId(''); setScreen('daily') }} icon={<BarChart3 size={20} />} label="当天学习统计" />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <details><summary className="min-h-11 cursor-pointer py-3 font-medium">学习详情与复习存量</summary><div className="grid grid-cols-2 gap-3">
               <Metric label="词库总量" value={words.length} />
               <Metric label="未学新词" value={unlearnedCount} />
               <Metric label="待复习总数" value={dailyPlan.reviewDebt} />
@@ -684,7 +708,7 @@ function App() {
               <Metric label="已掌握" value={mastered} />
               <Metric label="弱词" value={weakWords.length} />
               <Metric label="顽固词" value={stubbornWords} />
-            </div>
+            </div></details>
 
           </section>
         )}
@@ -697,7 +721,7 @@ function App() {
         )}
 
         {screen === 'learn' && sessionWords.length > 0 && activeIndex >= sessionWords.length && (
-          <DoneCard title="本轮完成" subtitle={`本轮练习 ${new Set(sessionWordIds).size} 个词。${dailyPlan.reviewDebt ? `还有 ${dailyPlan.reviewDebt} 个待复习，可以留到之后。` : '当前到期复习已完成。'}`} onFinish={() => setScreen('home')} onRestart={sessionKind === 'review' ? () => startReviewSession('learn') : sessionKind === 'weak' ? startWeakPracticeSession : () => startLearnSession()} />
+          <DoneCard title="本轮完成" subtitle={reliefActive ? '今天先到这里，剩余单词留到之后。' : `本轮练习 ${new Set(sessionWordIds).size} 个词。`} onFinish={() => setScreen('home')} onRestart={reliefActive ? undefined : sessionKind === 'review' ? () => startReviewSession('learn') : sessionKind === 'weak' ? startWeakPracticeSession : () => startLearnSession()} />
         )}
 
         {screen === 'quiz' && activeWord && activeIndex < sessionWords.length && (
@@ -712,7 +736,7 @@ function App() {
 
         {screen === 'review' && (
           <section className="space-y-3">
-            <PrimaryButton onClick={() => startReviewSession('learn')} icon={<RotateCcw size={20} />} label={reviewWords.length ? `开始复习 ${reviewWords.length} 个` : '暂无到期复习'} />
+            <PrimaryButton disabled={!reviewWords.length} onClick={() => startReviewSession('learn')} icon={<RotateCcw size={20} />} label={reviewWords.length ? `开始复习 ${reviewWords.length} 个` : reliefActive ? '今日安排已完成' : '暂无到期复习'} />
             <WordList title="复习队列" words={reviewWords} progressMap={progressMap} onOpen={openWordDetail} empty="现在没有到期复习词。" />
           </section>
         )}
@@ -741,7 +765,7 @@ function App() {
               <input className="mt-2 w-full accent-emerald-700" type="range" min="0" max="200" step="5" value={settings.dailyTarget} onChange={(event) => updateDailyTarget(Number(event.target.value))} />
               <div className="mt-1 text-sm text-stone-500">{settings.dailyTarget} 新词 / 天 · 总容量 {settings.dailyCapacity} 张卡</div>
               <label className="mt-5 flex min-h-12 items-center justify-between rounded-lg bg-stone-50 px-4 ring-1 ring-stone-200">
-                <span className="font-medium text-stone-900">自动减负</span>
+                <span className="font-medium text-stone-900">减负模式 · 每天最多 15 个旧词</span>
                 <input className="h-6 w-6 accent-emerald-700" type="checkbox" checked={settings.reliefMode} onChange={(event) => updateReliefMode(event.target.checked)} />
               </label>
               <button className="mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-stone-900 px-4 font-medium text-white" onClick={() => setScreen('import')}>
@@ -887,7 +911,7 @@ function WordDetail({ word, progress, onContinue, continueLabel }: {
             <Volume2 size={21} />
           </button>
         </div>
-        <p className="mt-5 text-2xl font-semibold leading-9">{word.meaning}</p>
+        <WordMeaning word={word} detailed />
         <div className="mt-5 border-t border-stone-200 pt-4">
           <p className="font-semibold">{word.collocation}</p>
           <div className="mt-3 flex items-start justify-between gap-3">
@@ -935,7 +959,7 @@ function WordDetail({ word, progress, onContinue, continueLabel }: {
   )
 }
 
-function DoneCard({ title, subtitle, onRestart, onFinish }: { title: string; subtitle: string; onRestart: () => void; onFinish: () => void }) {
+function DoneCard({ title, subtitle, onRestart, onFinish }: { title: string; subtitle: string; onRestart?: () => void; onFinish: () => void }) {
   return (
     <section className="rounded-lg bg-white p-5 text-center shadow-sm ring-1 ring-stone-200">
       <p className="text-3xl font-semibold">{title}</p>
@@ -943,9 +967,9 @@ function DoneCard({ title, subtitle, onRestart, onFinish }: { title: string; sub
       <button className="mt-6 flex min-h-14 w-full items-center justify-center rounded-lg bg-stone-950 px-5 text-lg font-semibold text-white" onClick={onFinish}>
         今天先到这里
       </button>
-      <button className="mt-3 flex min-h-12 w-full items-center justify-center text-stone-600" onClick={onRestart}>
+      {onRestart && <button className="mt-3 flex min-h-12 w-full items-center justify-center text-stone-600" onClick={onRestart}>
         再来一轮
-      </button>
+      </button>}
     </section>
   )
 }

@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import type { VocabWord } from '../types'
+import { WordMeaning } from './WordMeaning'
 
 export function WordRecallCard({ word, title, position, total, onRate }: {
   word: VocabWord; title: string; position: number; total: number
@@ -27,7 +28,7 @@ export function WordRecallCard({ word, title, position, total, onRate }: {
       <button type="button" className="min-h-40 w-full break-words text-center text-4xl font-semibold" aria-label={`查看 ${word.word} 的答案`} aria-expanded={revealed} disabled={saving} onClick={() => setRevealed(true)}>{word.word}</button>
       {!revealed ? <p className="text-center text-sm text-stone-500">点单词查看答案</p> : <div aria-live="polite">
         <p className="text-center text-sm text-stone-500">{word.phonetic}</p>
-        <p className="mt-4 text-center text-2xl font-medium">{word.meaning}</p>
+        <WordMeaning word={word} />
         <div className="mt-6 grid grid-cols-2 gap-3">
           <button type="button" disabled={saving} className="tap-button bg-emerald-600 text-white" onClick={() => void rate('known')}>会</button>
           <button type="button" disabled={saving} className="tap-button bg-rose-600 text-white" onClick={() => void rate('unknown')}>不会</button>
