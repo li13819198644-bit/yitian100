@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { reliefPlan } from './relief'
+import { extraReviewWords, reliefPlan } from './relief'
 import { createProgress, isWeak } from './srs'
 import { seedWords } from '../data/seedWords'
 import type { AppStats } from '../types'
@@ -10,6 +10,13 @@ const words = seedWords.slice(0, 40)
 const progress = words.map((w, i) => ({ ...createProgress(w.id, now - 86400000), seen: 5, correct: i < 20 ? 0 : 5, incorrect: i < 20 ? 5 : 0, lapses: i < 20 ? 5 : 0 }))
 const stats: AppStats = { todayDate: localDateKey(new Date(now)), todaySeen: [], combo: 0, bestCombo: 0, streak: 0 }
 describe('relief daily budget', () => {
+  it('offers voluntary old-word practice without new or excluded words', () => {
+    const items = progress.map((p, i) => ({ ...p, excluded: i === 0 }))
+    const extra = extraReviewWords([...words, seedWords[41]], items, false, now)
+    expect(extra).toHaveLength(10)
+    expect(extra.some(w => w.id === words[0].id || w.id === seedWords[41].id)).toBe(false)
+    expect(extraReviewWords(words, items, true, now).every(w => isWeak(items.find(p => p.wordId === w.id)!))).toBe(true)
+  })
   it('caps total and difficult words without changing progress', () => {
     const before = JSON.stringify(progress)
     const plan = reliefPlan(words, progress, stats, now)

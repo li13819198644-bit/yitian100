@@ -4,6 +4,18 @@ import { isWeak, isLeech } from './srs'
 
 export const RELIEF_TARGET = 15
 
+export function extraReviewWords(words: VocabWord[], progress: WordProgress[], weakOnly = false, now = Date.now()) {
+  const byId = new Map(progress.map(p => [p.wordId, p]))
+  return words.filter(w => {
+    const p = byId.get(w.id)
+    return p && p.seen > 0 && !p.excluded && (!weakOnly || isWeak(p))
+  }).sort((a, b) => {
+    const left = byId.get(a.id)!, right = byId.get(b.id)!
+    return Number(right.nextReviewAt <= now) - Number(left.nextReviewAt <= now)
+      || (left.lastStudiedAt ?? left.updatedAt) - (right.lastStudiedAt ?? right.updatedAt)
+  }).slice(0, 10)
+}
+
 export function reliefPlan(words: VocabWord[], progress: WordProgress[], stats: AppStats, now = Date.now()) {
   const today = localDateKey(new Date(now))
   const seen = new Set(stats.todayDate === today ? stats.todaySeen : [])

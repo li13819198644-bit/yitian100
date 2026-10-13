@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { BarChart3, BookOpen, ChevronRight, Cloud, Download, Headphones, Home, NotebookPen, RotateCcw, Scissors, Settings, Upload, Volume2, X } from 'lucide-react'
 import clsx from 'clsx'
-import { reliefPlan, RELIEF_TARGET } from './lib/relief'
+import { extraReviewWords, reliefPlan, RELIEF_TARGET } from './lib/relief'
 import type { AppSettings, AppStats, GrammarProgress, Screen, SessionKind, VocabWord, WordProgress } from './types'
 import { GrammarPanel } from './components/GrammarPanel'
 import { DailyStatsPanel } from './components/DailyStatsPanel'
@@ -260,13 +260,15 @@ function App() {
     [words, progress, settings.dailyTarget, settings.dailyCapacity, clockNow],
   )
   const reliefActive = settings.reliefMode
+  const [extraPractice, setExtraPractice] = useState(false)
   const relief = reliefPlan(words, progress, stats, clockNow)
+  const extraWords = extraReviewWords(words, progress, false, clockNow)
   const recommendedNewCount = reliefActive ? 0 : dailyPlan.recommendedNewCount
   const sessionWords = useMemo(
     () => sessionWordIds.map((id) => wordMap.get(id)).filter((word): word is VocabWord => Boolean(word)),
     [sessionWordIds, wordMap],
   )
-  const reviewWords = reliefActive ? relief.words : dailyPlan.dueReviewWords
+  const reviewWords = reliefActive ? relief.words.length ? relief.words : extraWords : dailyPlan.dueReviewWords
   const weakWords = useMemo(() => words.filter((word) => {
     const item = progressMap.get(word.id)
     return item ? isWeak(item) : false
@@ -385,7 +387,7 @@ function App() {
   }
 
   function startWeakPracticeSession(nextScreen: Screen = 'learn', requestedLimit?: number) {
-    if (reliefActive) { startReliefSession(); return }
+    if (reliefActive) { startExtraPractice(true); return }
     const limit = requestedLimit ?? (reliefActive ? 10 : 30)
     const nextWords = chooseWeakRotationSession(words, progress, limit)
     if (!nextWords.length) {
@@ -401,14 +403,25 @@ function App() {
     autoSpeakSessionWord(nextWords.map((word) => word.id), 0, 'weak')
   }
 
+  function startExtraPractice(weakOnly = false) {
+    const selected = extraReviewWords(words, progress, weakOnly)
+    if (!selected.length) { setScreen(weakOnly ? 'weak' : 'review'); return }
+    const ids = selected.map(w => w.id)
+    setExtraPractice(true)
+    setSessionWordIds(ids)
+    setActiveIndex(0)
+    setSessionKind(weakOnly ? 'weak' : 'review')
+    setScreen('learn')
+    autoSpeakSessionWord(ids, 0, 'review')
+  }
+
   function startReliefSession() {
     const plan = reliefPlan(words, progress, stats)
     if (!plan.words.length) {
-      setFeedback(plan.done ? '今日已完成，今天先到这里。' : '今日安排已完成，剩余词留到之后。')
-      setFeedbackWordId('')
-      setScreen('home')
+      startExtraPractice()
       return
     }
+    setExtraPractice(false)
     const ids = plan.words.map(w => w.id)
     setSessionWordIds(ids)
     setActiveIndex(0)
@@ -425,7 +438,7 @@ function App() {
       const correct = rating === 'known'
       const updated = scheduleReview(progressMap.get(word.id) ?? createProgress(word.id), rating, now)
       const nextStats = recordStudyResult(stats, word.id, correct, 'self', now, { rating, session: sessionKind, isNew: !(progressMap.get(word.id)?.seen) })
-      const nextIds = reliefActive && nextStats.todaySeen.length >= RELIEF_TARGET
+      const nextIds = reliefActive && !extraPractice && nextStats.todaySeen.length >= RELIEF_TARGET
         ? sessionWordIds.slice(0, activeIndex + 1)
         : insertDelayedRetry(sessionWordIds, activeIndex, word.id, rating)
       await saveProgress(updated)
@@ -675,17 +688,17 @@ function App() {
             {reliefActive && (
               <div className="rounded-lg bg-emerald-50 p-5 shadow-sm ring-1 ring-emerald-100">
                 <p className="text-sm font-medium text-emerald-800">减负模式</p>
-                <p className="mt-2 text-2xl font-semibold text-stone-950">{relief.done || !relief.words.length ? '今日安排已完成' : `今天最多再做 ${relief.remaining} 个`}</p>
-                <p className="mt-2 leading-6 text-stone-600">新词已暂停。{relief.done || !relief.words.length ? '今天先到这里，剩余单词留到之后。' : '今天只做一小轮，不用补齐积压。'}</p>
+                <p className="mt-2 text-2xl font-semibold text-stone-950">{relief.done || !relief.words.length ? '今日安排已完成' : `今天建议再做 ${relief.remaining} 个`}</p>
+                <p className="mt-2 leading-6 text-stone-600">新词已暂停。{relief.done || !relief.words.length ? '可以休息，也可以自选加练。' : '每日建议 15 个旧词，不用补齐积压。'}</p>
               </div>
             )}
 
             <div className="grid gap-3">
               <PrimaryButton
-                disabled={reliefActive && !relief.words.length}
+                disabled={reliefActive && !reviewWords.length}
                 onClick={reliefActive ? startReliefSession : dailyPlan.reviewDebt ? () => startReviewSession('learn') : recommendedNewCount ? () => startLearnSession() : () => startWeakPracticeSession('learn')}
                 icon={<BookOpen size={20} />}
-                label={reliefActive ? relief.words.length ? `复习 ${relief.words.length} 个` : '今天先到这里' : dailyPlan.reviewDebt ? '先清复习' : recommendedNewCount ? '学习新词' : '修复弱词'}
+                label={reliefActive ? relief.words.length ? `复习 ${relief.words.length} 个` : extraWords.length ? `自选加练 ${extraWords.length} 个旧词` : '暂无已学词' : dailyPlan.reviewDebt ? '先清复习' : recommendedNewCount ? '学习新词' : '修复弱词'}
               />
               {!reliefActive && gentleNewWordCount > 0 && (
                 <SecondaryButton onClick={() => startLearnSession({ limit: gentleNewWordCount })} icon={<BookOpen size={20} />} label={`学 ${gentleNewWordCount} 个新词`} />
@@ -742,7 +755,7 @@ function App() {
         )}
         {screen === 'weak' && (
           <section className="space-y-3">
-            <PrimaryButton disabled={!weakSessionWords.length} onClick={() => startWeakPracticeSession('learn')} icon={<RotateCcw size={20} />} label={weakSessionWords.length ? `轮换复习 ${weakSessionWords.length} 个弱词` : weakWords.length ? '弱词正在间隔休息' : '暂无弱词'} />
+            <PrimaryButton disabled={reliefActive ? !weakWords.length : !weakSessionWords.length} onClick={() => startWeakPracticeSession('learn')} icon={<RotateCcw size={20} />} label={reliefActive && weakWords.length ? '自选加练弱词' : weakSessionWords.length ? `轮换复习 ${weakSessionWords.length} 个弱词` : weakWords.length ? '弱词正在间隔休息' : '暂无弱词'} />
             <WordList title="弱词本" words={weakWords} progressMap={progressMap} onOpen={openWordDetail} empty="还没有弱词。" />
           </section>
         )}
@@ -765,7 +778,7 @@ function App() {
               <input className="mt-2 w-full accent-emerald-700" type="range" min="0" max="200" step="5" value={settings.dailyTarget} onChange={(event) => updateDailyTarget(Number(event.target.value))} />
               <div className="mt-1 text-sm text-stone-500">{settings.dailyTarget} 新词 / 天 · 总容量 {settings.dailyCapacity} 张卡</div>
               <label className="mt-5 flex min-h-12 items-center justify-between rounded-lg bg-stone-50 px-4 ring-1 ring-stone-200">
-                <span className="font-medium text-stone-900">减负模式 · 每天最多 15 个旧词</span>
+                <span className="font-medium text-stone-900">减负模式 · 每天建议 15 个旧词</span>
                 <input className="h-6 w-6 accent-emerald-700" type="checkbox" checked={settings.reliefMode} onChange={(event) => updateReliefMode(event.target.checked)} />
               </label>
               <button className="mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-stone-900 px-4 font-medium text-white" onClick={() => setScreen('import')}>
