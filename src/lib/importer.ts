@@ -1,13 +1,16 @@
 import type { VocabWord } from '../types'
+import { normalizeWordSenses } from './wordSenses'
 
 function normalizeWord(raw: Partial<VocabWord>, index: number): VocabWord {
   const word = String(raw.word ?? '').trim()
   if (!word) throw new Error(`第 ${index + 1} 条缺少 word`)
+  const senses = normalizeWordSenses(raw.senses)
   return {
     id: String(raw.id ?? word).trim().toLowerCase(),
     word,
     phonetic: String(raw.phonetic ?? '').trim(),
-    meaning: String(raw.meaning ?? '').trim(),
+    meaning: String(raw.meaning ?? senses?.[0]?.meaning ?? '').trim(),
+    ...(senses ? { senses } : {}),
     collocation: String(raw.collocation ?? '').trim(),
     example: String(raw.example ?? '').trim(),
     memoryHook: raw.memoryHook,

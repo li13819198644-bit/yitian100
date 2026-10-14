@@ -12,11 +12,25 @@ export interface WordBreakdown {
   note?: string
 }
 
+export type PartOfSpeech = 'adjective' | 'noun' | 'verb' | 'adverb' | 'preposition' | 'conjunction'
+export interface WordSense {
+  partOfSpeech: string
+  meaning: string
+  collocation?: string
+  phonetic?: string
+  note?: string
+  example?: string
+  translation?: string
+  lessCommon?: boolean
+}
+
 export interface VocabWord {
   id: string
   word: string
   phonetic: string
   meaning: string
+  senses?: WordSense[]
+  definitionSource?: string
   collocation: string
   example: string
   memoryHook?: {

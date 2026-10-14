@@ -93,7 +93,7 @@ const rows: Row[] = [
   ['practical', '/ˈpræktɪkəl/', '实际的；实用的', 'practical solution', 'The guide offers practical solutions for small teams.', 2, 'B2', '现实可用，不停留在理论。', '工具从说明书跳到手里开始干活。', '常搭 practical solution / practical advice；强调能落地。', '词源：来自希腊 praktikos，意为 fit for action、适合行动；practical 指可操作。', 'practical像工具上手：不是空谈，能干活。'],
   ['theoretical', '/ˌθiːəˈretɪkəl/', '理论的；假设的', 'theoretical model', 'The theoretical model needs real-world testing.', 4, 'C1', '停留在理论框架，未必已验证。', '纸上模型还没进实验室。', '常搭 theoretical model / theoretical possibility；强调理论层面。', '词源：来自希腊 theoria，意为 contemplation、观察思考；theoretical 指理论思考。', 'theoretical像纸上模型：还没被现实撞过。'],
   ['abstract', '/ˈæbstrækt/', '抽象的；摘要', 'abstract concept', 'Abstract concepts become clearer with examples.', 3, 'B2', '不具体可摸，需要概念理解。', '云雾里漂着一个没有实体的图形。', '常搭 abstract concept / abstract idea；和 concrete 相对。', '词源：来自拉丁 abstrahere，意为 draw away、抽离；abstract 是从具体中抽出来。', 'abstract像雾里图形：抓不到实体，只能想。'],
-  ['concrete', '/ˈkɑːnkriːt/', '具体的；混凝土的', 'concrete example', 'A concrete example made the rule easier to understand.', 2, 'B2', '具体可见，能落到例子上。', '抽象规则被浇成一块实心砖。', '常搭 concrete example / concrete evidence；强调具体实在。', '词源：来自拉丁 concrescere，意为 grow together、凝结；concrete 有凝成实体之感。', 'concrete像实心砖例子：概念终于能摸到。'],
+  ['concrete', '/ˈkɑːnkriːt/', '具体的、明确的；混凝土', 'concrete example', 'A concrete example made the rule easier to understand.', 2, 'B2', '具体可见，能落到例子上。', '抽象规则被浇成一块实心砖。', '形容词常搭 concrete example / concrete evidence；名词是混凝土，如 pour concrete。另有较少用的动词用法，表示用混凝土铺筑等；本卡先学常用形容词和名词。', '词源：来自拉丁 concrescere，意为 grow together、凝结；concrete 有凝成实体之感。', 'concrete像实心砖例子：概念终于能摸到。'],
   ['rational', '/ˈræʃənəl/', '理性的；合理的', 'rational decision', 'A rational decision should consider evidence, not fear.', 3, 'B2', '基于理由和证据，而非冲动。', '情绪火焰旁边放着冷静计算器。', '常搭 rational decision / rational explanation；强调理性推理。', '词源：来自拉丁 ratio，意为 reason、计算或理由；rational 指有理由。', 'rational像冷静计算器：不被情绪火带跑。'],
   ['logical', '/ˈlɑːdʒɪkəl/', '合逻辑的；有条理的', 'logical conclusion', 'The evidence supports a logical conclusion.', 2, 'B2', '推理顺，前后能接上。', '多米诺骨牌一张接一张倒下。', '常搭 logical conclusion / logical order；强调推理连接。', '词源：来自希腊 logos，意为 reason、word、logic；logical 指符合推理。', 'logical像多米诺推理：前一张推后一张。'],
   ['neutral', '/ˈnuːtrəl/', '中立的；不偏不倚的', 'neutral position', 'The mediator maintained a neutral position.', 3, 'B2', '不站任何一边。', '裁判站在中线，两边队徽都不看。', '常搭 neutral position / neutral tone；强调不偏向。', '词源：来自拉丁 neuter，意为 neither、两者都不是；neutral 是不属于任一边。', 'neutral像裁判站中线：不帮左也不帮右。'],
@@ -139,6 +139,7 @@ export const generatedBatch7: DraftWord[] = rows.map(([
   example,
   difficulty,
   level,
+  ...(word === 'concrete' ? { usageNote: breakdown } : {}),
   memoryHook: {
     core,
     image,

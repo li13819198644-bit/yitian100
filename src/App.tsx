@@ -7,6 +7,8 @@ import { DailyStatsPanel } from './components/DailyStatsPanel'
 import { makeObservation } from './lib/memoryEvidence'
 import { TargetedReview } from './components/TargetedReview'
 import { WordBreakdownPanel } from './components/WordBreakdownPanel'
+import { WordMeanings } from './components/WordMeanings'
+import { formatWordMeanings, hasSensePronunciations } from './lib/wordSenses'
 import { WordRecallCard } from './components/WordRecallCard'
 import { ListeningPlayer } from './components/ListeningPlayer'
 import { buildDailyReport } from './lib/dailyReport'
@@ -614,13 +616,15 @@ function App() {
       })),
       weakWords: weakWords.map((word) => ({
         word: word.word,
-        meaning: word.meaning,
+        meaning: formatWordMeanings(word),
+        senses: word.senses,
         progress: progressMap.get(word.id),
       })),
       words: words.map((word) => ({
         id: word.id,
         word: word.word,
-        meaning: word.meaning,
+        meaning: formatWordMeanings(word),
+        senses: word.senses,
         level: word.level,
         difficulty: word.difficulty,
         learned: learnedIds.has(word.id),
@@ -927,13 +931,13 @@ function WordDetail({ word, progress, onContinue, continueLabel, onReviewed }: {
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h2 className="break-words text-4xl font-semibold">{word.word}</h2>
-            <p className="mt-2 text-stone-500">{word.phonetic}</p>
+            {!hasSensePronunciations(word) && <p className="mt-2 text-stone-500">{word.phonetic}</p>}
           </div>
           <button className="flex min-h-12 min-w-12 shrink-0 items-center justify-center rounded-full bg-stone-950 text-white" onClick={() => speakWord(word.word)} aria-label={`朗读 ${word.word}`}>
             <Volume2 size={21} />
           </button>
         </div>
-        <p className="mt-5 text-2xl font-semibold leading-9">{word.meaning}</p>
+        <div className="mt-5"><WordMeanings word={word} detailed /></div>
         <WordBreakdownPanel word={word} />
         <details className="mt-5 border-t border-stone-200 pt-1">
           <summary className="min-h-11 cursor-pointer py-3 font-semibold">原搭配与例句</summary>
@@ -1017,7 +1021,7 @@ function WordList({ title, words, progressMap, empty, onOpen }: { title: string;
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-lg font-semibold">{word.word}</p>
-                <p className="text-sm text-stone-500">{word.meaning}</p>
+                <WordMeanings word={word} compact />
               </div>
               <ChevronRight className="shrink-0 text-stone-300" size={20} />
             </div>

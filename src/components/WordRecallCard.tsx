@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Rating, VocabWord } from '../types'
+import { WordMeanings } from './WordMeanings'
+import { hasSensePronunciations } from '../lib/wordSenses'
 
 export function WordRecallCard({ word, title, position, total, onRate }: {
   word: VocabWord; title: string; position: number; total: number
@@ -39,8 +41,8 @@ export function WordRecallCard({ word, title, position, total, onRate }: {
     <div className="rounded-lg bg-white p-5 shadow-sm ring-1 ring-stone-200">
       <button type="button" className="min-h-40 w-full break-words text-center text-4xl font-semibold" aria-label={`查看 ${word.word} 的答案`} aria-expanded={revealed} disabled={saving} onClick={reveal}>{word.word}</button>
       {!revealed ? <p className="text-center text-sm text-stone-500">点单词查看答案</p> : <div aria-live="polite">
-        <p className="text-center text-sm text-stone-500">{word.phonetic}</p>
-        <p className="mt-4 text-center text-2xl font-medium">{word.meaning}</p>
+        {!hasSensePronunciations(word) && <p className="text-center text-sm text-stone-500">{word.phonetic}</p>}
+        <div className="mt-4"><WordMeanings word={word} centered /></div>
         <div className="mt-6 grid grid-cols-2 gap-3">
           <button type="button" disabled={saving} className="tap-button bg-emerald-600 text-white" onClick={() => void rate('known')}>会</button>
           <button type="button" disabled={saving} className="tap-button bg-rose-600 text-white" onClick={() => void rate('unknown')}>不会</button>

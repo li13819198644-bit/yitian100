@@ -37,6 +37,11 @@ describe('additive offline storage compatibility', () => {
     const viable = seedWords.find((word) => word.word === 'viable')!
     await db.saveWords([{ ...viable, wordBreakdown: undefined }])
     expect((await db.getWords()).find((word) => word.word === 'viable')?.wordBreakdown?.parts[0].meaning).toContain('生命')
+    const concrete = seedWords.find((word) => word.word === 'concrete')!
+    await db.saveWords([{ ...concrete, meaning: '具体的；混凝土的', senses: undefined }])
+    expect((await db.getWords()).find((word) => word.word === 'concrete')?.senses).toMatchObject([
+      { partOfSpeech: 'adjective', meaning: '具体的、明确的' }, { partOfSpeech: 'noun', meaning: '混凝土' },
+    ])
     expect(await db.getProgress()).toEqual(expect.arrayContaining(progress))
     expect(await db.getProgress()).toHaveLength(605)
     expect(evidenceSummary((await db.getProgress())[0]).verifiedRecall).toBeNull()

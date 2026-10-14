@@ -1,6 +1,7 @@
 import type { AppStats, GrammarProgress, StudyMode, VocabWord, WordProgress } from '../types'
 import { evidenceSummary } from './memoryEvidence'
 import { memoryDiagnostics } from './memoryDiagnostics'
+import { formatWordMeanings } from './wordSenses'
 import { grammarQuestions, grammarTopics } from '../data/grammar'
 import { isObjectiveMode, localDateKey } from './studyStats'
 
@@ -18,7 +19,7 @@ export function buildDailyReport(words: VocabWord[], progress: WordProgress[], s
     const word = wordMap.get(id)
     const detail = day?.wordDetails?.[id] ?? null
     return {
-      id, word: word?.word ?? id, meaning: word?.meaning ?? null,
+      id, word: word?.word ?? id, meaning: word ? formatWordMeanings(word) : null, senses: word?.senses ?? null,
       firstAnswer: day?.firstAnswers[id] ?? null,
       recordedMistakes: detail ? detail.attempts - detail.correct : null,
       detail,
