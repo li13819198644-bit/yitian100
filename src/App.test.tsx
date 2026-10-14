@@ -44,6 +44,7 @@ beforeEach(() => {
   fixture.settings.reviewMode = 'choice'
   fixture.settings.dailyTarget = 5
   fixture.settings.dailyCapacity = 20
+  fixture.settings.reliefMode = false
   fixture.stats = defaultStats()
   fixture.progress = fixture.words.map((word) => ({ ...createProgress(word.id, Date.now() - 86_400_000), seen: 1, incorrect: 1, lapses: 2, lastRating: 'unknown' }))
   fixture.saveProgress.mockReset().mockImplementation(async (item: WordProgress) => { fixture.progress = [...fixture.progress.filter((p) => p.wordId !== item.wordId), item] })
@@ -72,6 +73,18 @@ function expectHidden(word = fixture.words[0]) {
   expect(host.querySelector('[role=tablist]')).toBeNull()
 }
 describe('actual session navigation', () => {
+  it('allows voluntary review after the relief target without stopping after one word', async () => {
+    fixture.settings.reliefMode = true
+    fixture.stats.todaySeen = Array.from({ length: 15 }, (_, i) => `finished-${i}`)
+    await mount()
+    await click('自选加练 2 个旧词')
+    expectHidden()
+    await click('alpha'); await click('会')
+    expectHidden(fixture.words[1])
+    await click('beta'); await click('会')
+    expect(host.textContent).toContain('本轮完成')
+    expect(fixture.saveProgress).toHaveBeenCalledTimes(2)
+  })
   for (const entry of ['学习', '复习', '弱词', '单词回忆']) {
     it(`${entry}: hides the answer, known advances, unknown opens the same word detail, and returning resumes`, async () => {
       await mount(); await start(entry)

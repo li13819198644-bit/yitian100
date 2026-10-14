@@ -125,6 +125,8 @@ const rawWords = [
   ['replace', '/rɪˈpleɪs/', '替换；代替', 'replace old habits', 'New routines can replace old habits.', 2, 'B2'],
 ] as const
 
+import { withWordSenses } from './wordSenses'
+
 const baseWords: VocabWord[] = rawWords.map(([word, phonetic, meaning, collocation, example, difficulty, level]) => ({
   id: word,
   word,
@@ -163,4 +165,4 @@ export const seedWords: VocabWord[] = [
   ...publishDraftWords(generatedBatch8),
   ...publishDraftWords(generatedBatch9, true),
   ...publishDraftWords(generatedBatch10, true),
-].map((word) => ({ ...word, senses: buildWordSenses(word), wordBreakdown: buildWordBreakdown(word) }))
+].map((word) => withWordSenses({ ...word, senses: buildWordSenses(word), wordBreakdown: buildWordBreakdown(word) }))

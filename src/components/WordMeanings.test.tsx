@@ -23,7 +23,8 @@ describe('meaning rows on recall cards', () => {
     await act(async () => (host.querySelector('button') as HTMLButtonElement).click())
     const section = host.querySelector('[aria-label="词性与释义"]')!
     expect(section.textContent).toContain('形容词具体的、明确的')
-    expect(section.textContent).toContain('名词混凝土')
+    expect(section.textContent).toContain('不可数名词混凝土')
+    expect(section.textContent).not.toContain('用混凝土覆盖')
     expect(section.querySelector('button, input, select')).toBeNull()
     const button = [...host.querySelectorAll('button')].find((item) => item.textContent === '会')!
     await act(async () => button.click())
@@ -37,6 +38,7 @@ describe('meaning rows on recall cards', () => {
     expect(rows[0].textContent).not.toContain('浇筑')
     expect(rows[1].textContent).toContain('pour concrete：浇筑混凝土')
     expect(rows[1].textContent).toContain('不可数')
+    expect(host.querySelector('details')?.open).toBe(false)
   })
   it('associates permit pronunciations with their respective parts of speech', () => {
     const word = seedWords.find((word) => word.word === 'permit')!

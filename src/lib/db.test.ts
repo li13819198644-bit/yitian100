@@ -40,7 +40,9 @@ describe('additive offline storage compatibility', () => {
     const concrete = seedWords.find((word) => word.word === 'concrete')!
     await db.saveWords([{ ...concrete, meaning: '具体的；混凝土的', senses: undefined }])
     expect((await db.getWords()).find((word) => word.word === 'concrete')?.senses).toMatchObject([
-      { partOfSpeech: 'adjective', meaning: '具体的、明确的' }, { partOfSpeech: 'noun', meaning: '混凝土' },
+      { partOfSpeech: expect.stringContaining('形容词'), meaning: expect.stringContaining('具体的、明确的') },
+      { partOfSpeech: expect.stringContaining('名词'), meaning: '混凝土' },
+      { partOfSpeech: expect.stringContaining('动词'), lessCommon: true },
     ])
     expect(await db.getProgress()).toEqual(expect.arrayContaining(progress))
     expect(await db.getProgress()).toHaveLength(605)

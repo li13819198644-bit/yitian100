@@ -11,6 +11,7 @@ function normalizeWord(raw: Partial<VocabWord>, index: number): VocabWord {
     phonetic: String(raw.phonetic ?? '').trim(),
     meaning: String(raw.meaning ?? senses?.[0]?.meaning ?? '').trim(),
     ...(senses ? { senses } : {}),
+    ...(typeof raw.definitionSource === 'string' && /^https?:\/\//.test(raw.definitionSource) ? { definitionSource: raw.definitionSource } : {}),
     collocation: String(raw.collocation ?? '').trim(),
     example: String(raw.example ?? '').trim(),
     memoryHook: raw.memoryHook,

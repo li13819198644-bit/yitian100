@@ -17,12 +17,13 @@ describe('part of speech belongs to its meaning', () => {
   it('separates concrete adjective and material noun, including the uncountable usage', () => {
     const word = seedWords.find((word) => word.word === 'concrete')!
     expect(word.senses).toMatchObject([
-      { partOfSpeech: 'adjective', meaning: '具体的、明确的', collocation: 'concrete evidence：明确的证据' },
-      { partOfSpeech: 'noun', meaning: '混凝土', collocation: 'pour concrete：浇筑混凝土', note: expect.stringContaining('不可数') },
+      { partOfSpeech: expect.stringContaining('形容词'), meaning: expect.stringContaining('具体的、明确的'), collocation: 'concrete evidence：明确的证据' },
+      { partOfSpeech: expect.stringContaining('名词'), meaning: '混凝土', collocation: 'pour concrete：浇筑混凝土', note: expect.stringContaining('不可数') },
+      { partOfSpeech: expect.stringContaining('动词'), lessCommon: true, meaning: '用混凝土覆盖或铺设' },
     ])
     expect(word.meaning).not.toContain('混凝土的')
     expect(word.usageNote).toContain('较少用的动词')
-    expect(formatWordMeanings(word)).toBe('形容词：具体的、明确的；名词：混凝土')
+    expect(formatWordMeanings(word)).toBe('形容词：具体的、明确的；实在的；不可数名词：混凝土')
   })
   it('keeps abstracts, variable nouns and adjective meanings in separate rows', () => {
     expect(reviewedWordSenses.abstract).toMatchObject([{ partOfSpeech: 'adjective', meaning: '抽象的' }, { partOfSpeech: 'noun', meaning: '摘要' }])
@@ -43,12 +44,14 @@ describe('part of speech belongs to its meaning', () => {
     expect(parseVocabulary('word,meaning\nold-term,旧释义', 'old.csv')[0].meaning).toBe('旧释义')
     expect(() => normalizeWordSenses([{ partOfSpeech: 'guess', meaning: '猜测' }])).toThrow('有效的 partOfSpeech')
     expect(() => normalizeWordSenses([{ partOfSpeech: 'noun', meaning: '' }])).toThrow('非空 meaning')
+    const legacy = { partOfSpeech: '可数名词 n. [C]', meaning: '条目', example: 'An entry.', translation: '一个条目。' }
+    expect(parseVocabulary(JSON.stringify([{ word: 'custom-term', senses: [legacy] }]))[0].senses).toEqual([legacy])
   })
   it('exports the paired meanings in the daily report rather than flattening them into an adjective', () => {
     const now = Date.now()
     const word = seedWords.find((word) => word.word === 'concrete')!
     const stats = recordStudyResult({ todayDate: localDateKey(new Date(now)), todaySeen: [], combo: 0, bestCombo: 0, streak: 0 }, word.id, true, 'self', now)
     const report = buildDailyReport([word], [], stats, [], now)
-    expect(report.vocabulary.results[0]).toMatchObject({ meaning: '形容词：具体的、明确的；名词：混凝土', senses: word.senses })
+    expect(report.vocabulary.results[0]).toMatchObject({ meaning: '形容词：具体的、明确的；实在的；不可数名词：混凝土', senses: word.senses })
   })
 })
