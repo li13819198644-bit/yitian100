@@ -1,7 +1,36 @@
 import type { VocabWord } from '../types'
+import dictionary from './dictionarySenses.json'
+import { curatedPos } from './curatedPos'
 
 // Selected everyday senses, checked against the linked dictionary; not an exhaustive dictionary.
 export const wordSenses: Record<string, NonNullable<VocabWord['senses']>> = {
+  leverage: [
+    { partOfSpeech: '名词 n.', meaning: '影响力；杠杆作用；（金融）杠杆融资' },
+    { partOfSpeech: '动词 v.', meaning: '利用已有资源或优势；运用杠杆融资' },
+  ],
+  blunt: [
+    { partOfSpeech: '形容词 adj.', meaning: '钝的；直言不讳的（有时显得不客气）' },
+    { partOfSpeech: '动词 v.', meaning: '使变钝；削弱' },
+  ],
+  foreground: [
+    { partOfSpeech: '名词 n.', meaning: '前景；显著位置；关注的中心' },
+    { partOfSpeech: '动词 v.', meaning: '突出；强调' },
+  ],
+  regardless: [
+    { partOfSpeech: '副词 adv.', meaning: '不顾；不加理会；无论如何（regardless of：不管；不论）' },
+  ],
+  worldwide: [
+    { partOfSpeech: '形容词 adj.', meaning: '全世界的；遍及全球的' },
+    { partOfSpeech: '副词 adv.', meaning: '在全世界；遍及全球地' },
+  ],
+  affordable: [
+    { partOfSpeech: '形容词 adj.', meaning: '负担得起的；价格合理的' },
+  ],
+  benchmark: [
+    { partOfSpeech: '名词 n.', meaning: '基准；衡量标准' },
+    { partOfSpeech: '动词 v.', meaning: '以基准衡量；对标；做基准测试' },
+    { partOfSpeech: '形容词 adj.', meaning: '基准的；作为衡量标准的' },
+  ],
   concrete: [
     { partOfSpeech: '形容词 adj.', meaning: '具体的；明确的；实在的', example: 'We need a concrete plan.', translation: '我们需要一个具体的计划。' },
     { partOfSpeech: '不可数名词 n. [U]', meaning: '混凝土', example: 'The floor is made of concrete.', translation: '地板是用混凝土做的。' },
@@ -27,6 +56,9 @@ export const wordSenses: Record<string, NonNullable<VocabWord['senses']>> = {
 }
 
 export function withWordSenses(word: VocabWord): VocabWord {
-  const senses = wordSenses[word.word]
-  return senses ? { ...word, senses, definitionSource: `https://dictionary.cambridge.org/dictionary/english/${word.word}` } : word
+  const reviewed = wordSenses[word.word]
+  if (reviewed) return { ...word, senses: reviewed, definitionSource: `https://dictionary.cambridge.org/dictionary/english/${word.word}`, definitionSourceLabel: 'Cambridge' }
+  const entries: Record<string, NonNullable<VocabWord['senses']>> = dictionary.entries
+  const senses = curatedPos[word.word] ?? entries[word.word]
+  return senses ? { ...word, senses, definitionSource: dictionary.source, definitionSourceLabel: 'ECDICT 开源英汉词典' } : word
 }

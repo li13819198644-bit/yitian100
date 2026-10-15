@@ -3,6 +3,8 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { VocabWord } from '../types'
 import { WordRecallCard } from './WordRecallCard'
+import { withWordSenses } from '../data/wordSenses'
+import { WordMeaning } from './WordMeaning'
 
 const word: VocabWord = { id: 'postpone', word: 'postpone', meaning: '推迟', phonetic: '/pəʊstˈpəʊn/', collocation: 'postpone the meeting', example: 'We postponed the meeting.', difficulty: 2, level: 'B2' }
 let host: HTMLDivElement
@@ -22,6 +24,25 @@ function render(onRate = vi.fn()) {
   return onRate
 }
 describe('word → reveal → known or unknown', () => {
+  it('hides all concrete senses before recall and folds the third sense after reveal', async () => {
+    const concrete = withWordSenses({ ...word, id: 'concrete', word: 'concrete' })
+    act(() => root.render(<WordRecallCard word={concrete} title="单词回忆" position={1} total={2} onRate={vi.fn()} />))
+    expect(host.textContent).not.toContain('混凝土')
+    expect(host.textContent).not.toContain('形容词')
+    await click('concrete')
+    expect(host.textContent).toContain('混凝土')
+    expect(host.querySelector('details')?.open).toBe(false)
+    expect(host.querySelector('details')?.textContent).toContain('用混凝土覆盖或铺设')
+  })
+  it('shows the actual source and all senses in the detailed view', () => {
+    const concrete = withWordSenses({ ...word, word: 'concrete' })
+    act(() => root.render(<WordMeaning word={concrete} detailed />))
+    expect(host.querySelector('details')).toBeNull()
+    expect(host.textContent).toContain('They concreted the yard.')
+    expect(host.querySelector('a')?.textContent).toContain('Cambridge')
+    act(() => root.render(<WordMeaning word={withWordSenses({ ...word, word: 'facilitate' })} detailed />))
+    expect(host.querySelector('a')?.textContent).toContain('ECDICT')
+  })
   it('does not render the answer, phonetic, context, or rating buttons before tapping the word', () => {
     render()
     expect(host.textContent).toContain('postpone')

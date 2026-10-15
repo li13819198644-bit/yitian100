@@ -1,0 +1,4233 @@
+{
+  "source": "https://github.com/skywind3000/ECDICT",
+  "license": "MIT",
+  "sourceSha256": "1a6947e04785db63613a92e14903cdae7954f7e84860b10e68e5c7cbb3f9c3cf",
+  "entries": {
+    "abrupt": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "突然的；唐突的"
+      }
+    ],
+    "abstract": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "抽象的, 深奥的"
+      },
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "摘要, 抽象概念"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "摘要, 提炼, 使抽象化"
+      }
+    ],
+    "abundant": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "大量的；丰富的"
+      }
+    ],
+    "acceptable": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "可接受的"
+      }
+    ],
+    "accessible": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "可进入的；可使用的；易理解的"
+      }
+    ],
+    "accommodate": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "容纳；照顾；适应"
+      }
+    ],
+    "accountability": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "问责；责任制"
+      }
+    ],
+    "accountable": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "负有责任的；可问责的"
+      }
+    ],
+    "accumulate": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "积累；堆积"
+      }
+    ],
+    "accurate": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "准确的；精确的"
+      }
+    ],
+    "accusation": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "指控；指责"
+      }
+    ],
+    "achieve": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "实现；达到"
+      }
+    ],
+    "acknowledge": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "承认；确认收到；致谢"
+      }
+    ],
+    "acquire": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "获得；习得"
+      }
+    ],
+    "acquisition": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "获得；收购；获得的事物"
+      }
+    ],
+    "adapt": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "适应；改编"
+      }
+    ],
+    "adequate": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "足够的；合格的"
+      }
+    ],
+    "adjacent": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "邻近的；相邻的"
+      }
+    ],
+    "adjust": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "调整；适应"
+      }
+    ],
+    "administer": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "管理；施用；执行"
+      }
+    ],
+    "administrative": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "行政的；管理的"
+      }
+    ],
+    "adverse": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "不利的；有害的"
+      }
+    ],
+    "adversity": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "逆境；不幸"
+      }
+    ],
+    "advocate": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "提倡者, 拥护者"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "主张, 提倡"
+      }
+    ],
+    "affect": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "影响, 感动, 假装, 模仿, 爱好, 倾向于"
+      },
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "自觉感情"
+      }
+    ],
+    "affluent": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "丰富的, 富裕的"
+      },
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "支流, 富人"
+      }
+    ],
+    "aggregate": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "合计, 总计, 聚集体"
+      },
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "合计的, 聚集的"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "聚集, 集合, 合计达"
+      }
+    ],
+    "align": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "使一致；对齐"
+      }
+    ],
+    "allegation": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "指控；未经证实的说法"
+      }
+    ],
+    "alleviate": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "减轻；缓解"
+      }
+    ],
+    "allocate": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "分配；拨出"
+      }
+    ],
+    "alter": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "改变；改动"
+      }
+    ],
+    "alternative": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "两者择一, 供替代的选择"
+      },
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "两者择一的, 供选择的"
+      }
+    ],
+    "ambiguous": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "模棱两可的；含糊的"
+      }
+    ],
+    "amendment": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "修正案；修改"
+      }
+    ],
+    "amplify": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "放大；增强；详述"
+      }
+    ],
+    "analytical": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "分析的；善于分析的"
+      }
+    ],
+    "annotate": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "注释；加批注"
+      }
+    ],
+    "anticipate": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "预期；预料"
+      }
+    ],
+    "apparent": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "明显的；表面上的"
+      }
+    ],
+    "applicable": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "适用的；可应用的"
+      }
+    ],
+    "appoint": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "任命；指定"
+      }
+    ],
+    "approve": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "批准；赞成"
+      }
+    ],
+    "arbitrary": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "任意的；武断的"
+      }
+    ],
+    "arrogant": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "傲慢的；自大的"
+      }
+    ],
+    "articulate": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "发音清晰的, 口才好的"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "明白地说, 以关节连接, 使成为系统的整体"
+      }
+    ],
+    "ascertain": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "查明；确定"
+      }
+    ],
+    "assertive": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "自信坚定的；敢于表达立场的"
+      }
+    ],
+    "assess": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "评估；评价"
+      }
+    ],
+    "asset": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "资产；有价值的人或事物"
+      }
+    ],
+    "assign": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "分派；指定；赋予"
+      }
+    ],
+    "assumption": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "假设；想当然的看法"
+      }
+    ],
+    "attain": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "达到；获得"
+      }
+    ],
+    "attribute": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "属性, 标志, 定语"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "把...归于, 认为...属于"
+      }
+    ],
+    "authentic": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "真实的；正宗的；非伪造的"
+      }
+    ],
+    "authorize": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "授权；批准"
+      }
+    ],
+    "autonomous": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "自治的；自主的"
+      }
+    ],
+    "autonomy": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "自主权；自治"
+      }
+    ],
+    "awkward": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "尴尬的；笨拙的；难处理的"
+      }
+    ],
+    "backlog": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "积压待办的事务, 积压而未交付的订货, 积压的工作"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "储备, 把...积压起来"
+      }
+    ],
+    "beforehand": [
+      {
+        "partOfSpeech": "副词 adv.",
+        "meaning": "事先；预先"
+      }
+    ],
+    "benefit": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "利益"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "有益于；受益"
+      }
+    ],
+    "bias": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "偏见, 斜纹"
+      },
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "偏斜的"
+      },
+      {
+        "partOfSpeech": "副词 adv.",
+        "meaning": "偏斜"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "使有偏见"
+      }
+    ],
+    "blunt": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "直言不讳的；钝的"
+      }
+    ],
+    "bolster": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "支持, 长枕"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "支持, 支撑"
+      }
+    ],
+    "breach": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "裂口, 违背, 破坏, 违反, 突破, 破裂"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "攻破, 突破；跳出水面"
+      }
+    ],
+    "breakdown": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "故障；崩溃；分类明细"
+      }
+    ],
+    "breakthrough": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "突破；重大进展"
+      }
+    ],
+    "broad": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "宽广的, 辽阔的, 广大的, 显著的"
+      },
+      {
+        "partOfSpeech": "副词 adv.",
+        "meaning": "宽阔地"
+      },
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "宽阔部分"
+      }
+    ],
+    "budget": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "预算"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "编预算；编入预算, 安排"
+      },
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "廉价的"
+      }
+    ],
+    "bureaucracy": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "官僚机构；繁文缛节"
+      }
+    ],
+    "capable": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "有能力的；能胜任的"
+      }
+    ],
+    "capacity": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "能力；容量；产能"
+      }
+    ],
+    "capture": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "抓取, 战利品, 捕获之物"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "抓取, 获得, 迷住"
+      }
+    ],
+    "churn": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "搅乳器"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "搅拌, 搅动"
+      }
+    ],
+    "circumvent": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "规避；绕过"
+      }
+    ],
+    "citation": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "引用；引文；传票"
+      }
+    ],
+    "clarify": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "澄清；阐明"
+      }
+    ],
+    "cognitive": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "认知的；思维的"
+      }
+    ],
+    "coherent": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "连贯的；一致的"
+      }
+    ],
+    "cohesion": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "凝聚力；结合"
+      }
+    ],
+    "coincidence": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "巧合"
+      }
+    ],
+    "collaborate": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "合作"
+      }
+    ],
+    "collateral": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "并行的, 附随的, 旁系的"
+      },
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "旁系亲属, 担保品"
+      }
+    ],
+    "combine": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "(使)联合, (使)结合"
+      },
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "(企业的)联合, 联合收割机"
+      }
+    ],
+    "commence": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "开始；着手"
+      }
+    ],
+    "commit": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "承诺；投入；犯下"
+      }
+    ],
+    "compare": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "比较, 比喻, 对照；相比"
+      },
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "比较"
+      }
+    ],
+    "compatible": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "兼容的；相容的"
+      }
+    ],
+    "compelling": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "令人信服的；引人注目的"
+      }
+    ],
+    "compensate": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "补偿；弥补"
+      }
+    ],
+    "competence": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "胜任能力；专业能力"
+      }
+    ],
+    "complement": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "补足物, 补语, 补数"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "补充, 补足"
+      }
+    ],
+    "complex": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "综合体, 情结, 络合物"
+      },
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "复杂的, 组合的"
+      }
+    ],
+    "compliance": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "合规；遵从"
+      }
+    ],
+    "comply": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "遵守；服从"
+      }
+    ],
+    "comprehensive": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "全面的；综合的"
+      }
+    ],
+    "comprise": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "由…组成；包含"
+      }
+    ],
+    "compromise": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "妥协, 折中, 折中方案, 和解"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "妥协处理；危害"
+      }
+    ],
+    "compulsory": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "强制的；必须的；必修的"
+      }
+    ],
+    "concede": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "承认；让步"
+      }
+    ],
+    "conceive": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "构想；设想；怀孕"
+      }
+    ],
+    "concession": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "让步；优惠；特许经营权"
+      }
+    ],
+    "concise": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "简明的；言简意赅的"
+      }
+    ],
+    "concrete": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "凝结物, 混凝土"
+      },
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "具体的, 实在的, 混凝土的"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "(使)凝结, 用混凝土浇筑"
+      }
+    ],
+    "concurrent": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "同时发生的事件"
+      },
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "同时发生的, 一致的"
+      }
+    ],
+    "conduct": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "行为, 举动, 指导"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "为人, 指挥, 管理, 实施；领导, 传导, 指挥"
+      }
+    ],
+    "confidential": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "机密的；保密的"
+      }
+    ],
+    "confirm": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "确认"
+      }
+    ],
+    "confront": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "面对；对抗"
+      }
+    ],
+    "consecutive": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "连续的；连贯发生的"
+      }
+    ],
+    "consensus": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "共识；一致意见"
+      }
+    ],
+    "consent": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "同意, 许可"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "同意, 赞同"
+      }
+    ],
+    "consistent": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "一致的；持续稳定的"
+      }
+    ],
+    "consolidate": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "巩固；合并"
+      }
+    ],
+    "constituency": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "选区；支持群体"
+      }
+    ],
+    "constitute": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "构成；设立；算作"
+      }
+    ],
+    "constrain": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "限制；约束"
+      }
+    ],
+    "consult": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "咨询；查阅；商议"
+      }
+    ],
+    "contemplate": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "深思；考虑"
+      }
+    ],
+    "contingency": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "可能的意外情况；应变事项"
+      }
+    ],
+    "contradict": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "反驳；与...矛盾"
+      }
+    ],
+    "contrast": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "差别, 对比, 对照物"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "使对比；成对照"
+      }
+    ],
+    "contribute": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "贡献；促成"
+      }
+    ],
+    "controversy": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "争议；争论"
+      }
+    ],
+    "conventional": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "传统的；常规的"
+      }
+    ],
+    "conversion": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "转化；转换"
+      }
+    ],
+    "convey": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "传达；表达；运输"
+      }
+    ],
+    "conviction": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "定罪；坚定信念"
+      }
+    ],
+    "convincing": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "令人信服的；有说服力的"
+      }
+    ],
+    "corporate": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "公司的；企业的"
+      }
+    ],
+    "correlate": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "有相互关系的东西, 相关物"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "使有相互关系；相关"
+      }
+    ],
+    "correlation": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "相关性；相互关联"
+      }
+    ],
+    "corroborate": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "证实；佐证"
+      }
+    ],
+    "craftsmanship": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "手艺；工艺水平"
+      }
+    ],
+    "credibility": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "可信度；可靠性"
+      }
+    ],
+    "credible": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "可信的；可靠的"
+      }
+    ],
+    "criterion": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "标准；准则"
+      }
+    ],
+    "crucial": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "关键的；至关重要的"
+      }
+    ],
+    "cultivate": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "培养；耕作；建立"
+      }
+    ],
+    "cultural": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "文化的"
+      }
+    ],
+    "cumbersome": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "笨重的；繁琐难用的"
+      }
+    ],
+    "custody": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "监护；拘留；保管"
+      }
+    ],
+    "cynical": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "愤世嫉俗的；怀疑别人动机的"
+      }
+    ],
+    "deadline": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "截止日期；最后期限"
+      }
+    ],
+    "deception": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "欺骗；骗局"
+      }
+    ],
+    "decline": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "衰退, 跌落, 下降"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "使降低, 婉谢；下降, 衰落, 偏斜"
+      }
+    ],
+    "deduce": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "推断；演绎"
+      }
+    ],
+    "deficient": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "不足的；有缺陷的"
+      }
+    ],
+    "deficit": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "赤字；不足额"
+      }
+    ],
+    "delegate": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "代表"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "委派...为代表"
+      }
+    ],
+    "deliberate": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "深思熟虑的, 故意的, 从容的"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "仔细考虑"
+      }
+    ],
+    "delineate": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "勾勒；清楚说明"
+      }
+    ],
+    "deny": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "否认；拒绝"
+      }
+    ],
+    "depict": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "描绘；描述"
+      }
+    ],
+    "derive": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "获得；源于"
+      }
+    ],
+    "deter": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "阻止；威慑"
+      }
+    ],
+    "detrimental": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "有害的；不利的"
+      }
+    ],
+    "deviate": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "脱离, 偏离；使偏离"
+      },
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "脱离常规的"
+      },
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "脱离常规的人"
+      }
+    ],
+    "digital": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "数字显示的, 数字的"
+      },
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "数字仪表, 数字式电子表(或时钟)"
+      }
+    ],
+    "dilemma": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "两难处境；困境"
+      }
+    ],
+    "diligent": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "勤勉的；认真细致的"
+      }
+    ],
+    "disadvantage": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "不利条件；劣势"
+      }
+    ],
+    "disagreement": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "分歧；不同意"
+      }
+    ],
+    "disbelief": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "不相信；怀疑"
+      }
+    ],
+    "discern": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "辨别；看出"
+      }
+    ],
+    "disclose": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "披露；透露"
+      }
+    ],
+    "discourage": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "阻止；使灰心"
+      }
+    ],
+    "discreet": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "谨慎的；不张扬的"
+      }
+    ],
+    "discrepancy": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "差异；不一致"
+      }
+    ],
+    "discretion": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "酌情决定权；谨慎保密"
+      }
+    ],
+    "discrimination": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "歧视；辨别能力"
+      }
+    ],
+    "dismiss": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "不予考虑；解雇；让离开"
+      }
+    ],
+    "dispute": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "争论"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "争论"
+      }
+    ],
+    "disrupt": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "分裂的, 中断的"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "使分裂, 使瓦解"
+      }
+    ],
+    "disseminate": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "传播；散布"
+      }
+    ],
+    "distinction": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "区别；差别；卓越"
+      }
+    ],
+    "distinctive": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "独特的；有辨识度的"
+      }
+    ],
+    "distinguish": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "区分；辨别"
+      }
+    ],
+    "distort": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "歪曲；扭曲"
+      }
+    ],
+    "diverse": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "多样的；不同的"
+      }
+    ],
+    "diversify": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "使多样化；分散"
+      }
+    ],
+    "doctrine": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "学说；原则；教义"
+      }
+    ],
+    "dominant": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "占主导的；支配性的"
+      }
+    ],
+    "drawback": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "缺点；不利条件"
+      }
+    ],
+    "durable": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "耐用的；持久的"
+      }
+    ],
+    "dynamic": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "动态的, 有活力的, 有力的, 动力的, 不断变化的"
+      },
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "动力, 动态"
+      }
+    ],
+    "efficacy": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "功效；效力"
+      }
+    ],
+    "efficient": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "高效的；效率高的"
+      }
+    ],
+    "elaborate": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "精细的, 详尽的, 精心计划(或制作)的"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "详细地说明, 用心地制作, 发挥；变复杂, 作详细说明"
+      }
+    ],
+    "eligible": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "有资格当选的, 合格的"
+      },
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "有资格者, 合格者, 适任者"
+      }
+    ],
+    "eliminate": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "消除；淘汰"
+      }
+    ],
+    "elusive": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "难以捉摸的；难找到的"
+      }
+    ],
+    "emerge": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "出现；显现"
+      }
+    ],
+    "eminent": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "杰出的；显赫的"
+      }
+    ],
+    "emotional": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "情绪的；情感上的"
+      }
+    ],
+    "empathy": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "共情；设身处地的理解"
+      }
+    ],
+    "emphasize": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "强调"
+      }
+    ],
+    "empirical": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "经验的；基于观察或实验的"
+      }
+    ],
+    "enable": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "使能够"
+      }
+    ],
+    "encompass": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "包含；涵盖"
+      }
+    ],
+    "encourage": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "鼓励；促进"
+      }
+    ],
+    "endorse": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "公开支持；认可；背书"
+      }
+    ],
+    "enforce": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "执行；强制实施"
+      }
+    ],
+    "enforcement": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "执行；强制实施"
+      }
+    ],
+    "enhance": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "提高；增强"
+      }
+    ],
+    "ensure": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "确保"
+      }
+    ],
+    "entail": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "使成为必需, 需要, 使承担, 遗传给"
+      },
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "限定继承"
+      }
+    ],
+    "entitlement": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "应享权利；应得额度"
+      }
+    ],
+    "environmental": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "环境的；生态的"
+      }
+    ],
+    "equity": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "公平；权益；股权"
+      }
+    ],
+    "equivalent": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "同等物, 等价物, 相等物"
+      },
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "相等的, 相当的, 同意义的"
+      }
+    ],
+    "eradicate": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "根除；消灭"
+      }
+    ],
+    "establish": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "建立；确立"
+      }
+    ],
+    "estimate": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "估计, 判断"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "估计, 评价, 判断；估计"
+      }
+    ],
+    "ethical": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "伦理的；道德的"
+      }
+    ],
+    "evaluate": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "评价；估计"
+      }
+    ],
+    "evident": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "明显的；显而易见的"
+      }
+    ],
+    "evoke": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "唤起；引发"
+      }
+    ],
+    "exacerbate": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "使恶化；加剧"
+      }
+    ],
+    "exceed": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "超过"
+      }
+    ],
+    "exception": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "例外；除外的情况"
+      }
+    ],
+    "exceptional": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "异常的；杰出的"
+      }
+    ],
+    "excessive": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "过度的；过多的"
+      }
+    ],
+    "exclude": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "排除；不包括"
+      }
+    ],
+    "exclusive": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "独有的；排他的"
+      }
+    ],
+    "exemption": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "豁免；免除"
+      }
+    ],
+    "exert": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "施加；运用；努力"
+      }
+    ],
+    "expand": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "扩大；扩展"
+      }
+    ],
+    "expenditure": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "支出；开支总额"
+      }
+    ],
+    "explicit": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "明确的；清楚的"
+      }
+    ],
+    "exploit": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "功绩, 勋绩"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "开发, 利用, 开拓, 剥削"
+      }
+    ],
+    "expose": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "暴露；揭露；使接触"
+      }
+    ],
+    "external": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "外部, 外面"
+      },
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "外部的, 客观的, 表面的"
+      }
+    ],
+    "facilitate": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "促进；使便利"
+      }
+    ],
+    "feasible": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "可行的；做得到的"
+      }
+    ],
+    "feedback": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "反馈；反馈意见"
+      }
+    ],
+    "financial": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "财务的；金融的"
+      }
+    ],
+    "fiscal": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "财政的；政府收支的"
+      }
+    ],
+    "flexible": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "灵活的；可调整的"
+      }
+    ],
+    "focus": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "焦点, 焦距"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "聚焦, 注视；使聚焦, 调焦, 集中"
+      }
+    ],
+    "forecast": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "预想, 预测, 预报"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "预想, 预测, 预报"
+      }
+    ],
+    "foreground": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "前景；突出的位置"
+      }
+    ],
+    "formulate": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "制定；构想；确切表达"
+      }
+    ],
+    "foster": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "收养的, 养育的"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "养育, 抚育, 培养, 鼓励, 抱(希望)"
+      }
+    ],
+    "fragile": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "易碎的；脆弱的"
+      }
+    ],
+    "framework": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "框架；体系"
+      }
+    ],
+    "fraud": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "诈骗；欺诈；骗子"
+      }
+    ],
+    "function": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "官能, 职务, 功能, 函数"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "活动, 运行, 行使职责"
+      }
+    ],
+    "fundamental": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "基本原理, 原则, 基波"
+      },
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "基本的, 重要的, 原音的"
+      }
+    ],
+    "furthermore": [
+      {
+        "partOfSpeech": "副词 adv.",
+        "meaning": "此外；而且"
+      }
+    ],
+    "futile": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "徒劳的；无效的"
+      }
+    ],
+    "generate": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "产生；生成"
+      }
+    ],
+    "genuine": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "真正的；真诚的；非假冒的"
+      }
+    ],
+    "governance": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "治理；管理机制"
+      }
+    ],
+    "gradual": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "逐渐的, 渐增的"
+      },
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "弥撒升阶圣歌"
+      }
+    ],
+    "grievance": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "不满；委屈；正式申诉"
+      }
+    ],
+    "habitual": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "习惯性的；惯常的"
+      }
+    ],
+    "harassment": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "骚扰；持续纠缠"
+      }
+    ],
+    "hardship": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "艰难；困苦"
+      }
+    ],
+    "henceforth": [
+      {
+        "partOfSpeech": "副词 adv.",
+        "meaning": "从今以后"
+      }
+    ],
+    "hierarchy": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "等级制度；层级"
+      }
+    ],
+    "hinder": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "后面的"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "阻碍, 打扰"
+      }
+    ],
+    "household": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "一家人, 家庭, 家族, 王室"
+      },
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "家庭的, 家常的, 王室的"
+      }
+    ],
+    "hypothesis": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "假设；待验证的命题"
+      }
+    ],
+    "identify": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "识别；确认"
+      }
+    ],
+    "illustrate": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "说明；阐明"
+      }
+    ],
+    "immense": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "极大的；巨大的"
+      }
+    ],
+    "imminent": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "即将发生的；迫近的"
+      }
+    ],
+    "impact": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "冲击, 冲突, 影响, 效果"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "挤入, 撞击, 压紧, 对...发生影响"
+      }
+    ],
+    "impartial": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "公正的；不偏不倚的"
+      }
+    ],
+    "implement": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "工具, 器具, 手段"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "实现, 使生效, 执行"
+      }
+    ],
+    "implication": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "含义；可能影响；牵连"
+      }
+    ],
+    "imply": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "暗示；意味着"
+      }
+    ],
+    "impose": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "强加；施加；征收"
+      }
+    ],
+    "inaccurate": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "不准确的"
+      }
+    ],
+    "incentive": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "动机"
+      },
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "激励的"
+      }
+    ],
+    "include": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "包括"
+      }
+    ],
+    "inclusive": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "包容的；包含的"
+      }
+    ],
+    "incompatible": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "不兼容的；不能共存的"
+      }
+    ],
+    "inconsistent": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "不一致的；前后矛盾的"
+      }
+    ],
+    "incorporate": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "合并的, 组成公司的, 一体化的"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "吸收, 合并, 使组成公司, 体现；合并, 混合, 组成公司"
+      }
+    ],
+    "increase": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "增加, 增进, 利益"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "增加, 加大；增加, 繁殖"
+      }
+    ],
+    "indicate": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "表明；指出"
+      }
+    ],
+    "indispensable": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "不可缺少之物"
+      },
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "不可缺少的, 责无旁贷的, 绝对必要的"
+      }
+    ],
+    "inevitable": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "不可避免的；必然的"
+      }
+    ],
+    "infer": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "推断；推论"
+      }
+    ],
+    "inflation": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "通货膨胀；膨胀"
+      }
+    ],
+    "infrastructure": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "基础设施；基础系统"
+      }
+    ],
+    "inherent": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "固有的；内在的"
+      }
+    ],
+    "initial": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "字首, 首字母"
+      },
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "开始的, 最初的, 字首的"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "用姓名的首字母签名"
+      }
+    ],
+    "inland": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "内陆的, 国内的"
+      },
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "内地"
+      }
+    ],
+    "innovative": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "创新的；革新的"
+      }
+    ],
+    "insight": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "洞察；深刻理解"
+      }
+    ],
+    "installment": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "分期付款的一期；连载的一集"
+      }
+    ],
+    "insufficient": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "不足的；不充分的"
+      }
+    ],
+    "intact": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "完好无损的；完整的"
+      }
+    ],
+    "integrate": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "综合, 使完整, 使成整体；成一体"
+      },
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "完整的, 完全的"
+      }
+    ],
+    "integrity": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "正直；完整性"
+      }
+    ],
+    "intense": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "强烈的；紧张的"
+      }
+    ],
+    "internal": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "内部的；内在的"
+      }
+    ],
+    "interpret": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "解释；理解"
+      }
+    ],
+    "intervene": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "介入；干预"
+      }
+    ],
+    "intervention": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "干预；介入"
+      }
+    ],
+    "intricate": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "错综复杂的；精细的"
+      }
+    ],
+    "intuition": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "直觉；直觉判断"
+      }
+    ],
+    "inventory": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "详细目录, 存货清单"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "列入详细目录, 清点存货"
+      }
+    ],
+    "investigate": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "调查；研究"
+      }
+    ],
+    "invoke": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "援引；唤起；调用"
+      }
+    ],
+    "involve": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "涉及；包含"
+      }
+    ],
+    "irrelevant": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "无关的；不切题的"
+      }
+    ],
+    "irresponsible": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "不负责任的"
+      }
+    ],
+    "irreversible": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "不可逆转的"
+      }
+    ],
+    "jeopardize": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "危及；使处于危险中"
+      }
+    ],
+    "jurisdiction": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "司法管辖权；权限范围"
+      }
+    ],
+    "justify": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "证明...合理；辩解"
+      }
+    ],
+    "landmark": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "地标；标志性事件"
+      }
+    ],
+    "leadership": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "领导能力；领导层"
+      }
+    ],
+    "legitimate": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "合法的, 正当的, 婚生的"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "认为正当, 立为嫡嗣, 使合法"
+      }
+    ],
+    "leverage": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "利用；发挥...的优势；杠杆作用"
+      }
+    ],
+    "liability": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "法律责任；负债；累赘"
+      }
+    ],
+    "liable": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "负有法律责任的；可能的"
+      }
+    ],
+    "likelihood": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "可能性"
+      }
+    ],
+    "liquidity": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "流动性；变现能力"
+      }
+    ],
+    "literature": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "文献；文学"
+      }
+    ],
+    "litigation": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "诉讼；打官司"
+      }
+    ],
+    "livelihood": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "生计；谋生手段"
+      }
+    ],
+    "logical": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "合逻辑的；有条理的"
+      }
+    ],
+    "lucrative": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "赚钱的；获利丰厚的"
+      }
+    ],
+    "maintain": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "维持；维护"
+      }
+    ],
+    "manageable": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "可管理的；能应付的"
+      }
+    ],
+    "mandate": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "命令, 指令, 要求"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "委任统治"
+      }
+    ],
+    "mandatory": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "强制的；必须的"
+      }
+    ],
+    "manipulate": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "操纵；熟练操作"
+      }
+    ],
+    "margin": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "页边的空白, 边缘, 界限, 余裕, 差数, 差额, 保证金"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "加边于, 加旁注于"
+      }
+    ],
+    "measurable": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "可测量的；可衡量的"
+      }
+    ],
+    "measure": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "尺寸, 量度器, 量度标准, 测量, 量具, 程度, 范围, 限度, 分寸, 措施, 方法"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "测量, 测度, 估量, 权衡, 调节, 拿(自己或自己的力量等)作较量；度量"
+      }
+    ],
+    "merger": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "合并；企业合并"
+      }
+    ],
+    "methodology": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "方法论；研究方法体系"
+      }
+    ],
+    "milestone": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "里程碑；重要阶段"
+      }
+    ],
+    "misconduct": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "办错, 使行为不端"
+      },
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "办错, 渎职, 通奸"
+      }
+    ],
+    "misinterpret": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "误解；错误解读"
+      }
+    ],
+    "mislead": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "误导"
+      }
+    ],
+    "misunderstand": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "误解；误会"
+      }
+    ],
+    "misuse": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "误用, 滥用"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "误用, 滥用, 虐待"
+      }
+    ],
+    "mitigate": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "减轻；缓和"
+      }
+    ],
+    "moderate": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "适度的, 稳健的, 中等的, 节制的"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "节制, 减轻, 使缓和；变缓和, 主持会议"
+      }
+    ],
+    "momentum": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "势头；动量"
+      }
+    ],
+    "monetary": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "货币的；金融政策的"
+      }
+    ],
+    "monitor": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "监督器, 级长, 监听员, 班长, 监视器, 告诫物"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "监视, 监听, 监督"
+      }
+    ],
+    "moreover": [
+      {
+        "partOfSpeech": "副词 adv.",
+        "meaning": "此外；而且"
+      }
+    ],
+    "mortgage": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "抵押, 约束性义务, 抵押借款"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "抵押, 以...作担保, 把...许给"
+      }
+    ],
+    "mutual": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "相互的；共同的"
+      }
+    ],
+    "narrow": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "狭窄部分, 隘路"
+      },
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "狭窄的, 仔细的, 有限的, 勉强的, 狭隘的, 手紧的"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "变窄；使变狭窄"
+      }
+    ],
+    "navigate": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "导航；应对；穿越"
+      }
+    ],
+    "negligible": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "微不足道的；可忽略的"
+      }
+    ],
+    "negotiate": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "谈判；协商"
+      }
+    ],
+    "neutral": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "中立者, 中立国, 非彩色, 空档"
+      },
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "中立的, 中性的, 无色的"
+      }
+    ],
+    "nevertheless": [
+      {
+        "partOfSpeech": "副词 adv.",
+        "meaning": "然而, 虽然如此"
+      },
+      {
+        "partOfSpeech": "连词 conj.",
+        "meaning": "然而"
+      }
+    ],
+    "nonetheless": [
+      {
+        "partOfSpeech": "连词 conj.",
+        "meaning": "然而, 尽管, 不过"
+      },
+      {
+        "partOfSpeech": "副词 adv.",
+        "meaning": "不过, 仍然, 尽管如此, 然而"
+      }
+    ],
+    "notable": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "著名人士, 值得注意之事物"
+      },
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "值得注意的, 显著的"
+      }
+    ],
+    "nuance": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "细微差别；微妙之处"
+      }
+    ],
+    "obligation": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "义务；必须履行的责任"
+      }
+    ],
+    "observe": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "观察；遵守"
+      }
+    ],
+    "obsolete": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "荒废的, 成废物的, 陈旧的, 老式的"
+      },
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "废词, 废物"
+      }
+    ],
+    "obtain": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "获得"
+      }
+    ],
+    "occur": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "发生；出现"
+      }
+    ],
+    "offset": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "抵消, 把...并列, 旁系, 支管, 用胶印法印；偏移量"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "弥补, 抵消, 胶印；装支管"
+      }
+    ],
+    "offshore": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "海面的, 吹向海面的, 近海的"
+      },
+      {
+        "partOfSpeech": "副词 adv.",
+        "meaning": "向海面"
+      }
+    ],
+    "ongoing": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "前进的, 进行的, 不间断的"
+      },
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "前进, 发展"
+      }
+    ],
+    "operate": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "操作；运营"
+      }
+    ],
+    "operational": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "运营的；操作层面的"
+      }
+    ],
+    "ordinance": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "条例；地方性法规"
+      }
+    ],
+    "organize": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "组织；整理"
+      }
+    ],
+    "otherwise": [
+      {
+        "partOfSpeech": "副词 adv.",
+        "meaning": "否则；在其他方面"
+      }
+    ],
+    "outbreak": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "突然发生；爆发"
+      }
+    ],
+    "outcome": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "结果；结局"
+      }
+    ],
+    "outdated": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "过时的；陈旧的"
+      }
+    ],
+    "outlook": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "前景；看法"
+      }
+    ],
+    "outnumber": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "在数量上超过"
+      }
+    ],
+    "outperform": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "表现优于；胜过"
+      }
+    ],
+    "outspoken": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "直言不讳的；公开坦率表达的"
+      }
+    ],
+    "outstanding": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "杰出的；未完成的；未付的"
+      }
+    ],
+    "outweigh": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "超过；比…更重要"
+      }
+    ],
+    "overall": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "全部的, 全体的, 从头至尾的, 一切在内的"
+      },
+      {
+        "partOfSpeech": "副词 adv.",
+        "meaning": "从头到尾, 总的说来"
+      },
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "罩衫, 工作服"
+      }
+    ],
+    "overcome": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "克服；战胜"
+      }
+    ],
+    "overestimate": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "评价过高, 过高估价"
+      },
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "估计过高, 评价过高"
+      }
+    ],
+    "overhead": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "经常开支, 普通用费, 天花板"
+      },
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "在头上的, 高架的"
+      },
+      {
+        "partOfSpeech": "副词 adv.",
+        "meaning": "在头顶上, 在空中, 在高处, 从头到脚全部没入地"
+      }
+    ],
+    "overlook": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "俯瞰, 远眺, 没注意到"
+      },
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "眺望, 俯瞰到的景色"
+      }
+    ],
+    "overseas": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "海外的, 国外的"
+      },
+      {
+        "partOfSpeech": "副词 adv.",
+        "meaning": "在海外, 在国外"
+      }
+    ],
+    "oversight": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "监督；监管；疏忽"
+      }
+    ],
+    "overwhelm": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "使不堪重负；压倒"
+      }
+    ],
+    "ownership": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "所有权；主人翁责任"
+      }
+    ],
+    "paradigm": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "范式；典型模式"
+      }
+    ],
+    "paradox": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "悖论；看似矛盾的情况"
+      }
+    ],
+    "parallel": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "平行, 对比, 相匹敌之物"
+      },
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "平行的, 相似的"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "与...平行, 与...相似, 相比, 使平行"
+      }
+    ],
+    "participate": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "参与"
+      }
+    ],
+    "partnership": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "伙伴关系；合作关系"
+      }
+    ],
+    "perceive": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "感知；认为；察觉"
+      }
+    ],
+    "perform": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "表现；执行"
+      }
+    ],
+    "permanent": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "永久的, 不变的, 固定的, 持久的"
+      },
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "烫发"
+      }
+    ],
+    "permit": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "许可证, 许可, 执照, 通行证"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "允许, 容许, 可能, 使放手做；容许, 给以机会, 提供可能"
+      }
+    ],
+    "persistent": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "持续的；坚持不懈的"
+      }
+    ],
+    "pervasive": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "普遍存在的；弥漫的"
+      }
+    ],
+    "physical": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "身体的, 物质的, 自然的, 物理学的, 好色的"
+      },
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "体格检查"
+      }
+    ],
+    "pipeline": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "管道；业务流程线；销售机会储备"
+      }
+    ],
+    "plausible": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "貌似合理的；可信的"
+      }
+    ],
+    "portfolio": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "投资组合；产品组合；作品集"
+      }
+    ],
+    "potential": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "潜在性, 可能性, 潜力, 潜能, 势, 位"
+      },
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "有潜力的, 可能的, 潜在的"
+      }
+    ],
+    "practical": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "实际的；实用的"
+      }
+    ],
+    "pragmatic": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "务实的；注重实际效果的"
+      }
+    ],
+    "precedent": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "先例, 前例"
+      },
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "在先的, 在前的"
+      }
+    ],
+    "precise": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "精确的；准确的"
+      }
+    ],
+    "predict": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "预测"
+      }
+    ],
+    "predictable": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "可预测的；意料之中的"
+      }
+    ],
+    "prefer": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "更喜欢"
+      }
+    ],
+    "prejudice": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "偏见, 成见, 侵害"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "使存偏见, 使有成见, 侵害"
+      }
+    ],
+    "preliminary": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "初步做法, 初步措施, 预试, 预选赛"
+      },
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "初步的, 开始的, 预备的"
+      }
+    ],
+    "premise": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "前提, 房屋连地基, 上述各项"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "预先提出, 引出, 作为...的前提；作出前提"
+      }
+    ],
+    "prerequisite": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "先决条件的, 必要的"
+      },
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "先决条件, 必备条件"
+      }
+    ],
+    "preserve": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "保护, 保持, 保存, 维持, 腌, 禁猎；加工食品, 禁猎"
+      },
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "加工成的食品, 禁猎地, 保护区, 防护物"
+      }
+    ],
+    "prevalent": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "流行的；普遍的"
+      }
+    ],
+    "primary": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "最主要者, 原色"
+      },
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "主要的, 初期的, 根本的, 原始的, 首要的, 基本的"
+      }
+    ],
+    "prioritize": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "优先处理"
+      }
+    ],
+    "procurement": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "采购；采办"
+      }
+    ],
+    "profound": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "深刻的；深远的"
+      }
+    ],
+    "prohibit": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "禁止"
+      }
+    ],
+    "promote": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "促进；提升"
+      }
+    ],
+    "prone": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "易于…的；俯卧的"
+      }
+    ],
+    "prospective": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "未来的；潜在的"
+      }
+    ],
+    "protocol": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "草案, 礼仪, 协议"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "拟定"
+      }
+    ],
+    "provision": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "(政府提供的)钱和设备, 准备, 供应品, 规定, 条款"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "供给...食物及必需品"
+      }
+    ],
+    "pursue": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "追求；从事"
+      }
+    ],
+    "qualitative": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "定性的；质性的"
+      }
+    ],
+    "quantify": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "量化；用数字表示"
+      }
+    ],
+    "questionable": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "可疑的；值得质疑的"
+      }
+    ],
+    "radical": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "激进分子, 词根, 基础, 根式, 根"
+      },
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "激进的, 根本的, 基本的, 根的"
+      }
+    ],
+    "range": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "排, 行, 山脉, 范围, 行列, 射程"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "排列, 归类于, 使并列, 放牧；平行, 延伸, 漫游"
+      }
+    ],
+    "rapid": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "迅速的, 飞快的, 急促的, 陡的"
+      },
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "急流"
+      }
+    ],
+    "rare": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "稀罕的, 罕有的, 珍奇的, 稀薄的, 半熟的, 非常好的"
+      },
+      {
+        "partOfSpeech": "副词 adv.",
+        "meaning": "非常"
+      }
+    ],
+    "rational": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "理性的, 合理的"
+      },
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "有理数"
+      }
+    ],
+    "rationale": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "基本原理；理由"
+      }
+    ],
+    "reasonable": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "合理的；价格公道的"
+      }
+    ],
+    "reassure": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "使安心；打消疑虑"
+      }
+    ],
+    "rebuild": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "重建；重新建立"
+      }
+    ],
+    "rebut": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "反驳；驳回"
+      }
+    ],
+    "recession": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "经济衰退；退回"
+      }
+    ],
+    "recognizable": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "可辨认的；容易认出的"
+      }
+    ],
+    "recognize": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "认出；认可"
+      }
+    ],
+    "recommend": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "推荐；建议"
+      }
+    ],
+    "reconcile": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "调和；使一致；和解"
+      }
+    ],
+    "reconsider": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "重新考虑"
+      }
+    ],
+    "recruit": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "新兵, 新手, 新会员, 补给品"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "恢复, 补充, 充实, 征募；征募新兵, 复原, 得到补充"
+      }
+    ],
+    "rectify": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "纠正；修复"
+      }
+    ],
+    "reduce": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "减少"
+      }
+    ],
+    "redundant": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "多余的；冗余的"
+      }
+    ],
+    "referendum": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "全民公投；公民投票"
+      }
+    ],
+    "refine": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "改进；精炼；优化"
+      }
+    ],
+    "reflect": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "反映；反思"
+      }
+    ],
+    "refund": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "偿还"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "付还, 偿还借款；归还, 偿还"
+      }
+    ],
+    "refute": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "驳斥；证明错误"
+      }
+    ],
+    "regardless": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "不顾；不管怎样"
+      }
+    ],
+    "regulatory": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "监管的；规章的"
+      }
+    ],
+    "reimburse": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "报销；偿还垫付费用"
+      }
+    ],
+    "reinforce": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "加强, 增援, 补充；求援, 得到增援"
+      },
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "加固材料"
+      }
+    ],
+    "reject": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "被拒之人, 被弃之物, 不合格品, 次品"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "拒绝, 抵制, 否决, 驳回, 丢弃, 呕出"
+      }
+    ],
+    "relevant": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "相关的；切题的"
+      }
+    ],
+    "reliable": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "可靠的；可信赖的"
+      }
+    ],
+    "relinquish": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "放弃；交出"
+      }
+    ],
+    "reluctant": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "不情愿的；勉强的"
+      }
+    ],
+    "remarkable": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "非凡的；引人注目的"
+      }
+    ],
+    "render": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "回报, 给于, 付给, 汇报, 提出, 舍弃, 反映, 表示, 表演, 致使, 执行, 实施；给予补偿"
+      },
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "交纳, 打底"
+      }
+    ],
+    "renewable": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "可再生的"
+      }
+    ],
+    "repay": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "偿还；报答"
+      }
+    ],
+    "replace": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "替换；代替"
+      }
+    ],
+    "represent": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "代表；表示"
+      }
+    ],
+    "repudiate": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "拒绝接受；否认；断绝"
+      }
+    ],
+    "reputable": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "信誉良好的；值得信赖的"
+      }
+    ],
+    "require": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "要求；需要"
+      }
+    ],
+    "resign": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "辞职；辞去"
+      }
+    ],
+    "resilient": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "有韧性的；能恢复的"
+      }
+    ],
+    "resolve": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "决定, 分解, 决心；使分解, 解析, 解决, 消除, 决心"
+      },
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "决定之事, 决心, 坚决"
+      }
+    ],
+    "respond": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "回应；反应"
+      }
+    ],
+    "restore": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "恢复；修复"
+      }
+    ],
+    "retain": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "保留；记住"
+      }
+    ],
+    "retention": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "留存；保留"
+      }
+    ],
+    "retrospective": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "回顾的, 怀旧的, 在后面的"
+      },
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "回顾展"
+      }
+    ],
+    "reveal": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "露出, 显示, 透露, 揭露, 泄露, (神)启示"
+      },
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "窗侧, 门侧"
+      }
+    ],
+    "revenue": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "收入；营收"
+      }
+    ],
+    "rigid": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "僵硬的；严格不变的"
+      }
+    ],
+    "rigorous": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "严谨的；严格的"
+      }
+    ],
+    "roadmap": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "路线图；规划图"
+      }
+    ],
+    "robust": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "强健的；稳健的；可靠的"
+      }
+    ],
+    "sample": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "样品, 范例, 样本"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "抽样, 尝试"
+      }
+    ],
+    "sanction": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "核准, 制裁, 处罚, 约束力"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "制定制裁规则, 认可, 核准, 同意"
+      }
+    ],
+    "scalable": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "可扩展的；能规模化的"
+      }
+    ],
+    "scarce": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "稀缺的；不足的"
+      }
+    ],
+    "scrutinize": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "仔细审查；细看"
+      }
+    ],
+    "scrutiny": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "仔细审查；监督"
+      }
+    ],
+    "secondary": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "次要的；第二位的"
+      }
+    ],
+    "sensible": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "明智的；合乎情理的"
+      }
+    ],
+    "sensitive": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "敏感的；体贴的；需谨慎处理的"
+      }
+    ],
+    "separate": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "独立件, 抽印本"
+      },
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "分开的, 各别的, 单独的, 分隔的"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "分开, 隔开, 分居；使分离, 使分开, 区分, 使分居"
+      }
+    ],
+    "setback": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "挫折；阻碍进展的事"
+      }
+    ],
+    "severe": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "严重的；严厉的"
+      }
+    ],
+    "shortage": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "短缺；不足"
+      }
+    ],
+    "shortcoming": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "缺点；不足之处"
+      }
+    ],
+    "simultaneous": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "同时的；同步的"
+      }
+    ],
+    "skeptical": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "怀疑的；持怀疑态度的"
+      }
+    ],
+    "specific": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "特效药, 特性"
+      },
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "特殊的, 明确的, 具有特效的, 特定地, 具体地"
+      }
+    ],
+    "speculate": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "推测；猜测；投机"
+      }
+    ],
+    "spontaneous": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "自发的；未经安排的"
+      }
+    ],
+    "stable": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "马房, 牛棚"
+      },
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "稳定的, 安定的, 坚固的, 坚定的"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "赶入马房；被关在马厩"
+      }
+    ],
+    "stakeholder": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "利益相关者"
+      }
+    ],
+    "standpoint": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "立场；角度"
+      }
+    ],
+    "statute": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "成文法；法规"
+      }
+    ],
+    "straightforward": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "简单明了的；坦率的"
+      }
+    ],
+    "strategic": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "战略性的；有策略的"
+      }
+    ],
+    "streamline": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "流线, 流线型"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "使成流线型, 使合理化"
+      }
+    ],
+    "submit": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "提交；屈服"
+      }
+    ],
+    "subordinate": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "属下, 附属物"
+      },
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "下级的, 次要的, 附属的"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "使居下位, 使服从"
+      }
+    ],
+    "subscription": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "订阅；订阅费；定期会员服务"
+      }
+    ],
+    "subsequent": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "随后的；后来的"
+      }
+    ],
+    "subsidy": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "补贴；补助金"
+      }
+    ],
+    "substantial": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "重要材料(或事物), 有实际价值的东西"
+      },
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "实质上的, 物质的, 有内容的, 结实的"
+      }
+    ],
+    "substantiate": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "证实；用证据支持"
+      }
+    ],
+    "subtle": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "微妙的；不易察觉的；巧妙的"
+      }
+    ],
+    "sufficient": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "足够的；充分的"
+      }
+    ],
+    "suggest": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "建议；表明"
+      }
+    ],
+    "suppress": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "压制；抑制；隐瞒"
+      }
+    ],
+    "surplus": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "剩余, 过剩, 盈余"
+      },
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "过剩的, 剩余的"
+      }
+    ],
+    "suspend": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "暂停；使停职；悬挂"
+      }
+    ],
+    "suspicion": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "怀疑；嫌疑"
+      }
+    ],
+    "suspicious": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "可疑的；起疑心的"
+      }
+    ],
+    "sustain": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "维持；支撑"
+      }
+    ],
+    "sustainable": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "可持续的"
+      }
+    ],
+    "sympathetic": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "有同情心的, 合意的, 赞成的"
+      },
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "交感神经, 容易感受的人"
+      }
+    ],
+    "synthesize": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "综合；合成"
+      }
+    ],
+    "tangible": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "可触知的东西, 有形资产"
+      },
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "可触摸的, 有实体的, 非相像的, 有形的, 明确的"
+      }
+    ],
+    "technical": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "技术的；专业技术性的"
+      }
+    ],
+    "tedious": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "冗长乏味的；令人厌烦的"
+      }
+    ],
+    "temporary": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "暂时的, 临时的"
+      },
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "临时工, 临时雇员"
+      }
+    ],
+    "tendency": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "倾向；趋势"
+      }
+    ],
+    "tentative": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "试验"
+      },
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "试验性的, 暂时的"
+      }
+    ],
+    "theoretical": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "理论的；假设的"
+      }
+    ],
+    "thereby": [
+      {
+        "partOfSpeech": "副词 adv.",
+        "meaning": "因此；由此；借此"
+      }
+    ],
+    "thesis": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "论文；论点"
+      }
+    ],
+    "thorough": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "彻底的；全面细致的"
+      }
+    ],
+    "thoughtful": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "体贴的；考虑周到的"
+      }
+    ],
+    "threshold": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "门槛；阈值；临界点"
+      }
+    ],
+    "throughout": [
+      {
+        "partOfSpeech": "副词 adv.",
+        "meaning": "到处, 贯穿全部地, 自始至终"
+      },
+      {
+        "partOfSpeech": "介词 prep.",
+        "meaning": "遍及, 在各处"
+      }
+    ],
+    "throughput": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "吞吐量；处理量"
+      }
+    ],
+    "tolerance": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "容忍；耐受力；允许误差"
+      }
+    ],
+    "trajectory": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "轨迹；发展路径"
+      }
+    ],
+    "transaction": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "交易；业务办理"
+      }
+    ],
+    "transcend": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "超越；胜过"
+      }
+    ],
+    "transfer": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "迁移, 移动, 传递, 转让, 转移, 过户, 汇兑, 换车"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "使转移, 调转, 调任, 改变, 传递, 转让；转移, 转学, 转职, 换车"
+      }
+    ],
+    "transform": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "转变；改造"
+      }
+    ],
+    "transparency": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "透明度；公开性"
+      }
+    ],
+    "transparent": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "透明的；公开清楚的"
+      }
+    ],
+    "trigger": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "触发器, 扳机"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "触发, 发射, 引起；松开扳柄"
+      }
+    ],
+    "trustworthy": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "值得信任的；可靠的"
+      }
+    ],
+    "turnover": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "翻倒, 翻转, 半圆酥饼, 营业额, 流通, 周转"
+      },
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "可翻转的"
+      }
+    ],
+    "typical": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "典型的；有代表性的"
+      }
+    ],
+    "unaware": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "不知道的；未察觉的"
+      }
+    ],
+    "uncertain": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "不确定的；没有把握的"
+      }
+    ],
+    "underestimate": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "低估"
+      },
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "低估, 看轻"
+      }
+    ],
+    "undergo": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "经历；接受"
+      }
+    ],
+    "underlying": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "潜在的；根本的"
+      }
+    ],
+    "undermine": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "逐渐削弱；暗中破坏"
+      }
+    ],
+    "underscore": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "划线于...下"
+      },
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "(表强调的)下划线"
+      }
+    ],
+    "understandable": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "可以理解的；情有可原的"
+      }
+    ],
+    "undertake": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "承担；着手做；承诺"
+      }
+    ],
+    "unemployment": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "失业；失业率"
+      }
+    ],
+    "uneven": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "不平坦的；不均匀的"
+      }
+    ],
+    "unexpected": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "出乎意料的"
+      }
+    ],
+    "unforgettable": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "难忘的"
+      }
+    ],
+    "unnecessary": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "不必要的；多余的"
+      }
+    ],
+    "unwilling": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "不愿意的"
+      }
+    ],
+    "upcoming": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "即将到来的"
+      }
+    ],
+    "uphold": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "维护；支持；维持原判"
+      }
+    ],
+    "validate": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "验证；确认有效；认可"
+      }
+    ],
+    "variable": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "易变的事物, 变数, 可变物, 变量"
+      },
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "可变的, 不定的, 易变的, 变量的"
+      }
+    ],
+    "vary": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "变化；不同"
+      }
+    ],
+    "verify": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "核实；验证"
+      }
+    ],
+    "viable": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "可行的；能存活的"
+      }
+    ],
+    "viewpoint": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "观点；看问题的角度"
+      }
+    ],
+    "virtual": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "虚拟的；事实上的"
+      }
+    ],
+    "visible": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "看得见的, 明显的, 显然的"
+      },
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "可见物"
+      }
+    ],
+    "volatile": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "挥发性的, 可变的, 不稳定的, 飞行的, 轻快的, 爆炸性的"
+      },
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "有翅动物, 挥发物"
+      }
+    ],
+    "voluntary": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "自动的, 自愿的, 故意的, 志愿的, 自发的"
+      },
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "自愿行动, 志愿者, 自由调"
+      }
+    ],
+    "vulnerable": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "脆弱的；易受伤害的"
+      }
+    ],
+    "waive": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "免除；放弃某项权利"
+      }
+    ],
+    "welfare": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "福利, 安宁, 幸福, 福利事业"
+      },
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "福利的"
+      }
+    ],
+    "whereas": [
+      {
+        "partOfSpeech": "连词 conj.",
+        "meaning": "然而；而；鉴于"
+      }
+    ],
+    "whereby": [
+      {
+        "partOfSpeech": "副词 adv.",
+        "meaning": "借以；通过这种方式"
+      }
+    ],
+    "widespread": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "广泛的；普遍的"
+      }
+    ],
+    "withdraw": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "撤回；退出；提取"
+      }
+    ],
+    "withstand": [
+      {
+        "partOfSpeech": "动词 v.",
+        "meaning": "承受；经得起；抵挡"
+      }
+    ],
+    "workforce": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "全体员工；劳动力"
+      }
+    ],
+    "workload": [
+      {
+        "partOfSpeech": "名词 n.",
+        "meaning": "工作量；工作负担"
+      }
+    ],
+    "worldwide": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "遍及全球的；在全世界"
+      }
+    ],
+    "worthwhile": [
+      {
+        "partOfSpeech": "形容词 adj.",
+        "meaning": "值得花时间或精力的"
+      }
+    ]
+  }
+}

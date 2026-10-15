@@ -9,8 +9,9 @@ export interface VocabWord {
   word: string
   phonetic: string
   meaning: string
-  senses?: Array<{ partOfSpeech: string; meaning: string; example: string; translation: string; phonetic?: string }>
+  senses?: Array<{ partOfSpeech: string; meaning: string; example?: string; translation?: string; phonetic?: string }>
   definitionSource?: string
+  definitionSourceLabel?: string
   collocation: string
   example: string
   memoryHook?: {
