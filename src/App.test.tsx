@@ -73,7 +73,7 @@ function expectHidden(word = fixture.words[0]) {
 describe('actual session navigation', () => {
   it('allows voluntary review after the relief target without stopping after one word', async () => {
     fixture.settings.reliefMode = true
-    fixture.stats.todaySeen = Array.from({ length: 15 }, (_, i) => `finished-${i}`)
+    fixture.stats.todaySeen = Array.from({ length: 25 }, (_, i) => `finished-${i}`)
     await mount()
     await click('自选加练 2 个旧词')
     expectHidden()

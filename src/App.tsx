@@ -676,7 +676,7 @@ function App() {
               <div className="flex items-end justify-between">
                 <div>
                   <p className="text-sm text-stone-500">今日练习量</p>
-                  <p className="mt-1 text-4xl font-semibold">{todayProgress}{reliefActive ? ' / 15' : ''}</p>
+                  <p className="mt-1 text-4xl font-semibold">{todayProgress}{reliefActive ? ` / ${RELIEF_TARGET}` : ''}</p>
                 </div>
                 <span className="rounded-full bg-sky-100 px-3 py-1 text-sm font-medium text-sky-800">B2 → C1</span>
               </div>
@@ -689,7 +689,7 @@ function App() {
               <div className="rounded-lg bg-emerald-50 p-5 shadow-sm ring-1 ring-emerald-100">
                 <p className="text-sm font-medium text-emerald-800">减负模式</p>
                 <p className="mt-2 text-2xl font-semibold text-stone-950">{relief.done || !relief.words.length ? '今日安排已完成' : `今天建议再做 ${relief.remaining} 个`}</p>
-                <p className="mt-2 leading-6 text-stone-600">新词已暂停。{relief.done || !relief.words.length ? '可以休息，也可以自选加练。' : '每日建议 15 个旧词，不用补齐积压。'}</p>
+                <p className="mt-2 leading-6 text-stone-600">新词已暂停。{relief.done || !relief.words.length ? '可以休息，也可以自选加练。' : '每日建议 25 个旧词，优先兼顾近期到期词，不用补齐积压。'}</p>
               </div>
             )}
 
@@ -778,7 +778,7 @@ function App() {
               <input className="mt-2 w-full accent-emerald-700" type="range" min="0" max="200" step="5" value={settings.dailyTarget} onChange={(event) => updateDailyTarget(Number(event.target.value))} />
               <div className="mt-1 text-sm text-stone-500">{settings.dailyTarget} 新词 / 天 · 总容量 {settings.dailyCapacity} 张卡</div>
               <label className="mt-5 flex min-h-12 items-center justify-between rounded-lg bg-stone-50 px-4 ring-1 ring-stone-200">
-                <span className="font-medium text-stone-900">减负模式 · 每天建议 15 个旧词</span>
+                <span className="font-medium text-stone-900">减负模式 · 每天建议 25 个旧词</span>
                 <input className="h-6 w-6 accent-emerald-700" type="checkbox" checked={settings.reliefMode} onChange={(event) => updateReliefMode(event.target.checked)} />
               </label>
               <button className="mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-stone-900 px-4 font-medium text-white" onClick={() => setScreen('import')}>

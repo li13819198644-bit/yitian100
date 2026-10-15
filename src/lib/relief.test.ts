@@ -7,7 +7,7 @@ import { localDateKey } from './studyStats'
 
 const now = new Date(2026, 9, 14, 12).getTime()
 const words = seedWords.slice(0, 40)
-const progress = words.map((w, i) => ({ ...createProgress(w.id, now - 86400000), seen: 5, correct: i < 20 ? 0 : 5, incorrect: i < 20 ? 5 : 0, lapses: i < 20 ? 5 : 0 }))
+const progress = words.map((w, i) => ({ ...createProgress(w.id, now - 10 * 86400000), seen: 5, correct: i < 20 ? 0 : 5, incorrect: i < 20 ? 5 : 0, lapses: i < 20 ? 5 : 0 }))
 const stats: AppStats = { todayDate: localDateKey(new Date(now)), todaySeen: [], combo: 0, bestCombo: 0, streak: 0 }
 describe('relief daily budget', () => {
   it('offers voluntary old-word practice without new or excluded words', () => {
@@ -20,7 +20,7 @@ describe('relief daily budget', () => {
   it('caps total and difficult words without changing progress', () => {
     const before = JSON.stringify(progress)
     const plan = reliefPlan(words, progress, stats, now)
-    expect(plan.words).toHaveLength(15)
+    expect(plan.words).toHaveLength(25)
     expect(plan.words.filter(w => isWeak(progress.find(p => p.wordId === w.id)!))).toHaveLength(5)
     expect(JSON.stringify(progress)).toBe(before)
   })
@@ -32,11 +32,19 @@ describe('relief daily budget', () => {
   it('keeps the quota across entry points and reloads', () => {
     const todaySeen = words.slice(0, 5).map(w => w.id)
     const plan = reliefPlan(words, progress, { ...stats, todaySeen }, now)
-    expect(plan.words).toHaveLength(10)
-    expect(plan.words.every(w => !isWeak(progress.find(p => p.wordId === w.id)!))).toBe(true)
-    expect(reliefPlan(words, progress, { ...stats, todaySeen: words.slice(0, 15).map(w => w.id) }, now).words).toEqual([])
+    expect(plan.words).toHaveLength(20)
+    expect(plan.words.every(w => !todaySeen.includes(w.id))).toBe(true)
+    expect(reliefPlan(words, progress, { ...stats, todaySeen: words.slice(0, 25).map(w => w.id) }, now).words).toEqual([])
   })
-  it('allows fewer than 15 instead of adding extra hard words', () => {
+  it('allows fewer than 25 instead of filling with old hard words', () => {
     expect(reliefPlan(words.slice(0, 20), progress, stats, now).words).toHaveLength(5)
+  })
+  it('reserves recent due words even when old debt and hard words dominate', () => {
+    const items = progress.map((p, i) => i < 20 ? { ...p, lastStudiedAt: now - 2 * 86400000, nextReviewAt: now - 86400000 } : p)
+    const plan = reliefPlan(words, items, stats, now)
+    expect(plan.words).toHaveLength(25)
+    expect(plan.words.filter(w => words.slice(0, 20).some(r => r.id === w.id))).toHaveLength(15)
+    expect(extraReviewWords(words, items, false, now).filter(w => words.slice(0, 20).some(r => r.id === w.id))).toHaveLength(6)
+    expect(reliefPlan(words, items.map(p => ({ ...p, nextReviewAt: now + 1000 })), stats, now).words).toEqual([])
   })
 })
