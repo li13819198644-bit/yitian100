@@ -1,5 +1,11 @@
 // Deliberate sound/spelling associations, not morphological analyses or etymologies.
 export const reviewedRecallHooks: Readonly<Record<string, string>> = {
+  oversight: 'oversight借overlook忽略：发邮件漏了附件，这是一次疏漏；另一义是监督，要看语境。',
+  compelling: 'compelling借credible可信：回执可信，完整时间线更让人信服；记有说服力的。',
+  dilemma: 'dilemma借alternative选项：加班误了家宴，不加班误了交付；两边都难选，进退两难。',
+  fraud: 'fraud借genuine真的：假冒银行邮件骗你转账，不是真通知，而是欺诈。',
+  exemption: 'exemption借exclude排除：已有合格证，获准不参加必修培训；不是被拒绝，是获豁免。',
+  compromise: 'compromise借negotiate谈判：你要周五，他要周一，最后各退一步定周日；达成妥协。',
   mandate: 'mandate看mandatory必须的：公司邮件要求必须培训；mandatory是必须做，mandate是正式要求做。',
   entail: 'entail借require需要：接下这份工作，就必然要每周出差；做这件事随之必须涉及什么。',
   compensate: 'compensate借refund退款：酒店取消预订，退房费之外再补你另订酒店的差价；弥补损失。',

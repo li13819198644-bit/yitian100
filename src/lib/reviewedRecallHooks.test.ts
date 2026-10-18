@@ -5,7 +5,7 @@ import { buildWordShapeHook } from './wordShapeHooks'
 
 describe('reviewed recall associations', () => {
   it('publishes all reviewed associations verbatim, including preserved batches', () => {
-    expect(Object.keys(reviewedRecallHooks)).toHaveLength(35)
+    expect(Object.keys(reviewedRecallHooks)).toHaveLength(41)
     for (const [word, hook] of Object.entries(reviewedRecallHooks)) {
       const matches = seedWords.filter((item) => item.word === word)
       expect(matches, word).toHaveLength(1)

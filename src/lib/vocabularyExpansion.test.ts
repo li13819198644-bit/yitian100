@@ -3,6 +3,7 @@ import { generatedBatch10 } from '../data/generatedBatch10'
 import { batch10Origins } from '../data/batch10Origins'
 import { seedWords } from '../data/seedWords'
 import { reviewedRecallHooks } from '../data/reviewedRecallHooks'
+import { familiarWordBridges } from '../data/familiarWordBridges'
 import { createProgress, getNewWords } from './srs'
 
 const newIds = new Set(generatedBatch10.map((word) => word.id))
@@ -45,7 +46,7 @@ describe('the hundred-word expansion', () => {
       expect(word.etymologySource).toMatch(/^https:\/\/www\.etymonline\.com\/word\/[a-z]+$/)
       expect(word.evilHook, word.word).toMatch(/看|借|接/)
       expect(seedWords.find((item) => item.id === word.id)?.memoryHook?.breakdown).toBe(word.wordOrigin)
-      expect(seedWords.find((item) => item.id === word.id)?.usageNote).toBe(word.usageNote)
+      expect(seedWords.find((item) => item.id === word.id)?.usageNote).toBe(familiarWordBridges[word.word]?.usageNote ?? word.usageNote)
       expect(seedWords.find((item) => item.id === word.id)?.etymologySource).toBe(word.etymologySource)
     }
     const entry = (id: string) => generatedBatch10.find((word) => word.id === id)!
