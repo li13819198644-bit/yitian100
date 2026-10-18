@@ -15,6 +15,7 @@ import { generatedBatch10 } from './generatedBatch10'
 import { nextBatchDraft } from './nextBatchDraft'
 import { nextBatchDraft2 } from './nextBatchDraft2'
 import { confusionNotes } from './confusions'
+import { withFamiliarWordBridge } from './familiarWordBridges'
 
 const rawWords = [
   ['facilitate', '/fəˈsɪlɪteɪt/', '促进；使便利', 'facilitate communication', 'Clear visuals facilitate communication across teams.', 3, 'B2'],
@@ -163,4 +164,4 @@ export const seedWords: VocabWord[] = [
   ...publishDraftWords(generatedBatch8),
   ...publishDraftWords(generatedBatch9, true),
   ...publishDraftWords(generatedBatch10, true),
-].map(withWordSenses)
+].map(withWordSenses).map(withFamiliarWordBridge)

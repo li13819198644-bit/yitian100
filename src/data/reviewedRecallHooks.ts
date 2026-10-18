@@ -1,5 +1,10 @@
 // Deliberate sound/spelling associations, not morphological analyses or etymologies.
 export const reviewedRecallHooks: Readonly<Record<string, string>> = {
+  mandate: 'mandate看mandatory必须的：公司邮件要求必须培训；mandatory是必须做，mandate是正式要求做。',
+  entail: 'entail借require需要：接下这份工作，就必然要每周出差；做这件事随之必须涉及什么。',
+  compensate: 'compensate借refund退款：酒店取消预订，退房费之外再补你另订酒店的差价；弥补损失。',
+  fiscal: 'fiscal借budget预算：看政府收税、修路的预算；围绕政府收支，记财政的。',
+  nuance: 'nuance借distinction区别：邮件同样催今天交，命令与客气询问语气不同；记细微差别。',
   allegation: 'allegation借a lie（谎话）：有人告你，先查真假；指控不等于事实。',
   articulate: 'articulate借art艺术+late迟到：艺术家迟到了，把原因说清楚；别认成agri农业。',
   inventory: 'inventory借in里面+tory听story故事：别讲仓库故事，数清里面库存。',
