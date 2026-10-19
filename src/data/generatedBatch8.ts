@@ -24,7 +24,7 @@ const rows: Row[] = [
   ['deduce', '/dɪˈduːs/', '推断；演绎', 'deduce the answer', 'We can deduce the answer from the available evidence.', 4, 'C1', '拉丁 deducere，de 表示从，ducere 表示引导', 'deduce看duce带出：从证据里带出结论，连到推断。'],
   ['delineate', '/dɪˈlɪnieɪt/', '勾勒；清楚说明', 'delineate responsibilities', 'The contract clearly delineates each party’s responsibilities.', 5, 'C1', '拉丁 delineare，linea 是线，原义是用线描出', 'delineate看line线：把边界一条条画清，连到清楚说明。'],
   ['deter', '/dɪˈtɜːr/', '阻止；威慑', 'deter crime', 'Visible security measures may deter crime.', 4, 'C1', '拉丁 deterrere，意为吓退，由 de 和 terrere 构成', 'deter听“吓得退”：因为害怕后果而停止，连到威慑。'],
-  ['discern', '/dɪˈsɜːrn/', '辨别；看出', 'discern a pattern', 'Experienced readers can discern a pattern in the data.', 4, 'C1', '拉丁 discernere，意为分开、区分判断', 'discern听“的确识认”：从相似中看出来，连到辨别。'],
+  ['discern', '/dɪˈsɜːrn/', '辨别；看出', 'discern a pattern', 'Experienced readers can discern a pattern in the data.', 4, 'C1', '拉丁 discernere，由 dis-（分开）和 cernere（筛选、辨别）构成；可按历史词干记 dis- + cern（分辨），从“分辨开来”记到“辨别、看出”', 'discern看“找不同”：两张图乍看一样，仔细看才辨出差别；记“辨别、看出”。'],
   ['disseminate', '/dɪˈsemɪneɪt/', '传播；散布', 'disseminate information', 'The agency disseminates information through local networks.', 5, 'C1', '拉丁 disseminare，semen 是种子，原义是撒种', 'disseminate看seed撒种：信息像种子撒开，连到传播。'],
   ['distort', '/dɪˈstɔːrt/', '歪曲；扭曲', 'distort the facts', 'Selective reporting can distort the facts.', 3, 'C1', '拉丁 distorquere，意为向不同方向扭转', 'distort看扭曲的tort：把事实拧歪，连到歪曲。'],
   ['endorse', '/ɪnˈdɔːrs/', '公开支持；认可；背书', 'endorse a proposal', 'Several experts endorsed the proposal.', 4, 'C1', '中世纪拉丁 indorsare，原指在文件背面签字', 'endorse看door背后签名：签字背书，连到公开支持。'],

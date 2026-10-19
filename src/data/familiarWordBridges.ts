@@ -2,6 +2,11 @@ import type { VocabWord } from '../types'
 
 // Learner-approved illustrative events, not claims about the learner's own history.
 export const familiarWordBridges: Record<string, Pick<VocabWord, 'example' | 'collocation' | 'usageNote'>> = {
+  discern: {
+    collocation: 'discern a difference',
+    example: 'I could discern a difference between the two pictures.',
+    usageNote: '场景记忆：假设你在玩找不同，两张图乍看一样，仔细看后辨出一处差别。I could discern a difference between the two pictures.（我能辨出这两张图之间的一处差别。）discern 是动词，表示辨别、察觉、看出，常用于不容易发现的事物；也可说 discern a pattern（看出规律），不限于用眼睛看。回想：原本不明显，后来辨出来了，用哪个动词？',
+  },
   oversight: {
     collocation: 'an oversight',
     example: 'Leaving out the attachment was an oversight.',

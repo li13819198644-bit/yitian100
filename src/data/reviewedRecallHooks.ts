@@ -38,7 +38,7 @@ export const reviewedRecallHooks: Readonly<Record<string, string>> = {
   intense: 'intense看tense紧绷：绳子绷得特别紧，气氛紧张；程度特别强烈。',
   resilient: 'resilient别读silent，中间/zɪl/；借re再：球受压再弹回，受挫能恢复。',
   validate: 'validate看valid有效：扫码查票是否valid，验证有效；不是把date解释成证明。',
-  discern: 'discern借近形disc光盘：两张盘外表接近，细看编号才辨别出差异。',
+  discern: 'discern看“找不同”：两张图乍看一样，仔细看才辨出差别；记“辨别、看出”。',
   deficient: 'deficient借近形efficient高效：高效机器缺零件也不行；缺乏、不足。',
   pervasive: 'pervasive看per每个：烟味钻进每个房间，无处不在、普遍存在。',
 }

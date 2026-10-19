@@ -2,8 +2,8 @@ import { expect, it } from 'vitest'
 import { familiarWordBridges, withFamiliarWordBridge } from './familiarWordBridges'
 import { seedWords } from './seedWords'
 
-it('publishes the eleven selected bridges and keeps identity and origins', () => {
-  expect(Object.keys(familiarWordBridges).sort()).toEqual(['compelling', 'compensate', 'compromise', 'dilemma', 'entail', 'exemption', 'fiscal', 'fraud', 'mandate', 'nuance', 'oversight'])
+it('publishes the twelve selected bridges and keeps identity and origins', () => {
+  expect(Object.keys(familiarWordBridges).sort()).toEqual(['compelling', 'compensate', 'compromise', 'dilemma', 'discern', 'entail', 'exemption', 'fiscal', 'fraud', 'mandate', 'nuance', 'oversight'])
   for (const [name, bridge] of Object.entries(familiarWordBridges)) {
     const word = seedWords.find(w => w.word === name)!
     expect(word).toMatchObject(bridge)
