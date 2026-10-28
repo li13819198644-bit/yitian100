@@ -4,10 +4,12 @@ const mocks = vi.hoisted(() => ({
   getProgress: vi.fn(), getSettings: vi.fn(), getStats: vi.fn(), getGrammarProgress: vi.fn(),
   saveProgress: vi.fn(), saveSettings: vi.fn(), saveStats: vi.fn(), saveGrammarProgress: vi.fn(),
   maybeSingle: vi.fn(), upsert: vi.fn(),
+  rpc: vi.fn(),
 }))
 vi.mock('./db', () => mocks)
 vi.mock('@supabase/supabase-js', () => ({
   createClient: () => ({
+    rpc: mocks.rpc,
     auth: { getUser: async () => ({ data: { user: { id: 'test-user' } }, error: null }) },
     from: () => ({
       upsert: mocks.upsert,
@@ -28,6 +30,7 @@ describe('grammar cloud snapshot compatibility', () => {
     mocks.getStats.mockResolvedValue({ todaySeen: [] })
     mocks.getGrammarProgress.mockResolvedValue(grammar)
     mocks.upsert.mockResolvedValue({ error: null })
+    mocks.rpc.mockReturnValue({ single: mocks.maybeSingle })
   })
   afterEach(() => vi.unstubAllEnvs())
   it('uploads grammar alongside vocabulary in the same user snapshot', async () => {
@@ -46,5 +49,20 @@ describe('grammar cloud snapshot compatibility', () => {
     const { restoreCloudSnapshot } = await import('./cloudSync')
     await restoreCloudSnapshot()
     expect(mocks.saveGrammarProgress).not.toHaveBeenCalled()
+  })
+  it('uploads a daily report through the authenticated RPC without client-supplied user identity', async () => {
+    const payload = (await import('../test/dailyAnalysisFixtures')).report()
+    mocks.maybeSingle.mockResolvedValue({ data: { id: 'daily-job', status: 'pending' }, error: null })
+    const { uploadDailyLearningReport } = await import('./cloudSync')
+    expect(await uploadDailyLearningReport(payload)).toMatchObject({ id: 'daily-job', status: 'pending' })
+    expect(mocks.rpc).toHaveBeenCalledWith('upload_daily_learning_report', { p_payload: payload })
+    expect(mocks.upsert).not.toHaveBeenCalled()
+  })
+  it('propagates backend errors instead of returning an upload success', async () => {
+    const payload = (await import('../test/dailyAnalysisFixtures')).report()
+    const error = { code: 'PGRST202' }
+    mocks.maybeSingle.mockResolvedValue({ data: null, error })
+    const { uploadDailyLearningReport } = await import('./cloudSync')
+    await expect(uploadDailyLearningReport(payload)).rejects.toBe(error)
   })
 })

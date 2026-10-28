@@ -14,6 +14,7 @@ export interface VocabWord {
   definitionSourceLabel?: string
   collocation: string
   example: string
+  personalExampleTranslation?: string
   memoryHook?: {
     core: string
     image: string
@@ -56,6 +57,7 @@ export interface WordProgress {
 }
 
 export interface AppSettings {
+  dailyAnalysisEnabled?: boolean
   dailyTarget: number
   dailyCapacity: number
   reliefMode: boolean

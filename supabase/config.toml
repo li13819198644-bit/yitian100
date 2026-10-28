@@ -10,3 +10,7 @@ max_rows = 1000
 [auth]
 enabled = true
 
+[functions.analyze-daily-report]
+# Requests are authenticated by a server-only shared secret, not an end-user JWT.
+verify_jwt = false
+

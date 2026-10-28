@@ -1,5 +1,6 @@
 import type { SupabaseClient, User } from '@supabase/supabase-js'
 import type { LearningSnapshot } from '../types'
+import type { AnalysisJob, DailyUpload, PersonalWordCard } from './dailyAnalysis'
 import { getProgress, getSettings, getStats, saveProgress, saveSettings, saveStats, getGrammarProgress, saveGrammarProgress } from './db'
 
 type SnapshotRow = {
@@ -122,4 +123,34 @@ export async function restoreCloudSnapshot() {
   await saveStats(snapshot.stats)
   if (snapshot.grammar) await saveGrammarProgress(snapshot.grammar)
   return snapshot
+}
+
+export async function uploadDailyLearningReport(payload: DailyUpload): Promise<AnalysisJob> {
+  const { data, error } = await (await getClient()).rpc('upload_daily_learning_report', { p_payload: payload }).single<AnalysisJob>()
+  if (error) throw error
+  return data
+}
+
+export async function getDailyLearningState(): Promise<{ jobs: AnalysisJob[]; cards: PersonalWordCard[] }> {
+  const supabase = await getClient()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError) throw authError
+  if (!user) throw new Error('请先登录再读取分析')
+  const [jobs, cards] = await Promise.all([
+    supabase.from('latest_daily_analysis_jobs').select('id,report_date,revision,status,result,created_at,updated_at').eq('user_id', user.id).order('report_date', { ascending: false }).limit(14),
+    supabase.from('personal_word_card_versions').select('word_id,content').eq('user_id', user.id).eq('is_active', true),
+  ])
+  if (jobs.error) throw jobs.error
+  if (cards.error) throw cards.error
+  return { jobs: jobs.data as AnalysisJob[], cards: cards.data as PersonalWordCard[] }
+}
+
+export async function acceptDailyWordCard(jobId: string, wordId: string) {
+  const { error } = await (await getClient()).rpc('accept_daily_word_card', { p_job_id: jobId, p_word_id: wordId })
+  if (error) throw error
+}
+
+export async function restoreOriginalWordCard(wordId: string) {
+  const { error } = await (await getClient()).rpc('restore_original_word_card', { p_word_id: wordId })
+  if (error) throw error
 }

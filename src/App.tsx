@@ -5,6 +5,9 @@ import { extraReviewWords, reliefPlan, RELIEF_TARGET } from './lib/relief'
 import type { AppSettings, AppStats, GrammarProgress, Screen, SessionKind, VocabWord, WordProgress } from './types'
 import { GrammarPanel } from './components/GrammarPanel'
 import { DailyStatsPanel } from './components/DailyStatsPanel'
+import { DailyAnalysisPanel } from './components/DailyAnalysisPanel'
+import { applyPersonalCards, buildDailyUpload, planForDate } from './lib/dailyAnalysis'
+import { useDailyLearning } from './lib/useDailyLearning'
 import { WordRecallCard } from './components/WordRecallCard'
 import { WordMeaning } from './components/WordMeaning'
 import { ListeningPlayer } from './components/ListeningPlayer'
@@ -178,7 +181,7 @@ async function speakWord(word: string) {
 
 function App() {
   const [screen, setScreen] = useState<Screen>('home')
-  const [words, setWords] = useState<VocabWord[]>([])
+  const [baseWords, setWords] = useState<VocabWord[]>([])
   const [progress, setProgress] = useState<WordProgress[]>([])
   const [grammarProgress, setGrammarProgress] = useState<GrammarProgress[]>([])
   const [grammarReady, setGrammarReady] = useState(false)
@@ -197,6 +200,8 @@ function App() {
   const [cloudPassword, setCloudPassword] = useState('')
   const [cloudMessage, setCloudMessage] = useState('')
   const [cloudBusy, setCloudBusy] = useState(false)
+  const learning = useDailyLearning(cloudUser)
+  const words = useMemo(() => applyPersonalCards(baseWords, learning.cards), [baseWords, learning.cards])
   const answering = useRef(false)
   const [clockNow, setClockNow] = useState(Date.now)
 
@@ -251,31 +256,38 @@ function App() {
   const wordMap = useMemo(() => new Map(words.map((item) => [item.id, item])), [words])
   const excludedWords = useMemo(() => words.filter(word => progressMap.get(word.id)?.excluded), [words, progressMap])
   const availableWords = useMemo(() => words.filter(word => !progressMap.get(word.id)?.excluded), [words, progressMap])
+  const personalPlan = settings.dailyAnalysisEnabled !== false ? planForDate(learning.jobs, todayKey(new Date(clockNow)), Intl.DateTimeFormat().resolvedOptions().timeZone) : null
+  const reliefTarget = personalPlan?.reviewWords ?? RELIEF_TARGET
+  const reliefOptions = { target: reliefTarget, focusIds: personalPlan?.focusWords.map(word => word.id), oldOnly: !!personalPlan }
+  const todayNewWords = Object.values(stats.dailyHistory?.find(day => day.date === todayKey(new Date(clockNow)))?.wordDetails ?? {}).filter(word => word.newWord === true).length
+  const personalNewRemaining = personalPlan ? Math.max(0, Math.min(settings.dailyTarget, personalPlan.newWords) - todayNewWords) : null
   const dailyPlan = useMemo(
     () => buildDailyPlan(words, progress, {
       baseNewWordsPerDay: settings.dailyTarget,
       dailyCapacity: settings.dailyCapacity,
+      reviewCap: personalPlan?.reviewWords,
       now: clockNow,
     }),
-    [words, progress, settings.dailyTarget, settings.dailyCapacity, clockNow],
+    [words, progress, settings.dailyTarget, settings.dailyCapacity, clockNow, personalPlan?.reviewWords],
   )
   const reliefActive = settings.reliefMode
+  const guidedReview = reliefActive || !!personalPlan
   const [extraPractice, setExtraPractice] = useState(false)
-  const relief = reliefPlan(words, progress, stats, clockNow)
+  const relief = reliefPlan(words, progress, stats, clockNow, reliefOptions)
   const extraWords = extraReviewWords(words, progress, false, clockNow)
-  const recommendedNewCount = reliefActive ? 0 : dailyPlan.recommendedNewCount
+  const recommendedNewCount = reliefActive ? 0 : Math.min(dailyPlan.recommendedNewCount, personalNewRemaining ?? Infinity)
   const sessionWords = useMemo(
     () => sessionWordIds.map((id) => wordMap.get(id)).filter((word): word is VocabWord => Boolean(word)),
     [sessionWordIds, wordMap],
   )
-  const reviewWords = reliefActive ? relief.words.length ? relief.words : extraWords : dailyPlan.dueReviewWords
+  const reviewWords = guidedReview ? relief.words.length ? relief.words : extraWords : dailyPlan.dueReviewWords
   const weakWords = useMemo(() => words.filter((word) => {
     const item = progressMap.get(word.id)
     return item ? isWeak(item) : false
   }), [words, progressMap])
   const weakSessionWords = reliefActive ? relief.words : chooseWeakRotationSession(words, progress, 30, clockNow)
   const unlearnedCount = getNewWords(words, progress).length
-  const gentleNewWordCount = Math.min(10, unlearnedCount)
+  const gentleNewWordCount = Math.min(10, unlearnedCount, personalNewRemaining ?? Infinity)
   // Derive this so existing local/cloud progress benefits from improved criteria
   // without requiring a destructive data migration.
   const mastered = progress.filter(isMastered).length
@@ -283,8 +295,9 @@ function App() {
     const item = progressMap.get(word.id)
     return item ? isLeech(item) : false
   }).length
-  const progressStudiedToday = progress.filter((item) => item.seen > 0 && todayKey(new Date(item.lastStudiedAt ?? item.updatedAt)) === todayKey()).length
-  const todayProgress = Math.max(stats.todayDate === todayKey() ? stats.todaySeen.length : 0, progressStudiedToday)
+  const studiedTodayIds = new Set(stats.todayDate === todayKey() ? stats.todaySeen : [])
+  for (const item of progress) if (item.seen > 0 && todayKey(new Date(item.lastStudiedAt ?? item.updatedAt)) === todayKey()) studiedTodayIds.add(item.wordId)
+  const todayProgress = studiedTodayIds.size
   const todayAccuracy = accuracy(progress)
   const todayFirstAnswers = firstAnswerSummary(stats.dailyHistory?.find((entry) => entry.date === todayKey()))
   const activeWord = sessionWords[activeIndex]
@@ -332,9 +345,9 @@ function App() {
 
   function startLearnSession(options: { limit?: number } = {}) {
     if (reliefActive) { startReliefSession(); return }
-    const target = options.limit ?? settings.dailyTarget
-    // Reaching this function is an explicit request to learn new words. Daily
-    // load recommendations may show zero, but they must not disable this action.
+    const target = Math.min(options.limit ?? settings.dailyTarget, personalNewRemaining ?? Infinity)
+    if (target === 0) { setFeedback('今日建议新词量已完成，可以复习旧词。'); setFeedbackWordId(''); return }
+    // Voluntary new-word practice remains available within the active personal plan.
     const nextWords = getNewWords(words, progress, target, Date.now())
     if (!nextWords.length) {
       setFeedback('现在没有未学新词。可以先复习，或导入新词。')
@@ -350,7 +363,7 @@ function App() {
   }
 
   function startReviewSession(nextScreen: Screen = 'learn', limit?: number) {
-    if (reliefActive) { startReliefSession(); return }
+    if (guidedReview) { startReliefSession(); return }
     const nextWords = chooseReviewSession(words, progress, {
       baseNewWordsPerDay: settings.dailyTarget,
       dailyCapacity: settings.dailyCapacity,
@@ -416,7 +429,7 @@ function App() {
   }
 
   function startReliefSession() {
-    const plan = reliefPlan(words, progress, stats)
+    const plan = reliefPlan(words, progress, stats, Date.now(), reliefOptions)
     if (!plan.words.length) {
       startExtraPractice()
       return
@@ -438,7 +451,8 @@ function App() {
       const correct = rating === 'known'
       const updated = scheduleReview(progressMap.get(word.id) ?? createProgress(word.id), rating, now)
       const nextStats = recordStudyResult(stats, word.id, correct, 'self', now, { rating, session: sessionKind, isNew: !(progressMap.get(word.id)?.seen) })
-      const nextIds = reliefActive && !extraPractice && nextStats.todaySeen.length >= RELIEF_TARGET
+      const reachedGuidedQuota = guidedReview && !extraPractice && sessionKind === 'review' && reliefPlan(words, [...progress.filter(item => item.wordId !== word.id), updated], nextStats, now, reliefOptions).done
+      const nextIds = reachedGuidedQuota
         ? sessionWordIds.slice(0, activeIndex + 1)
         : insertDelayedRetry(sessionWordIds, activeIndex, word.id, rating)
       await saveProgress(updated)
@@ -543,6 +557,15 @@ function App() {
     } finally {
       setCloudBusy(false)
     }
+  }
+
+  function uploadToday() {
+    if (!cloudUser || !isCloudSyncConfigured()) { setScreen('sync'); return }
+    try {
+      const now = Date.now()
+      setClockNow(now); setScreen('daily')
+      void learning.upload(buildDailyUpload(buildDailyReport(baseWords, progress, stats, grammarProgress, now), baseWords, settings))
+    } catch { setFeedback('当天记录未能整理，请重新读取后上传。本机记录已保留。'); setFeedbackWordId('') }
   }
 
   async function restoreCloudNow() {
@@ -668,7 +691,13 @@ function App() {
 
         {screen === 'grammar' && <GrammarPanel progress={grammarProgress} ready={grammarReady} onAnswer={answerGrammar} />}
         <ListeningPlayer words={availableWords} due={dailyPlan.dueReviewWords} weak={weakWords} learned={availableWords.filter(word => (progressMap.get(word.id)?.seen ?? 0) > 0)} visible={screen === 'listening'} />
-        {screen === 'daily' && <DailyStatsPanel report={buildDailyReport(words, progress, stats, grammarProgress, clockNow)} ready={grammarReady} onBack={() => setScreen('home')} />}
+        {screen === 'daily' && <DailyStatsPanel report={buildDailyReport(words, progress, stats, grammarProgress, clockNow)} ready={grammarReady} onBack={() => setScreen('home')} analysis={<DailyAnalysisPanel
+          date={todayKey(new Date(clockNow))} ready={grammarReady} configured={isCloudSyncConfigured()} signedIn={!!cloudUser}
+          job={learning.jobs.find(job => job.report_date === todayKey(new Date(clockNow)))} previousJob={learning.jobs.find(job => job.status === 'completed')}
+          cards={learning.cards} busy={learning.busy} message={learning.message}
+          onUpload={uploadToday}
+          onLogin={() => setScreen('sync')} onRefresh={() => void learning.reload()} onAccept={(jobId, wordId) => void learning.accept(jobId, wordId)} onRestore={wordId => void learning.restore(wordId)}
+        />} />}
 
         {screen === 'home' && (
           <section className="space-y-4">
@@ -676,12 +705,12 @@ function App() {
               <div className="flex items-end justify-between">
                 <div>
                   <p className="text-sm text-stone-500">今日练习量</p>
-                  <p className="mt-1 text-4xl font-semibold">{todayProgress}{reliefActive ? ` / ${RELIEF_TARGET}` : ''}</p>
+                  <p className="mt-1 text-4xl font-semibold">{todayProgress}{guidedReview ? ` / ${reliefTarget + (reliefActive ? 0 : personalPlan?.newWords ?? 0)}` : ''}</p>
                 </div>
                 <span className="rounded-full bg-sky-100 px-3 py-1 text-sm font-medium text-sky-800">B2 → C1</span>
               </div>
               <div className="mt-4 h-3 rounded-full bg-stone-100">
-                <div className="h-3 rounded-full bg-emerald-600" style={{ width: `${Math.min(100, (todayProgress / (reliefActive ? RELIEF_TARGET : Math.max(1, settings.dailyCapacity))) * 100)}%` }} />
+                <div className="h-3 rounded-full bg-emerald-600" style={{ width: `${Math.min(100, (todayProgress / (guidedReview ? reliefTarget + (reliefActive ? 0 : personalPlan?.newWords ?? 0) : Math.max(1, settings.dailyCapacity))) * 100)}%` }} />
               </div>
             </div>
 
@@ -689,16 +718,17 @@ function App() {
               <div className="rounded-lg bg-emerald-50 p-5 shadow-sm ring-1 ring-emerald-100">
                 <p className="text-sm font-medium text-emerald-800">减负模式</p>
                 <p className="mt-2 text-2xl font-semibold text-stone-950">{relief.done || !relief.words.length ? '今日安排已完成' : `今天建议再做 ${relief.remaining} 个`}</p>
-                <p className="mt-2 leading-6 text-stone-600">新词已暂停。{relief.done || !relief.words.length ? '可以休息，也可以自选加练。' : '每日建议 25 个旧词，优先兼顾近期到期词，不用补齐积压。'}</p>
+                <p className="mt-2 leading-6 text-stone-600">新词已暂停。{personalPlan ? personalPlan.reason : relief.done || !relief.words.length ? '可以休息，也可以自选加练。' : '每日建议 25 个旧词，优先兼顾近期到期词，不用补齐积压。'}</p>
               </div>
             )}
+            {personalPlan && <p className="rounded-lg bg-white p-4 text-sm leading-6 ring-1 ring-stone-200">今日安排已按 {personalPlan.sourceDate} 的分析更新：{personalPlan.reviewWords}个旧词、{reliefActive ? 0 : Math.min(settings.dailyTarget, personalPlan.newWords)}个新词。{!reliefActive && personalPlan.reason}复习顺序兼顾近期到期词和反复不会的词。</p>}
 
             <div className="grid gap-3">
               <PrimaryButton
-                disabled={reliefActive && !reviewWords.length}
-                onClick={reliefActive ? startReliefSession : dailyPlan.reviewDebt ? () => startReviewSession('learn') : recommendedNewCount ? () => startLearnSession() : () => startWeakPracticeSession('learn')}
+                disabled={guidedReview && !reviewWords.length}
+                onClick={guidedReview ? startReliefSession : dailyPlan.reviewDebt ? () => startReviewSession('learn') : recommendedNewCount ? () => startLearnSession() : () => startWeakPracticeSession('learn')}
                 icon={<BookOpen size={20} />}
-                label={reliefActive ? relief.words.length ? `复习 ${relief.words.length} 个` : extraWords.length ? `自选加练 ${extraWords.length} 个旧词` : '暂无已学词' : dailyPlan.reviewDebt ? '先清复习' : recommendedNewCount ? '学习新词' : '修复弱词'}
+                label={guidedReview ? relief.words.length ? `复习 ${relief.words.length} 个` : extraWords.length ? `自选加练 ${extraWords.length} 个旧词` : '暂无已学词' : dailyPlan.reviewDebt ? '先清复习' : recommendedNewCount ? '学习新词' : '修复弱词'}
               />
               {!reliefActive && gentleNewWordCount > 0 && (
                 <SecondaryButton onClick={() => startLearnSession({ limit: gentleNewWordCount })} icon={<BookOpen size={20} />} label={`学 ${gentleNewWordCount} 个新词`} />
@@ -706,6 +736,7 @@ function App() {
               {!reliefActive && <SecondaryButton onClick={startQuizSession} icon={<BarChart3 size={20} />} label="单词回忆" />}
               <SecondaryButton onClick={() => setScreen('listening')} icon={<Headphones size={20} />} label="听词复习 · MP3" />
               <SecondaryButton onClick={() => { setClockNow(Date.now()); setFeedback(''); setFeedbackWordId(''); setScreen('daily') }} icon={<BarChart3 size={20} />} label="当天学习统计" />
+              <SecondaryButton disabled={!grammarReady || learning.busy} onClick={uploadToday} icon={<Upload size={20} />} label={learning.busy ? '正在上传学习记录…' : '上传今日记录'} />
             </div>
 
             <details><summary className="min-h-11 cursor-pointer py-3 font-medium">学习详情与复习存量</summary><div className="grid grid-cols-2 gap-3">
@@ -776,9 +807,10 @@ function App() {
               </label>
               <label className="mt-5 block text-sm font-medium text-stone-700">每日新词目标</label>
               <input className="mt-2 w-full accent-emerald-700" type="range" min="0" max="200" step="5" value={settings.dailyTarget} onChange={(event) => updateDailyTarget(Number(event.target.value))} />
+              <label className="mt-4 flex items-center justify-between gap-3 text-sm"><span>按每日分析自动调整学习安排</span><input className="h-6 w-6 shrink-0 accent-emerald-700" type="checkbox" checked={settings.dailyAnalysisEnabled !== false} onChange={async event => { const next = { ...settings, dailyAnalysisEnabled: event.target.checked }; setSettings(next); await saveSettings(next); void syncCloudQuietly() }} /></label>
               <div className="mt-1 text-sm text-stone-500">{settings.dailyTarget} 新词 / 天 · 总容量 {settings.dailyCapacity} 张卡</div>
               <label className="mt-5 flex min-h-12 items-center justify-between rounded-lg bg-stone-50 px-4 ring-1 ring-stone-200">
-                <span className="font-medium text-stone-900">减负模式 · 每天建议 25 个旧词</span>
+                <span className="font-medium text-stone-900">减负模式 · 每天建议 {reliefTarget} 个旧词</span>
                 <input className="h-6 w-6 accent-emerald-700" type="checkbox" checked={settings.reliefMode} onChange={(event) => updateReliefMode(event.target.checked)} />
               </label>
               <button className="mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-stone-900 px-4 font-medium text-white" onClick={() => setScreen('import')}>
@@ -855,6 +887,8 @@ function App() {
             word={detailWord}
             progress={progressMap.get(detailWord.id)}
             onContinue={continueFromWordDetail}
+            onRestore={learning.cards.some(card => card.word_id === detailWord.id) ? () => void learning.restore(detailWord.id) : undefined}
+            restoreBusy={learning.busy}
             continueLabel={detailReturnScreen === 'learn' || detailReturnScreen === 'quiz' ? '继续下一个词' : '返回上一页'}
           />
         )}
@@ -901,11 +935,13 @@ function OriginExtras({ word }: { word: VocabWord }) {
   </>
 }
 
-function WordDetail({ word, progress, onContinue, continueLabel }: {
+function WordDetail({ word, progress, onContinue, continueLabel, onRestore, restoreBusy }: {
   word: VocabWord
   progress?: WordProgress
   onContinue: () => void
   continueLabel: string
+  onRestore?: () => void
+  restoreBusy?: boolean
 }) {
   return (
     <section className="space-y-4">
@@ -934,6 +970,8 @@ function WordDetail({ word, progress, onContinue, continueLabel }: {
             </button>
           </div>
         </div>
+        {word.personalExampleTranslation && <p className="mt-2 text-sm text-stone-600">{word.personalExampleTranslation}</p>}
+        {onRestore && <button disabled={restoreBusy} className="mt-2 min-h-11 text-sm font-semibold text-emerald-800 underline" onClick={onRestore}>恢复原词卡</button>}
       </div>
 
       {word.confusions?.map((confusion) => (
@@ -1015,8 +1053,8 @@ function PrimaryButton({ icon, label, onClick, disabled = false }: { icon: React
   return <button disabled={disabled} className="flex min-h-14 items-center justify-center gap-2 rounded-lg bg-stone-950 px-5 text-lg font-semibold text-white disabled:opacity-50" onClick={onClick}>{icon}{label}</button>
 }
 
-function SecondaryButton({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick: () => void }) {
-  return <button className="flex min-h-14 items-center justify-center gap-2 rounded-lg bg-white px-5 text-lg font-semibold ring-1 ring-stone-200" onClick={onClick}>{icon}{label}</button>
+function SecondaryButton({ icon, label, onClick, disabled = false }: { icon: React.ReactNode; label: string; onClick: () => void; disabled?: boolean }) {
+  return <button disabled={disabled} className="flex min-h-14 items-center justify-center gap-2 rounded-lg bg-white px-5 text-lg font-semibold ring-1 ring-stone-200 disabled:opacity-50" onClick={onClick}>{icon}{label}</button>
 }
 
 function NavButton({ active, icon, label, onClick }: { active: boolean; icon: React.ReactNode; label: string; onClick: () => void }) {

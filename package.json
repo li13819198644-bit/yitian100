@@ -8,6 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "test": "vitest run",
+    "check:edge": "tsc -p tsconfig.edge.json",
+    "test:db": "bash scripts/test-daily-analysis-db.sh",
     "preview": "vite preview",
     "audio:generate": "node scripts/generate-listening.mjs",
     "audio:spelling": "node scripts/generate-spelling-audio.mjs",

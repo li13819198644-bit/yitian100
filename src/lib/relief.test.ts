@@ -47,4 +47,17 @@ describe('relief daily budget', () => {
     expect(extraReviewWords(words, items, false, now).filter(w => words.slice(0, 20).some(r => r.id === w.id))).toHaveLength(6)
     expect(reliefPlan(words, items.map(p => ({ ...p, nextReviewAt: now + 1000 })), stats, now).words).toEqual([])
   })
+  it('uses an individual budget and priority only among eligible due words', () => {
+    const focusIds = [words[39].id, words[38].id, words[37].id]
+    const items = progress.map((p, i) => ({ ...p, excluded: i === 39, nextReviewAt: i === 38 ? now + 1000 : p.nextReviewAt }))
+    const plan = reliefPlan(words, items, stats, now, { target: 15, focusIds })
+    expect(plan.words).toHaveLength(15)
+    expect(plan.words[0].id).toBe(words[37].id)
+    expect(plan.words.some(word => [words[38].id, words[39].id].includes(word.id))).toBe(false)
+    expect(plan.words.filter(word => isWeak(items.find(p => p.wordId === word.id)!)).length).toBeLessThanOrEqual(5)
+  })
+  it('does not let individual priority bypass the two-failure daily cooldown', () => {
+    const items = progress.map(p => ({ ...p, practiceDay: stats.todayDate, mistakesToday: 2 }))
+    expect(reliefPlan(words, items, stats, now, { target: 15, focusIds: words.map(word => word.id) }).words).toEqual([])
+  })
 })
