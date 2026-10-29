@@ -7,6 +7,7 @@ import { spawnSync } from 'node:child_process'
 const ref = process.env.SUPABASE_PROJECT_REF ?? ''
 const accessToken = process.env.SUPABASE_ACCESS_TOKEN ?? ''
 if (!/^[a-z0-9]{10,40}$/.test(ref) || !accessToken) throw new Error('请配置 SUPABASE_PROJECT_REF 和 SUPABASE_ACCESS_TOKEN。')
+if ((process.env.EXPECTED_SUPABASE_URL ?? '').replace(/\/$/, '') !== `https://${ref}.supabase.co`) throw new Error('请将 EXPECTED_SUPABASE_URL 配置为网页使用的 VITE_SUPABASE_URL，且必须与部署项目一致。')
 const aiKey = process.env.OPENAI_API_KEY ?? ''
 const model = process.env.DAILY_ANALYSIS_MODEL ?? ''
 if (Boolean(aiKey) !== Boolean(model)) throw new Error('启用助记草稿时，请同时配置 OPENAI_API_KEY 与 DAILY_ANALYSIS_MODEL。')
@@ -41,6 +42,8 @@ try {
   if (!configured.ok) throw new Error(`后台通知配置失败（HTTP ${configured.status}），请重跑部署。`)
   const checked = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-analysis-secret': workerSecret }, body: JSON.stringify({ job_id: null }), signal: AbortSignal.timeout(120_000) })
   if (!checked.ok) throw new Error(`后台运行检查未通过（HTTP ${checked.status}）。`)
+  const health = await checked.json()
+  if (!Array.isArray(health.results) || !health.results.length || health.results.some(status => !['idle', 'completed', 'superseded'].includes(status))) throw new Error('后台入口已连接，但任务执行未通过，请检查任务和数据库。')
   console.log('每日分析已部署，数据库通知已连接，后台运行检查通过。')
 } finally {
   await rm(directory, { recursive: true, force: true })

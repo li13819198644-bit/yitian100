@@ -17,7 +17,7 @@ export function DailyAnalysisPanel({ date, ready, signedIn, configured, job, pre
     {!configured ? <p className="text-sm text-stone-600">请先在云同步设置中配置服务。</p> : <p role="status" className="text-sm text-stone-700">{status}{job ? ` · ${date}，第${job.revision}版` : ''}</p>}
     {job && <p className="text-xs text-stone-500">保存时间：{new Date(job.created_at).toLocaleString()}。同一天重复上传会更新日报，不增加学习次数。</p>}
     {message && <p role="status" className="text-sm text-stone-700">{message}</p>}
-    {signedIn && job && !result && <button disabled={busy} className="min-h-11 text-sm font-semibold underline" onClick={onRefresh}>刷新分析状态</button>}
+    {signedIn && job && job.status !== 'completed' && <button disabled={busy} className="min-h-11 text-sm font-semibold underline" onClick={onRefresh}>刷新分析状态</button>}
     {result && <>
       {result.sourceDate !== date && <p className="text-xs text-stone-600">最近分析来自 {result.sourceDate} 的记录。</p>}
       <p className="font-semibold">{result.planDate} 建议：{result.reviewWords}个旧词 · {result.newWords}个新词</p>

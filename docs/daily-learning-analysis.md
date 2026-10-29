@@ -30,7 +30,7 @@
 
 1. 将代码合并到默认分支，按原有 Pages 流程发布手机网页。
 2. 在仓库 Actions secrets 中设置 `SUPABASE_ACCESS_TOKEN`（Supabase 管理访问令牌）、`SUPABASE_DB_PASSWORD`（该项目数据库密码）。它们用于后台部署，不能放进前端 `VITE_` 配置或提交仓库。
-3. 运行工作流，填写 Supabase project reference。该项目须与网页 `VITE_SUPABASE_URL` 对应的项目一致。
+3. 运行工作流，填写 Supabase project reference。工作流在迁移前检查该项目与网页 secret `VITE_SUPABASE_URL` 一致，不一致时停止。本机部署另须设置 `EXPECTED_SUPABASE_URL` 为同一网页 URL 配置。
 4. 若启用助记草稿，另设置 `OPENAI_API_KEY` secret，勾选启用AI并填写可用模型名；不启用即可无模型费用运行规则分析。
 5. 工作流执行 `supabase db push`，部署 Edge Function，并自动生成专用工作密钥，同时配置 Edge secrets 和 Vault 通知设置。随后实际调用一次受保护的分析入口检查服务。
 6. 在手机登录云同步，上传一份当天报告。确认任务进入完成状态、次日建议可读；关闭页面后也应由服务器继续完成。
