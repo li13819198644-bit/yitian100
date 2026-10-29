@@ -2,6 +2,26 @@ import type { VocabWord } from '../types'
 
 // Learner-approved illustrative events, not claims about the learner's own history.
 export const familiarWordBridges: Record<string, Pick<VocabWord, 'example' | 'collocation' | 'usageNote'>> = {
+  concede: {
+    collocation: 'concede that someone is right',
+    example: 'After checking the receipt, he conceded that I was right.',
+    usageNote: '事件桥梁：refute → concede，是对话中的两种动作，不是同词根。假设对方说你没交材料，你拿出提交回执，refute（用证据驳斥）他的说法；他看完说“好，你确实按时交了”，这时他 concedes（承认）。After checking the receipt, he conceded that I was right.（查过回执后，他承认我是对的。）这个义项常带不情愿，但不要求此前一定争吵；也可表示让步、让出或承认失败。若 refute 也想不起，直接记双方的动作。回想：拿出证据的是我，终于承认的是他，他做了什么？',
+  },
+  pervasive: {
+    collocation: 'a pervasive smell of smoke',
+    example: 'The smell of smoke was pervasive throughout the house.',
+    usageNote: '事件记忆，不做伪拆词。假设有人在屋里抽烟，后来卧室、走廊、衣服上都能闻到。The smell of smoke was pervasive throughout the house.（烟味弥漫整间屋子。）pervasive 侧重遍布、渗透到各处，不只是数量很多；也能形容影响或问题。prevalent 侧重某地某时很普遍，两者有重叠，但不必把另一个未记牢的词当基础。这个场景帮助理解，不保证能独立想起英文。回想：不是只有一处有烟，而是走到哪里都有，这种分布用哪个形容词？',
+  },
+  adverse: {
+    collocation: 'adverse weather',
+    example: 'Adverse weather delayed the trip.',
+    usageNote: '事件记忆：先固定 adverse weather（不利天气），不是构词拆解。假设你准备出海，大风使行程被迫推迟：Adverse weather delayed the trip.（不利的天气耽误了行程。）重点是天气对计划不利，不是你主观不喜欢天气；再引申到 adverse effects（不良影响）、adverse conditions（不利条件）。场景先帮助理解，拼写仍要单独回想。回想：大风阻碍出海，weather 前用哪个词表示不利？',
+  },
+  ascertain: {
+    collocation: 'ascertain who approved the change',
+    example: 'We need to ascertain who approved the change.',
+    usageNote: '熟词桥梁：如果认识 certain（确定的），把 ascertain 按 as + certain 识别字形；这是助记分块，不把 as 硬解释成词根，也不按两个词分别读音。假设你不知道谁批准了变更，去查邮件、协议和签字记录：We need to ascertain who approved the change.（我们需要查明是谁批准了这项变更。）certain 表示确定的状态；ascertain 是查明事实、弄确定的动作，常接 who、whether、how 等。回想：不是猜负责人，而是查记录弄清楚，用哪个动词？',
+  },
   discern: {
     collocation: 'discern a difference',
     example: 'I could discern a difference between the two pictures.',

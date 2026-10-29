@@ -5,7 +5,7 @@ import { buildWordShapeHook } from './wordShapeHooks'
 
 describe('reviewed recall associations', () => {
   it('publishes all reviewed associations verbatim, including preserved batches', () => {
-    expect(Object.keys(reviewedRecallHooks)).toHaveLength(41)
+    expect(Object.keys(reviewedRecallHooks)).toHaveLength(43)
     for (const [word, hook] of Object.entries(reviewedRecallHooks)) {
       const matches = seedWords.filter((item) => item.word === word)
       expect(matches, word).toHaveLength(1)
@@ -21,7 +21,7 @@ describe('reviewed recall associations', () => {
     for (const word of ['refute', 'incentive', 'anticipate']) {
       expect(reviewedRecallHooks[word]).toBeUndefined()
     }
-    expect(seedWords.find((word) => word.word === 'concede')?.evilHook).toContain('肯seed')
+    expect(seedWords.find((word) => word.word === 'concede')?.evilHook).toContain('refute')
     expect(seedWords.find((word) => word.word === 'validate')?.evilHook).toContain('不是把date解释成证明')
   })
 })

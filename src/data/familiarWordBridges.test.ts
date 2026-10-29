@@ -2,8 +2,8 @@ import { expect, it } from 'vitest'
 import { familiarWordBridges, withFamiliarWordBridge } from './familiarWordBridges'
 import { seedWords } from './seedWords'
 
-it('publishes the twelve selected bridges and keeps identity and origins', () => {
-  expect(Object.keys(familiarWordBridges).sort()).toEqual(['compelling', 'compensate', 'compromise', 'dilemma', 'discern', 'entail', 'exemption', 'fiscal', 'fraud', 'mandate', 'nuance', 'oversight'])
+it('publishes the sixteen selected bridges and keeps identity and origins', () => {
+  expect(Object.keys(familiarWordBridges).sort()).toEqual(['adverse', 'ascertain', 'compelling', 'compensate', 'compromise', 'concede', 'dilemma', 'discern', 'entail', 'exemption', 'fiscal', 'fraud', 'mandate', 'nuance', 'oversight', 'pervasive'])
   for (const [name, bridge] of Object.entries(familiarWordBridges)) {
     const word = seedWords.find(w => w.word === name)!
     expect(word).toMatchObject(bridge)
@@ -15,6 +15,14 @@ it('publishes the twelve selected bridges and keeps identity and origins', () =>
   }
   const other = seedWords.find(w => w.word === 'concrete')!
   expect(withFamiliarWordBridge(other)).toBe(other)
+})
+
+it('replaces ineffective hooks without claiming that scenes teach spelling or that concede requires an argument', () => {
+  expect(seedWords.find(w => w.word === 'concede')?.evilHook).toContain('refute')
+  expect(seedWords.find(w => w.word === 'concede')?.evilHook).not.toContain('seed')
+  expect(familiarWordBridges.concede.usageNote).toContain('不要求此前一定争吵')
+  expect(familiarWordBridges.ascertain.usageNote).toContain('如果认识 certain')
+  expect(familiarWordBridges.pervasive.usageNote).toContain('不保证能独立想起英文')
 })
 
 it('keeps important secondary meanings and does not equate a bridge with the target', () => {

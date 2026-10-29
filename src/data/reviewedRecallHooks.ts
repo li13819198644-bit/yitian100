@@ -31,7 +31,7 @@ export const reviewedRecallHooks: Readonly<Record<string, string>> = {
   intricate: 'intricate借in里面+tric联想trick把戏：机关里面还套机关，错综复杂。',
   paradigm: 'paradigm尾音借dime一角硬币：造硬币得照整套模子；范式是可照着做的模式。',
   advocate: 'advocate借ad广告：举广告牌替某个主张发声，公开支持、提倡它。',
-  concede: 'concede借“肯seed（种子）”：争完肯让出一粒，终于承认、让步。',
+  concede: 'concede借refute反驳的后续：你拿回执驳倒他，他终于说“你是对的”；承认、让步。',
   disadvantage: 'disadvantage看advantage优势，dis反转：比赛你穿拖鞋他穿跑鞋，你处于劣势。',
   disseminate: 'disseminate借近音“递、撒米呢”：米撒向四面八方，消息也广泛传播出去。',
   eminent: 'eminent借近形Emmy艾美奖：站上领奖台的杰出人物，声名显赫。',
@@ -40,5 +40,7 @@ export const reviewedRecallHooks: Readonly<Record<string, string>> = {
   validate: 'validate看valid有效：扫码查票是否valid，验证有效；不是把date解释成证明。',
   discern: 'discern看“找不同”：两张图乍看一样，仔细看才辨出差别；记“辨别、看出”。',
   deficient: 'deficient借近形efficient高效：高效机器缺零件也不行；缺乏、不足。',
-  pervasive: 'pervasive看per每个：烟味钻进每个房间，无处不在、普遍存在。',
+  pervasive: 'pervasive借烟味事件：卧室、走廊、衣服上都有；不是单纯很多，而是弥漫各处。',
+  adverse: 'adverse借出海事件：大风使行程取消，天气对计划不利；记adverse weather不利天气。',
+  ascertain: 'ascertain看certain确定的：查邮件和签字记录，把谁批准的查清；从不确定到查明。',
 }
