@@ -2,10 +2,40 @@ import type { VocabWord } from '../types'
 
 // Learner-approved illustrative events, not claims about the learner's own history.
 export const familiarWordBridges: Record<string, Pick<VocabWord, 'example' | 'collocation' | 'usageNote'>> = {
+  volatile: {
+    collocation: 'volatile prices',
+    example: 'Prices were volatile throughout the week.',
+    usageNote: '事件记忆，不做硬拆词。假设同一商品上午涨价，下午跌价，第二天又猛涨：Prices were volatile throughout the week.（这一周价格波动很大。）volatile 强调容易突然变化、不稳定，不等于昂贵，也不只是下降。还可以形容情绪或局势易变，以及物质易挥发；先固定 volatile prices。回想：价格不是一直高，而是突然涨跌，用哪个形容词？',
+  },
+  relinquish: {
+    collocation: 'relinquish control',
+    example: 'She relinquished control of the project.',
+    usageNote: '熟词候选：give up（放弃）；若不熟，直接记交出控制权的事件，不把它当已掌握词。假设你原本有项目审批权，交接后不再拥有：She relinquished control of the project.（她交出了项目的控制权。）relinquish 常搭权利、控制权、职位，表示不再保有；可以自愿，也可以被迫，不只是暂时交别人代管。与 concede 的承认事实不同：这里交出的是原来拥有的东西。回想：不再握有审批权，交出控制权，用哪个动词？',
+  },
+  concurrent: {
+    collocation: 'concurrent meetings',
+    example: 'The two meetings are concurrent.',
+    usageNote: '事件记忆：假设两个会议都安排在九点，你没法同时参加：The two meetings are concurrent.（这两个会议同时进行。）concurrent 侧重时间重叠、同时发生或存在，不要求起止时刻完全一样；不是先后相接。不要把 current 的“当前的”直接当成整个词的含义。回想：两个会议撞在同一时段，是先后进行，还是怎样进行？说出那个形容词。',
+  },
+  beforehand: {
+    collocation: 'read the report beforehand',
+    example: 'Please read the report beforehand.',
+    usageNote: '熟词候选：before（之前）→ beforehand（事先），先确认你认识 before，不给 hand 编造含义。假设明天开会，对方希望你在开会前读完报告：Please read the report beforehand.（请事先读一下报告。）before the meeting 后面有明确时间事件；beforehand 可以独立表示在约定事件之前，不说 beforehand the meeting。回想：不是会上才读，而是事先读，用哪个副词？',
+  },
+  outperform: {
+    collocation: 'outperform the older model',
+    example: 'The new machine outperformed the older model.',
+    usageNote: '熟词候选：perform（表现）→ out + perform；out- 在这里表示超过，不是向外。假设两台机器处理同一任务，新机器更快且出错更少：The new machine outperformed the older model.（新机器的表现优于旧型号。）perform well 是表现好；outperform someone/something 是表现比对方更好，有比较对象，不用再加 than。回想：不是只说新机器好，而是胜过旧机器，用哪个动词？',
+  },
+  misconduct: {
+    collocation: 'professional misconduct',
+    example: 'The employee was dismissed for misconduct.',
+    usageNote: '熟词候选：conduct 在这里是名词“行为”，不是动词“实施”；mis- 表示错误、不当。假设员工故意把私人消费作为公务费用报销：The employee was dismissed for misconduct.（这名员工因不当行为被解雇。）misconduct 常指违反职业或行为规范的行为，不是普通工作做得不够好。回想：不是能力不足，而是行为违规，用哪个名词？',
+  },
   concede: {
     collocation: 'concede that someone is right',
     example: 'After checking the receipt, he conceded that I was right.',
-    usageNote: '事件桥梁：refute → concede，是对话中的两种动作，不是同词根。假设对方说你没交材料，你拿出提交回执，refute（用证据驳斥）他的说法；他看完说“好，你确实按时交了”，这时他 concedes（承认）。After checking the receipt, he conceded that I was right.（查过回执后，他承认我是对的。）这个义项常带不情愿，但不要求此前一定争吵；也可表示让步、让出或承认失败。若 refute 也想不起，直接记双方的动作。回想：拿出证据的是我，终于承认的是他，他做了什么？',
+    usageNote: '先记一句回应：“好，这点你对。”假设对方本来不相信你按时交材料，查完回执后终于承认：After checking the receipt, he conceded that I was right.（查过回执后，他承认我是对的。）固定 concede that + 承认的事实。这个义项常带不情愿，但不要求此前一定争吵；也可表示让步、让出或承认失败。若你认识 refute，可对比：我举证驳斥，他承认；不认识也不影响这个事件。回想：嘴硬之后说“这点你对”，承认的是他，他做了什么？',
   },
   pervasive: {
     collocation: 'a pervasive smell of smoke',
@@ -15,7 +45,7 @@ export const familiarWordBridges: Record<string, Pick<VocabWord, 'example' | 'co
   adverse: {
     collocation: 'adverse weather',
     example: 'Adverse weather delayed the trip.',
-    usageNote: '事件记忆：先固定 adverse weather（不利天气），不是构词拆解。假设你准备出海，大风使行程被迫推迟：Adverse weather delayed the trip.（不利的天气耽误了行程。）重点是天气对计划不利，不是你主观不喜欢天气；再引申到 adverse effects（不良影响）、adverse conditions（不利条件）。场景先帮助理解，拼写仍要单独回想。回想：大风阻碍出海，weather 前用哪个词表示不利？',
+    usageNote: '熟词候选：bad（坏的）先帮助理解，再缩小到“对事情不利、有害”，不是同词根，也不是所有 bad 都能换成 adverse。假设你准备出海，大风迫使行程推迟：Adverse weather delayed the trip.（不利的天气耽误了行程。）固定 adverse weather；再迁移到 adverse effects（不良影响）。重点是阻碍或损害，不是自己讨厌天气。场景不能代替拼写练习。回想：看到 adverse weather，先说“天气对出海有利还是不利”；遮住 adverse，再尝试说出完整搭配。',
   },
   ascertain: {
     collocation: 'ascertain who approved the change',
