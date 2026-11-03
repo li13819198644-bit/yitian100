@@ -29,7 +29,8 @@ export function SemanticLearningPanel({ words, progress, state, minutes, onSave,
       if (p?.excluded || p?.practiceDay === localDateKey(new Date()) && (p.mistakesToday ?? 0) >= 2) return false
       return independentReady(events, word.id) && (!p || p.nextReviewAt <= Date.now() || events.some(event => event.wordId === word.id))
     }).sort((a, b) => Number(!!semanticCardFor(b).problem) - Number(!!semanticCardFor(a).problem) || nextIndependentReview(events, a.id).at - nextIndependentReview(events, b.id).at)
-    const next = eligible.find(word => !displayed.current.slice(-3).includes(word.id))
+    // Eligibility already enforces elapsed time and intervening-word spacing.
+    const next = eligible.find(word => !displayed.current.slice(-3).includes(word.id)) ?? eligible[0]
     setCurrent(next ?? null); setEffort(undefined); pending.current = null; attempt.current = null
     if (next) { displayed.current.push(next.id); setPhase(nextIndependentReview(events, next.id).stage) }
   }

@@ -59,6 +59,12 @@ describe('separate retrieval evidence', () => {
   })
 })
 describe('adaptive initial scheduling', () => {
+  it('returns to independent recall after correcting a failed answer', () => {
+    const records = [event(start, { outcome: 'incorrect' }), event(start + 1000, { kind: 'feedback', outcome: null })]
+    expect(nextIndependentReview(records, 'discern', start + 1000)).toEqual({ at: start + 61000, stage: 'recall' })
+    expect(independentReady(records, 'discern', start + 61000)).toBe(false)
+    expect(independentReady(records, 'discern', start + 601000)).toBe(true)
+  })
   it('requires spacing and other words after study; context success alone cannot grow independent spacing', () => {
     const records = [event(start, { kind: 'encoding', cue: 'sentence', outcome: null })]
     expect(independentReady(records, 'discern', start + 1000)).toBe(false)

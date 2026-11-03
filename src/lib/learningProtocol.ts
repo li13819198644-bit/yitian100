@@ -116,6 +116,7 @@ export function nextIndependentReview(events: LearningEvent[], wordId: string, n
     const date = new Date(now).toDateString()
     const failures = recalls.filter(event => new Date(event.at).toDateString() === date && event.outcome === 'incorrect').length
     if (failures >= 2) { const morning = new Date(now); morning.setDate(morning.getDate() + 1); morning.setHours(9, 0, 0, 0); return { at: morning.getTime(), stage: 'recall' as const } }
+    if (exposure && exposure.at >= recall.at) return { at: exposure.at + 60_000, stage: 'recall' as const }
     return { at: recall.at + 60_000, stage: 'encode' as const }
   }
   if (!recall || exposure && exposure.at >= recall.at && !(exposure.kind === 'feedback' && exposure.attemptId === recall.id && recall.outcome === 'correct')) return { at: (exposure?.at ?? last.at) + 60_000, stage: 'recall' as const }
