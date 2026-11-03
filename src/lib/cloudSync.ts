@@ -1,7 +1,7 @@
 import type { SupabaseClient, User } from '@supabase/supabase-js'
 import type { LearningSnapshot } from '../types'
 import type { AnalysisJob, DailyUpload, PersonalWordCard } from './dailyAnalysis'
-import { getProgress, getSettings, getStats, saveProgress, saveSettings, saveStats, getGrammarProgress, saveGrammarProgress } from './db'
+import { getProgress, getSettings, getStats, saveProgress, saveSettings, saveStats, getGrammarProgress, saveGrammarProgress, getLearningProtocol, saveLearningProtocol } from './db'
 
 type SnapshotRow = {
   payload: LearningSnapshot
@@ -68,7 +68,7 @@ export async function signOutFromCloud() {
 }
 
 export async function buildLocalSnapshot(): Promise<LearningSnapshot> {
-  const [progress, settings, stats, grammar] = await Promise.all([getProgress(), getSettings(), getStats(), getGrammarProgress()])
+  const [progress, settings, stats, grammar, learningProtocol] = await Promise.all([getProgress(), getSettings(), getStats(), getGrammarProgress(), getLearningProtocol()])
   return {
     schemaVersion: 1,
     updatedAt: Date.now(),
@@ -76,10 +76,11 @@ export async function buildLocalSnapshot(): Promise<LearningSnapshot> {
     settings,
     stats,
     grammar,
+    learningProtocol,
   }
 }
 
-export async function uploadLocalSnapshot() {
+async function performSnapshotUpload() {
   const supabase = await getClient()
   const { data: { user }, error: userError } = await supabase.auth.getUser()
   if (userError) throw userError
@@ -95,6 +96,15 @@ export async function uploadLocalSnapshot() {
     })
   if (error) throw error
   return snapshot
+}
+
+let snapshotQueue: Promise<unknown> = Promise.resolve()
+
+export function uploadLocalSnapshot(): Promise<LearningSnapshot> {
+  // Read the latest data inside the queue, so a slower old upload cannot finish last.
+  const next = snapshotQueue.catch(() => undefined).then(performSnapshotUpload)
+  snapshotQueue = next
+  return next
 }
 
 export async function downloadCloudSnapshot() {
@@ -122,6 +132,7 @@ export async function restoreCloudSnapshot() {
   await saveSettings(snapshot.settings)
   await saveStats(snapshot.stats)
   if (snapshot.grammar) await saveGrammarProgress(snapshot.grammar)
+  if (snapshot.learningProtocol) await saveLearningProtocol(snapshot.learningProtocol)
   return snapshot
 }
 

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react'
 import { BarChart3, BookOpen, ChevronRight, Cloud, Download, Headphones, Home, NotebookPen, RotateCcw, Scissors, Settings, Upload, Volume2, X } from 'lucide-react'
 import clsx from 'clsx'
 import { extraReviewWords, reliefPlan, RELIEF_TARGET } from './lib/relief'
@@ -6,6 +6,11 @@ import type { AppSettings, AppStats, GrammarProgress, Screen, SessionKind, Vocab
 import { GrammarPanel } from './components/GrammarPanel'
 import { DailyStatsPanel } from './components/DailyStatsPanel'
 import { DailyAnalysisPanel } from './components/DailyAnalysisPanel'
+import { SemanticLearningPanel } from './components/SemanticLearningPanel'
+import { VocabularyLab } from './components/VocabularyLab'
+import { emptyLearningState, learningEvidenceSummary, newId, type LearningEvent, type LearningState } from './lib/learningProtocol'
+import { scheduleSemanticRecall } from './lib/semanticScheduling'
+import { reservedExperimentWords } from './lib/vocabularyExperiment'
 import { applyPersonalCards, buildDailyUpload, planForDate } from './lib/dailyAnalysis'
 import { useDailyLearning } from './lib/useDailyLearning'
 import { WordRecallCard } from './components/WordRecallCard'
@@ -38,12 +43,14 @@ import {
   getSettings,
   getStats,
   getWords,
+  getLearningProtocol,
   resetProgress,
   saveProgress,
   saveGrammarProgress,
   saveSettings,
   saveStats,
   saveWords,
+  saveLearningProtocol,
   todayKey,
 } from './lib/db'
 import { parseVocabulary } from './lib/importer'
@@ -185,6 +192,8 @@ function App() {
   const [progress, setProgress] = useState<WordProgress[]>([])
   const [grammarProgress, setGrammarProgress] = useState<GrammarProgress[]>([])
   const [grammarReady, setGrammarReady] = useState(false)
+  const [protocol, setProtocol] = useState<LearningState>(emptyLearningState)
+  const [semanticScope, setSemanticScope] = useState<'all' | 'review' | 'weak'>('all')
   const [settings, setSettings] = useState<AppSettings>(defaultSettings)
   const [stats, setStats] = useState<AppStats>(blankStats)
   const [activeIndex, setActiveIndex] = useState(0)
@@ -203,15 +212,18 @@ function App() {
   const learning = useDailyLearning(cloudUser)
   const words = useMemo(() => applyPersonalCards(baseWords, learning.cards), [baseWords, learning.cards])
   const answering = useRef(false)
+  const protocolSyncTimer = useRef<number | undefined>(undefined)
+  const protocolLastSync = useRef(0)
   const [clockNow, setClockNow] = useState(Date.now)
 
   async function refresh() {
-    const [nextWords, nextProgress, nextSettings, nextStats, nextGrammar] = await Promise.all([
+    const [nextWords, nextProgress, nextSettings, nextStats, nextGrammar, nextProtocol] = await Promise.all([
       getWords(),
       getProgress(),
       getSettings(),
       getStats(),
       getGrammarProgress(),
+      getLearningProtocol(),
     ])
     setWords(nextWords)
     setProgress(nextProgress)
@@ -219,6 +231,7 @@ function App() {
     setStats(nextStats)
     setGrammarProgress(nextGrammar)
     setGrammarReady(true)
+    setProtocol(nextProtocol)
   }
 
   useEffect(() => {
@@ -232,6 +245,7 @@ function App() {
       window.removeEventListener('focus', updateClock)
     }
   }, [])
+  useEffect(() => () => { if (protocolSyncTimer.current !== undefined) window.clearTimeout(protocolSyncTimer.current); protocolSyncTimer.current = undefined }, [cloudUser])
 
   async function syncCloudQuietly() {
     if (!cloudUser) return
@@ -241,6 +255,13 @@ function App() {
     } catch {
       setCloudMessage('自动云同步失败，本地进度已保存')
     }
+  }
+
+  function queueProtocolSync() {
+    if (!cloudUser || protocolSyncTimer.current !== undefined) return
+    protocolSyncTimer.current = window.setTimeout(() => {
+      protocolSyncTimer.current = undefined; protocolLastSync.current = Date.now(); void syncCloudQuietly()
+    }, Math.max(1000, 15000 - (Date.now() - protocolLastSync.current)))
   }
 
   async function answerGrammar(id: string, correct: boolean, selectedOption: number) {
@@ -256,7 +277,16 @@ function App() {
   const wordMap = useMemo(() => new Map(words.map((item) => [item.id, item])), [words])
   const excludedWords = useMemo(() => words.filter(word => progressMap.get(word.id)?.excluded), [words, progressMap])
   const availableWords = useMemo(() => words.filter(word => !progressMap.get(word.id)?.excluded), [words, progressMap])
-  const personalPlan = settings.dailyAnalysisEnabled !== false ? planForDate(learning.jobs, todayKey(new Date(clockNow)), Intl.DateTimeFormat().resolvedOptions().timeZone) : null
+  const semanticMode = settings.learningStrategy !== 'legacy'
+  const learningMinutes = Math.max(3, Math.min(30, settings.learningMinutes ?? 10))
+  const protocolSummary = learningEvidenceSummary(protocol.events, clockNow)
+  const inActiveExperiment = reservedExperimentWords(protocol)
+  const semanticWords = availableWords.filter(word => {
+    if (inActiveExperiment.has(word.id)) return false
+    const item = progressMap.get(word.id)
+    return semanticScope === 'all' || semanticScope === 'weak' && !!item && isWeak(item) || semanticScope === 'review' && !!item && item.seen > 0 && item.nextReviewAt <= clockNow
+  })
+  const personalPlan = !semanticMode && settings.dailyAnalysisEnabled !== false ? planForDate(learning.jobs, todayKey(new Date(clockNow)), Intl.DateTimeFormat().resolvedOptions().timeZone) : null
   const reliefTarget = personalPlan?.reviewWords ?? RELIEF_TARGET
   const reliefOptions = { target: reliefTarget, focusIds: personalPlan?.focusWords.map(word => word.id), oldOnly: !!personalPlan }
   const todayNewWords = Object.values(stats.dailyHistory?.find(day => day.date === todayKey(new Date(clockNow)))?.wordDetails ?? {}).filter(word => word.newWord === true).length
@@ -344,6 +374,7 @@ function App() {
   }
 
   function startLearnSession(options: { limit?: number } = {}) {
+    if (semanticMode) { setSemanticScope('all'); setScreen('semantic'); return }
     if (reliefActive) { startReliefSession(); return }
     const target = Math.min(options.limit ?? settings.dailyTarget, personalNewRemaining ?? Infinity)
     if (target === 0) { setFeedback('今日建议新词量已完成，可以复习旧词。'); setFeedbackWordId(''); return }
@@ -363,6 +394,7 @@ function App() {
   }
 
   function startReviewSession(nextScreen: Screen = 'learn', limit?: number) {
+    if (semanticMode) { setSemanticScope('review'); setScreen('semantic'); return }
     if (guidedReview) { startReliefSession(); return }
     const nextWords = chooseReviewSession(words, progress, {
       baseNewWordsPerDay: settings.dailyTarget,
@@ -400,6 +432,7 @@ function App() {
   }
 
   function startWeakPracticeSession(nextScreen: Screen = 'learn', requestedLimit?: number) {
+    if (semanticMode) { setSemanticScope('weak'); setScreen('semantic'); return }
     if (reliefActive) { startExtraPractice(true); return }
     const limit = requestedLimit ?? (reliefActive ? 10 : 30)
     const nextWords = chooseWeakRotationSession(words, progress, limit)
@@ -478,6 +511,22 @@ function App() {
       setFeedbackWordId('')
       return false
     } finally { answering.current = false }
+  }
+
+  async function saveProtocolEvents(events: LearningEvent[]) {
+    const recall = events.find(event => event.kind === 'recall' && event.cue === 'none' && !event.experimentId && event.outcome !== 'needs-review')
+    const current = recall ? progressMap.get(recall.wordId) ?? createProgress(recall.wordId) : undefined
+    const updated = recall && current ? scheduleSemanticRecall(current, recall.outcome === 'correct', protocol.events, recall.at) : undefined
+    const nextStats = recall ? recordStudyResult(stats, recall.wordId, recall.outcome === 'correct', 'recall', recall.at, { rating: recall.outcome === 'correct' ? 'known' : 'unknown', session: 'review', isNew: !current?.seen }) : undefined
+    const saved = await saveLearningProtocol({ schemaVersion: 1, events, experiments: [] }, updated, nextStats)
+    setProtocol(saved)
+    if (updated) setProgress(items => [...items.filter(item => item.wordId !== updated.wordId), updated])
+    if (nextStats) setStats(nextStats)
+    setClockNow(Date.now()); queueProtocolSync()
+  }
+
+  async function saveExperimentState(state: LearningState) {
+    setProtocol(await saveLearningProtocol(state)); setClockNow(Date.now()); queueProtocolSync()
   }
 
   async function importFile(file?: File) {
@@ -564,7 +613,7 @@ function App() {
     try {
       const now = Date.now()
       setClockNow(now); setScreen('daily')
-      void learning.upload(buildDailyUpload(buildDailyReport(baseWords, progress, stats, grammarProgress, now), baseWords, settings))
+      void learning.upload(buildDailyUpload(buildDailyReport(baseWords, progress, stats, grammarProgress, now, protocol), baseWords, settings))
     } catch { setFeedback('当天记录未能整理，请重新读取后上传。本机记录已保留。'); setFeedbackWordId('') }
   }
 
@@ -607,7 +656,8 @@ function App() {
       schemaVersion: 1,
       app: '一天100词',
       exportedAt: new Date(now).toISOString(),
-      dailyReport: buildDailyReport(words, progress, stats, grammarProgress, now),
+      dailyReport: buildDailyReport(words, progress, stats, grammarProgress, now, protocol),
+      learningProtocol: protocol,
       summary: {
         totalWords: words.length,
         learnedWords: learnedIds.size,
@@ -690,8 +740,10 @@ function App() {
         </div>}
 
         {screen === 'grammar' && <GrammarPanel progress={grammarProgress} ready={grammarReady} onAnswer={answerGrammar} />}
+        {screen === 'semantic' && <SemanticLearningPanel words={semanticWords} progress={progress} state={protocol} minutes={learningMinutes} onSave={saveProtocolEvents} onBack={() => setScreen('home')} />}
+        {screen === 'experiment' && <VocabularyLab words={words} progress={progress} state={protocol} onSave={saveExperimentState} onBack={() => setScreen('home')} />}
         <ListeningPlayer words={availableWords} due={dailyPlan.dueReviewWords} weak={weakWords} learned={availableWords.filter(word => (progressMap.get(word.id)?.seen ?? 0) > 0)} visible={screen === 'listening'} />
-        {screen === 'daily' && <DailyStatsPanel report={buildDailyReport(words, progress, stats, grammarProgress, clockNow)} ready={grammarReady} onBack={() => setScreen('home')} analysis={<DailyAnalysisPanel
+        {screen === 'daily' && <DailyStatsPanel report={buildDailyReport(words, progress, stats, grammarProgress, clockNow, protocol)} ready={grammarReady} onBack={() => setScreen('home')} analysis={<DailyAnalysisPanel semanticMode={semanticMode}
           date={todayKey(new Date(clockNow))} ready={grammarReady} configured={isCloudSyncConfigured()} signedIn={!!cloudUser}
           job={learning.jobs.find(job => job.report_date === todayKey(new Date(clockNow)))} previousJob={learning.jobs.find(job => job.status === 'completed')}
           cards={learning.cards} busy={learning.busy} message={learning.message}
@@ -701,6 +753,8 @@ function App() {
 
         {screen === 'home' && (
           <section className="space-y-4">
+            {semanticMode && <div className="space-y-3 rounded-lg bg-white p-5 ring-1 ring-emerald-200"><h2 className="text-xl font-semibold">把词义学准，隔天仍能想起</h2><p className="text-sm leading-6">今天按 {learningMinutes} 分钟练习。已记录约 {protocolSummary.activeMinutes.toFixed(1)} 分钟，学习词数仅作记录。</p><div className="grid grid-cols-3 gap-2 text-sm">{([['≥24小时', protocolSummary.delayed24h], ['≥7天', protocolSummary.delayed7d], ['≥14天', protocolSummary.delayed14d]] as const).map(([label, value]) => <div key={label}><p>{label}独立回忆</p><strong>{value.tested ? `${value.correct}/${value.tested}` : '尚未测到'}</strong>{value.selfRated > 0 && <p className="text-xs text-stone-500">含自评{value.selfRated}次</p>}</div>)}</div><p className="text-xs text-stone-500">按距最近学习、核对或提取的实际间隔统计，阈值可重叠；实验按初学日期的检查点在实验页查看。</p></div>}
+            {!semanticMode && <>
             <div className="rounded-lg bg-white p-5 shadow-sm ring-1 ring-stone-200">
               <div className="flex items-end justify-between">
                 <div>
@@ -722,18 +776,20 @@ function App() {
               </div>
             )}
             {personalPlan && <p className="rounded-lg bg-white p-4 text-sm leading-6 ring-1 ring-stone-200">今日安排已按 {personalPlan.sourceDate} 的分析更新：{personalPlan.reviewWords}个旧词、{reliefActive ? 0 : Math.min(settings.dailyTarget, personalPlan.newWords)}个新词。{!reliefActive && personalPlan.reason}复习顺序兼顾近期到期词和反复不会的词。</p>}
+            </>}
 
             <div className="grid gap-3">
               <PrimaryButton
-                disabled={guidedReview && !reviewWords.length}
-                onClick={guidedReview ? startReliefSession : dailyPlan.reviewDebt ? () => startReviewSession('learn') : recommendedNewCount ? () => startLearnSession() : () => startWeakPracticeSession('learn')}
+                disabled={!grammarReady || !semanticMode && guidedReview && !reviewWords.length}
+                onClick={semanticMode ? () => startLearnSession() : guidedReview ? startReliefSession : dailyPlan.reviewDebt ? () => startReviewSession('learn') : recommendedNewCount ? () => startLearnSession() : () => startWeakPracticeSession('learn')}
                 icon={<BookOpen size={20} />}
-                label={guidedReview ? relief.words.length ? `复习 ${relief.words.length} 个` : extraWords.length ? `自选加练 ${extraWords.length} 个旧词` : '暂无已学词' : dailyPlan.reviewDebt ? '先清复习' : recommendedNewCount ? '学习新词' : '修复弱词'}
+                label={semanticMode ? `精准学习 · ${learningMinutes}分钟` : guidedReview ? relief.words.length ? `复习 ${relief.words.length} 个` : extraWords.length ? `自选加练 ${extraWords.length} 个旧词` : '暂无已学词' : dailyPlan.reviewDebt ? '先清复习' : recommendedNewCount ? '学习新词' : '修复弱词'}
               />
-              {!reliefActive && gentleNewWordCount > 0 && (
+              {!semanticMode && !reliefActive && gentleNewWordCount > 0 && (
                 <SecondaryButton onClick={() => startLearnSession({ limit: gentleNewWordCount })} icon={<BookOpen size={20} />} label={`学 ${gentleNewWordCount} 个新词`} />
               )}
-              {!reliefActive && <SecondaryButton onClick={startQuizSession} icon={<BarChart3 size={20} />} label="单词回忆" />}
+              {!semanticMode && !reliefActive && <SecondaryButton onClick={startQuizSession} icon={<BarChart3 size={20} />} label="单词回忆" />}
+              <SecondaryButton disabled={!grammarReady} onClick={() => setScreen('experiment')} icon={<BarChart3 size={20} />} label="记忆方法实验与延迟复测" />
               <SecondaryButton onClick={() => setScreen('listening')} icon={<Headphones size={20} />} label="听词复习 · MP3" />
               <SecondaryButton onClick={() => { setClockNow(Date.now()); setFeedback(''); setFeedbackWordId(''); setScreen('daily') }} icon={<BarChart3 size={20} />} label="当天学习统计" />
               <SecondaryButton disabled={!grammarReady || learning.busy} onClick={uploadToday} icon={<Upload size={20} />} label={learning.busy ? '正在上传学习记录…' : '上传今日记录'} />
@@ -749,7 +805,7 @@ function App() {
               <Metric label="累计答对率" value={`${todayAccuracy}%`} />
               <Metric label="Combo" value={stats.combo} />
               <Metric label="连续学习" value={`${stats.streak} 天`} />
-              <Metric label="已掌握" value={mastered} />
+              <Metric label="排程巩固词" value={mastered} />
               <Metric label="弱词" value={weakWords.length} />
               <Metric label="顽固词" value={stubbornWords} />
             </div></details>
@@ -794,6 +850,8 @@ function App() {
         {screen === 'settings' && (
           <section className="space-y-4">
             <Panel title="设置">
+              <label className="mb-4 flex min-h-12 items-center justify-between gap-3"><span>精准语义与间隔提取策略</span><input type="checkbox" className="h-6 w-6" checked={semanticMode} onChange={async event => { const next: AppSettings = { ...settings, learningStrategy: event.target.checked ? 'semantic' : 'legacy' }; setSettings(next); await saveSettings(next); void syncCloudQuietly() }} /></label>
+              <label className="mb-4 block text-sm">每次练习时间：{learningMinutes}分钟<input className="mt-2 w-full" type="range" min="3" max="30" step="1" value={learningMinutes} onChange={async event => { const next = { ...settings, learningMinutes: Number(event.target.value) }; setSettings(next); await saveSettings(next); void syncCloudQuietly() }} /></label>
               <p className="text-sm font-medium text-stone-700">复习方式</p>
               <div className="mt-2">
                 <p className="text-sm text-stone-600">先看单词，点单词显示答案，再选会 / 不会。不会进入详情页。</p>
@@ -805,7 +863,7 @@ function App() {
                 </span>
                 <input className="h-6 w-6 shrink-0 accent-emerald-700" type="checkbox" checked={settings.autoPronounce} onChange={(event) => updateAutoPronounce(event.target.checked)} />
               </label>
-              <label className="mt-5 block text-sm font-medium text-stone-700">每日新词目标</label>
+              {!semanticMode && <><label className="mt-5 block text-sm font-medium text-stone-700">每日新词目标</label>
               <input className="mt-2 w-full accent-emerald-700" type="range" min="0" max="200" step="5" value={settings.dailyTarget} onChange={(event) => updateDailyTarget(Number(event.target.value))} />
               <label className="mt-4 flex items-center justify-between gap-3 text-sm"><span>按每日分析自动调整学习安排</span><input className="h-6 w-6 shrink-0 accent-emerald-700" type="checkbox" checked={settings.dailyAnalysisEnabled !== false} onChange={async event => { const next = { ...settings, dailyAnalysisEnabled: event.target.checked }; setSettings(next); await saveSettings(next); void syncCloudQuietly() }} /></label>
               <div className="mt-1 text-sm text-stone-500">{settings.dailyTarget} 新词 / 天 · 总容量 {settings.dailyCapacity} 张卡</div>
@@ -813,6 +871,7 @@ function App() {
                 <span className="font-medium text-stone-900">减负模式 · 每天建议 {reliefTarget} 个旧词</span>
                 <input className="h-6 w-6 accent-emerald-700" type="checkbox" checked={settings.reliefMode} onChange={(event) => updateReliefMode(event.target.checked)} />
               </label>
+              </>}
               <button className="mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-stone-900 px-4 font-medium text-white" onClick={() => setScreen('import')}>
                 <Upload size={18} /> 导入词库
               </button>
@@ -889,6 +948,7 @@ function App() {
             onContinue={continueFromWordDetail}
             onRestore={learning.cards.some(card => card.word_id === detailWord.id) ? () => void learning.restore(detailWord.id) : undefined}
             restoreBusy={learning.busy}
+            onViewed={() => { void saveProtocolEvents([{ id: newId(), wordId: detailWord.id, at: Date.now(), updatedAt: Date.now(), kind: 'encoding', cue: 'sentence', direction: 'en-zh', outcome: null, assessment: 'self', activeMs: 0, sessionId: 'word-detail' }]).catch(() => setFeedback('词义查看记录未保存，请检查本机存储。')) }}
             continueLabel={detailReturnScreen === 'learn' || detailReturnScreen === 'quiz' ? '继续下一个词' : '返回上一页'}
           />
         )}
@@ -935,14 +995,17 @@ function OriginExtras({ word }: { word: VocabWord }) {
   </>
 }
 
-function WordDetail({ word, progress, onContinue, continueLabel, onRestore, restoreBusy }: {
+function WordDetail({ word, progress, onContinue, continueLabel, onRestore, restoreBusy, onViewed }: {
   word: VocabWord
   progress?: WordProgress
   onContinue: () => void
   continueLabel: string
   onRestore?: () => void
   restoreBusy?: boolean
+  onViewed?: () => void
 }) {
+  const noteViewed = useEffectEvent(() => onViewed?.())
+  useEffect(() => { noteViewed() }, [word.id])
   return (
     <section className="space-y-4">
       <div className="flex items-center justify-between text-sm text-stone-500">

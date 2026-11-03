@@ -1,9 +1,10 @@
 import { CloudUpload } from 'lucide-react'
 import type { AnalysisJob, PersonalWordCard } from '../lib/dailyAnalysis'
 
-export function DailyAnalysisPanel({ date, ready, signedIn, configured, job, previousJob, cards, busy, message, onUpload, onLogin, onRefresh, onAccept, onRestore }: {
+export function DailyAnalysisPanel({ date, ready, signedIn, configured, job, previousJob, cards, busy, message, onUpload, onLogin, onRefresh, onAccept, onRestore, semanticMode }: {
   date: string; ready: boolean; signedIn: boolean; configured: boolean; job?: AnalysisJob
   previousJob?: AnalysisJob
+  semanticMode?: boolean
   cards: PersonalWordCard[]; busy: boolean; message: string
   onUpload: () => void; onLogin: () => void; onRefresh: () => void
   onAccept: (jobId: string, wordId: string) => void; onRestore: (wordId: string) => void
@@ -20,8 +21,7 @@ export function DailyAnalysisPanel({ date, ready, signedIn, configured, job, pre
     {signedIn && job && job.status !== 'completed' && <button disabled={busy} className="min-h-11 text-sm font-semibold underline" onClick={onRefresh}>刷新分析状态</button>}
     {result && <>
       {result.sourceDate !== date && <p className="text-xs text-stone-600">最近分析来自 {result.sourceDate} 的记录。</p>}
-      <p className="font-semibold">{result.planDate} 建议：{result.reviewWords}个旧词 · {result.newWords}个新词</p>
-      <p className="text-sm leading-6">{result.reason}</p>
+      {result.strategyRecommendation ? <><p className="font-semibold">{result.planDate} 建议：{result.strategyRecommendation.minutes}分钟精准练习</p><p className="text-sm leading-6">{result.reason}</p><ul className="list-inside list-disc text-sm leading-7">{result.strategyRecommendation.actions.map(action => <li key={action}>{action}</li>)}</ul></> : semanticMode ? <p className="text-sm">这份记录来自旧版数量建议。新策略按练习时间、准确词义和延迟回忆安排，历史记录继续保留。</p> : <><p className="font-semibold">{result.planDate} 建议：{result.reviewWords}个旧词 · {result.newWords}个新词</p><p className="text-sm leading-6">{result.reason}</p></>}
       <p className="text-xs leading-5 text-stone-600">已分析{result.analyzedDays}个学习日；首次自评会 {result.evidence.self.known}/{result.evidence.self.count}，辨认类首答 {result.evidence.recognition.known}/{result.evidence.recognition.count}。{result.measurement}</p>
       {result.focusWords.length > 0 && <details><summary className="min-h-11 cursor-pointer py-3 text-sm font-semibold">优先关注的词</summary><ul className="space-y-2 text-sm">{result.focusWords.map(word => <li key={word.id}><strong>{word.word}</strong>：{word.reason}</li>)}</ul></details>}
       {result.cardDrafts.length > 0 && <div className="space-y-3"><p className="text-sm font-semibold">个人助记草稿 · 采用后生效</p>{result.cardDrafts.map(draft => {

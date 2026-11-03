@@ -1,7 +1,7 @@
 export type Rating = 'known' | 'fuzzy' | 'unknown'
 export type ReviewMode = 'choice' | 'advanced'
 
-export type Screen = 'home' | 'learn' | 'quiz' | 'review' | 'weak' | 'settings' | 'import' | 'sync' | 'detail' | 'grammar' | 'daily' | 'listening'
+export type Screen = 'home' | 'learn' | 'quiz' | 'review' | 'weak' | 'settings' | 'import' | 'sync' | 'detail' | 'grammar' | 'daily' | 'listening' | 'semantic' | 'experiment'
 export type SessionKind = 'learn' | 'review' | 'quiz' | 'weak'
 
 export interface VocabWord {
@@ -57,6 +57,8 @@ export interface WordProgress {
 }
 
 export interface AppSettings {
+  learningStrategy?: 'semantic' | 'legacy'
+  learningMinutes?: number
   dailyAnalysisEnabled?: boolean
   dailyTarget: number
   dailyCapacity: number
@@ -110,6 +112,7 @@ export interface AppStats {
 }
 
 export interface LearningSnapshot {
+  learningProtocol?: import('./lib/learningProtocol').LearningState
   schemaVersion: 1
   updatedAt: number
   progress: WordProgress[]

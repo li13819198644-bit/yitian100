@@ -33,6 +33,7 @@ export function DailyStatsPanel({ report, ready, onBack, analysis }: { report: D
     </div>
     {message && <p role="status" className="text-sm text-stone-600">{message}</p>}
     {!ready ? <p role="status">正在读取学习记录…</p> : <>
+      {report.protocol && <div className="space-y-2 rounded-lg bg-white p-4 ring-1 ring-stone-200"><h3 className="font-semibold">精准学习记录（累计指标）</h3>{([['约24小时', report.protocol.delayed24h], ['至少7天', report.protocol.delayed7d], ['至少14天', report.protocol.delayed14d]] as const).map(([label, metric]) => <p key={label} className="text-sm">{label}：{metric.tested ? `${metric.correct}/${metric.tested}，其中自评${metric.selfRated}次` : '尚未记录'}</p>)}<p className="text-sm">句中理解首答记录：{report.protocol.context}次；反向提取：{report.protocol.reverse}次；新语境表达自评：{report.protocol.usage ? `${report.protocol.usage.correct}/${report.protocol.usage.tested}` : '尚未记录'}。</p><p className="text-xs text-stone-500">累计记录快照；按距最近学习、核对或提取的实际间隔统计。实验检查点另按初学日期报告，期间练习需一起查看。</p></div>}
       <div className="border-y border-stone-200 py-4">
         <h3 className="mb-4 text-lg font-bold">单词</h3>
         <dl className="grid grid-cols-2 gap-x-4 gap-y-5">
@@ -44,7 +45,7 @@ export function DailyStatsPanel({ report, ready, onBack, analysis }: { report: D
           <Stat label="旧版英文输入 · 作答" value={`${words.retrievalPractice.production.correct}/${words.retrievalPractice.production.count}`} />
           <Stat label="提示后答对 · 作答" value={`${words.retrievalPractice.assisted.correct}/${words.retrievalPractice.assisted.count}`} />
           <Stat label="词义回忆 · 自评" value={`${words.retrievalPractice.recall.correct}/${words.retrievalPractice.recall.count}`} />
-          <Stat label="表达练习 · 自评" value={`${words.retrievalPractice.usage.correct}/${words.retrievalPractice.usage.count}`} />
+          <Stat label="旧版表达练习 · 自评" value={`${words.retrievalPractice.usage.correct}/${words.retrievalPractice.usage.count}`} />
           <Stat label="错词 · 已记录" value={words.mistakeWordsRecorded} />
         </dl>
         <p className="mt-4 text-sm text-stone-500">选择首答 {words.firstAnswerByMode.choice.correct}/{words.firstAnswerByMode.choice.count} · 拼写首答 {words.firstAnswerByMode.spelling.correct}/{words.firstAnswerByMode.spelling.count} · 组句首答 {words.firstAnswerByMode.sentence.correct}/{words.firstAnswerByMode.sentence.count}</p>
@@ -61,7 +62,7 @@ export function DailyStatsPanel({ report, ready, onBack, analysis }: { report: D
         </dl>
         {grammar.detailCoverage === 'partial' && <p className="mt-3 text-sm text-amber-800">更新前的语法练习缺少当天明细，以下仅统计已记录的部分。</p>}
       </div>
-      {words.uniqueWords === 0 && grammar.uniqueQuestionsRecorded === 0 && !grammar.legacyQuestionsWithoutDailyDetails && <p className="text-sm text-stone-500">今天还没有学习记录。</p>}
+      {words.uniqueWords === 0 && grammar.uniqueQuestionsRecorded === 0 && !grammar.legacyQuestionsWithoutDailyDetails && <p className="text-sm text-stone-500">今天还没有可计分的单词或语法作答；词义学习和表达练习另行记录。</p>}
       {words.results.length > 0 && <details className="border-b border-stone-200 pb-4" open>
         <summary className="min-h-11 cursor-pointer font-semibold">单词明细 · {words.results.length} 个</summary>
         <ul className="divide-y divide-stone-200">{words.results.map((item) => <li key={item.id} className="py-3">

@@ -3,6 +3,7 @@ import type { AppSettings, AppStats, GrammarProgress, VocabWord, WordProgress } 
 import { mergeGrammarProgress } from './grammar'
 import { seedWords } from '../data/seedWords'
 import { localDateKey } from './studyStats'
+import { emptyLearningState, mergeLearningStates, type LearningState } from './learningProtocol'
 
 interface WordsDb extends DBSchema {
   words: {
@@ -15,7 +16,7 @@ interface WordsDb extends DBSchema {
   }
   meta: {
     key: string
-    value: AppSettings | AppStats | GrammarProgress[]
+    value: AppSettings | AppStats | GrammarProgress[] | LearningState
   }
 }
 
@@ -51,6 +52,8 @@ function writeBackup<T>(key: string, value: T) {
 }
 
 export const defaultSettings: AppSettings = {
+  learningStrategy: 'semantic',
+  learningMinutes: 10,
   dailyTarget: 100,
   dailyCapacity: 160,
   reliefMode: true,
@@ -88,10 +91,10 @@ export async function ensureSeedData() {
   await Promise.all(seedWords.map((word) => tx.store.put(word)))
   await tx.done
   if (!(await db.get('meta', 'settings'))) {
-    await db.put('meta', defaultSettings, 'settings')
+    await db.put('meta', normalizeSettings(readBackup<Partial<AppSettings>>(settingsBackupKey, {})), 'settings')
   }
   if (!(await db.get('meta', 'stats'))) {
-    await db.put('meta', defaultStats(), 'stats')
+    await db.put('meta', readBackup<AppStats>(statsBackupKey, defaultStats()), 'stats')
   }
 }
 
@@ -179,10 +182,14 @@ export async function saveStats(stats: AppStats) {
 
 export async function resetProgress() {
   const db = await dbPromise
+  const protocol = await getLearningProtocol()
+  const experimentsOnly = { ...protocol, events: protocol.events.filter(event => !!event.experimentId) }
   await db.clear('progress')
   await db.put('meta', defaultStats(), 'stats')
   writeBackup(progressBackupKey, [])
   writeBackup(statsBackupKey, defaultStats())
+  await db.put('meta', experimentsOnly, 'learning-protocol')
+  writeBackup('yitian100:learning-protocol', experimentsOnly)
 }
 
 export async function getGrammarProgress(): Promise<GrammarProgress[]> {
@@ -200,5 +207,29 @@ export async function saveGrammarProgress(items: GrammarProgress[]): Promise<Gra
   await tx.store.put(merged, 'grammar')
   await tx.done
   writeBackup('yitian100:grammar', merged)
+  return merged
+}
+
+export async function getLearningProtocol(): Promise<LearningState> {
+  const db = await dbPromise
+  return mergeLearningStates(readBackup<LearningState>('yitian100:learning-protocol', emptyLearningState()), (await db.get('meta', 'learning-protocol')) as LearningState | undefined)
+}
+
+// A scored recall and its ordinary progress either both commit or neither commits.
+export async function saveLearningProtocol(state: LearningState, progress?: WordProgress, stats?: AppStats): Promise<LearningState> {
+  const db = await dbPromise
+  const tx = db.transaction(['meta', 'progress'], 'readwrite')
+  const existing = await tx.objectStore('meta').get('learning-protocol') as LearningState | undefined
+  const merged = mergeLearningStates(readBackup<LearningState>('yitian100:learning-protocol', emptyLearningState()), existing, state)
+  await tx.objectStore('meta').put(merged, 'learning-protocol')
+  if (progress) await tx.objectStore('progress').put(progress)
+  if (stats) await tx.objectStore('meta').put(stats, 'stats')
+  await tx.done
+  writeBackup('yitian100:learning-protocol', merged)
+  if (progress) {
+    const byId = new Map(readBackup<WordProgress[]>(progressBackupKey, []).map(item => [item.wordId, item]))
+    byId.set(progress.wordId, progress); writeBackup(progressBackupKey, [...byId.values()])
+  }
+  if (stats) writeBackup(statsBackupKey, stats)
   return merged
 }

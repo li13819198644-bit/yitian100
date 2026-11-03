@@ -19,7 +19,8 @@ export function buildDailyUpload(report: DailyReport, words: VocabWord[], settin
   const byId = new Map(words.map(word => [word.id, word]))
   return parseDailyUpload({
     schemaVersion: 1, date: report.date, timeZone: report.timeZone,
-    preferences: { reliefMode: settings.reliefMode, dailyTarget: settings.dailyTarget },
+    preferences: { reliefMode: settings.reliefMode, dailyTarget: settings.dailyTarget, strategy: settings.learningStrategy ?? 'semantic', timeBudgetMinutes: settings.learningMinutes ?? 10 },
+    protocol: report.protocol,
     vocabulary: {
       uniqueWords: report.vocabulary.uniqueWords, detailCoverage: report.vocabulary.detailCoverage,
       results: report.vocabulary.results.map(item => {

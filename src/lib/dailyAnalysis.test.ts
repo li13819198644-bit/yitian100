@@ -8,6 +8,19 @@ import type { AppSettings, AppStats } from '../types'
 import { report } from '../test/dailyAnalysisFixtures'
 
 describe('server learning analysis', () => {
+  it('uses a time and retrieval strategy instead of a daily word quota for new clients', () => {
+    const day = report(undefined, false)
+    day.preferences.strategy = 'semantic'; day.preferences.timeBudgetMinutes = 10
+    day.protocol = { version: 1, scope: 'cumulative', activeMinutes: 10, delayed24h: { tested: 3, correct: 2, selfRated: 1 }, delayed7d: { tested: 0, correct: 0, selfRated: 0 }, delayed14d: { tested: 0, correct: 0, selfRated: 0 }, context: 3, reverse: 3 }
+    const previous = { ...day, date: '2026-10-27' }
+    const parsed = parseDailyUpload(day)
+    const result = analyzeDailyReports([previous, parsed], day.date)
+    expect(result.algorithmVersion).toBe('semantic-v1')
+    expect(result.strategyRecommendation).toMatchObject({ minutes: 10, protocol: { delayed24h: { tested: 3 } } })
+    expect(result.reason).not.toMatch(/15个|25个/)
+    expect(result.reason).toContain('撤掉语境')
+    expect(() => parseDailyUpload({ ...day, protocol: { ...day.protocol, delayed7d: { tested: 0, correct: 3, selfRated: 0 } } })).toThrow('invalid_daily_report')
+  })
   it('does not treat choice recognition or repeated same-day answers as independent recall', () => {
     const choice = report(undefined, true, 'choice')
     const repeated = report()

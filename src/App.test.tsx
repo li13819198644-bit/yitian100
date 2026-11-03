@@ -7,7 +7,7 @@ import { analyzeDailyReports, offsetDate } from '../supabase/functions/_shared/d
 import { report } from './test/dailyAnalysisFixtures'
 
 const fixture = vi.hoisted(() => {
-  const settings: AppSettings = { dailyTarget: 5, dailyCapacity: 20, reliefMode: false, autoPronounce: false, reviewMode: 'choice', currentLevel: 'B2' }
+  const settings: AppSettings = { learningStrategy: 'legacy', dailyTarget: 5, dailyCapacity: 20, reliefMode: false, autoPronounce: false, reviewMode: 'choice', currentLevel: 'B2' }
   const words: VocabWord[] = [
     { id: 'alpha', word: 'alpha', meaning: '秘密释义一', phonetic: '/a/', collocation: 'first phrase', example: 'First example.', difficulty: 2, level: 'B2' },
     { id: 'beta', word: 'beta', meaning: '秘密释义二', phonetic: '/b/', collocation: 'second phrase', example: 'Second example.', difficulty: 2, level: 'B2' },
@@ -22,6 +22,7 @@ vi.mock('./lib/db', () => {
     getWords: async () => fixture.words, getProgress: async () => fixture.progress,
     getSettings: async () => fixture.settings, getStats: async () => fixture.stats,
     getGrammarProgress: async () => [], saveProgress: fixture.saveProgress, saveStats: fixture.saveStats,
+    getLearningProtocol: async () => ({ schemaVersion: 1, events: [], experiments: [] }), saveLearningProtocol: async (value: unknown) => value,
     saveWords: vi.fn(), saveSettings: vi.fn(), resetProgress: vi.fn(), saveGrammarProgress: vi.fn(),
   }
 })
@@ -48,6 +49,7 @@ beforeEach(() => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true })
   fixture.settings.reviewMode = 'choice'
   fixture.settings.reliefMode = false
+  fixture.settings.learningStrategy = 'legacy'
   fixture.settings.dailyAnalysisEnabled = true
   fixture.account = ''; fixture.jobs = []; fixture.cards = []; fixture.words.splice(2)
   localStorage.clear()
@@ -81,6 +83,17 @@ function expectHidden(word = fixture.words[0]) {
   expect(host.querySelector('[role=tablist]')).toBeNull()
 }
 describe('actual session navigation', () => {
+  it('makes semantic encoding and time-based practice the new default without a fixed old-word goal', async () => {
+    fixture.settings.learningStrategy = 'semantic'
+    await mount()
+    expect(host.textContent).toContain('≥7天独立回忆')
+    expect(host.textContent).not.toContain('每日建议 25 个旧词')
+    await click('精准学习 · 10分钟'); await click('开始练习')
+    expect(host.textContent).toContain('秘密释义一')
+    expect(host.querySelector('input:not([type=radio]),textarea')).toBeNull()
+    expect(fixture.saveProgress).not.toHaveBeenCalled()
+    expect(fixture.saveStats).not.toHaveBeenCalled()
+  })
   it('uploads today from the home button and fetches the completed server analysis', async () => {
     fixture.account = 'learner@example.com'
     const date = defaultStats().todayDate

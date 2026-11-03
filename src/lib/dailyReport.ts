@@ -1,12 +1,13 @@
 import type { AppStats, GrammarProgress, StudyMode, VocabWord, WordProgress } from '../types'
 import { grammarQuestions, grammarTopics } from '../data/grammar'
 import { isObjectiveMode, localDateKey } from './studyStats'
+import { learningEvidenceSummary, type LearningState } from './learningProtocol'
 
 function ratio(correct: number, count: number) {
   return { correct, count, accuracy: count ? Math.round(correct / count * 100) : null }
 }
 
-export function buildDailyReport(words: VocabWord[], progress: WordProgress[], stats: AppStats, grammar: GrammarProgress[], now = Date.now()) {
+export function buildDailyReport(words: VocabWord[], progress: WordProgress[], stats: AppStats, grammar: GrammarProgress[], now = Date.now(), learningProtocol?: LearningState) {
   const date = localDateKey(new Date(now))
   const day = stats.dailyHistory?.find((entry) => entry.date === date)
   const wordMap = new Map(words.map((word) => [word.id, word]))
@@ -50,6 +51,7 @@ export function buildDailyReport(words: VocabWord[], progress: WordProgress[], s
   const grammarFirst = questionResults.filter((item) => item.record.firstCorrect !== null)
   const legacyGrammarToday = grammar.filter((item) => localDateKey(new Date(item.updatedAt)) === date && !item.dailyHistory?.some((entry) => entry.date === date)).length
   return {
+    protocol: learningProtocol ? { version: 1 as const, scope: 'cumulative' as const, ...learningEvidenceSummary(learningProtocol.events, now) } : undefined,
     schemaVersion: 1, reportType: 'daily-learning', app: '一天100词', date,
     exportedAt: new Date(now).toISOString(), timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     vocabulary: {

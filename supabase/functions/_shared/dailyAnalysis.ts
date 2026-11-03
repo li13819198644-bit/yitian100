@@ -13,7 +13,8 @@ export interface DailyUpload {
   schemaVersion: 1
   date: string
   timeZone: string
-  preferences: { reliefMode: boolean; dailyTarget: number }
+  preferences: { reliefMode: boolean; dailyTarget: number; strategy?: 'semantic' | 'legacy'; timeBudgetMinutes?: number }
+  protocol?: { version: 1; scope: 'cumulative'; activeMinutes: number; delayed24h: { tested: number; correct: number; selfRated: number }; delayed7d: { tested: number; correct: number; selfRated: number }; delayed14d: { tested: number; correct: number; selfRated: number }; context: number; reverse: number; usage?: { tested: number; correct: number; selfRated: number } }
   vocabulary: { uniqueWords: number; detailCoverage: 'complete' | 'partial'; results: LearningWord[] }
   grammar: { questions: number; firstCorrect: number; firstCount: number }
 }
@@ -26,7 +27,8 @@ export interface CardDraft {
 }
 export interface DailyAnalysis {
   schemaVersion: 1
-  algorithmVersion: 'rules-v1'
+  algorithmVersion: 'rules-v1' | 'semantic-v1'
+  strategyRecommendation?: { mode: 'semantic'; minutes: number; actions: string[]; protocol?: DailyUpload['protocol'] }
   sourceDate: string
   planDate: string
   timeZone: string
@@ -66,6 +68,17 @@ export function parseDailyUpload(value: unknown): DailyUpload {
   try { new Intl.DateTimeFormat('en', { timeZone: value.timeZone }).format() } catch { return invalid() }
   const prefs = value.preferences, vocabulary = value.vocabulary, grammar = value.grammar
   if (!isObject(prefs) || typeof prefs.reliefMode !== 'boolean' || !count(prefs.dailyTarget) || prefs.dailyTarget > 200) return invalid()
+  if (prefs.strategy !== undefined && !['semantic', 'legacy'].includes(String(prefs.strategy))) return invalid()
+  if (prefs.timeBudgetMinutes !== undefined && (!Number.isInteger(prefs.timeBudgetMinutes) || Number(prefs.timeBudgetMinutes) < 3 || Number(prefs.timeBudgetMinutes) > 30)) return invalid()
+  const protocol = value.protocol
+  const metricCopy = (metric: NonNullable<DailyUpload['protocol']>['delayed24h']) => ({ tested: metric.tested, correct: metric.correct, selfRated: metric.selfRated })
+  if (protocol !== undefined) {
+    if (!isObject(protocol) || protocol.version !== 1 || protocol.scope !== 'cumulative' || typeof protocol.activeMinutes !== 'number' || !Number.isFinite(protocol.activeMinutes) || protocol.activeMinutes < 0 || !count(protocol.context) || !count(protocol.reverse)) return invalid()
+    for (const key of ['delayed24h', 'delayed7d', 'delayed14d', ...(protocol.usage ? ['usage'] : [])]) {
+      const metric = protocol[key]
+      if (!isObject(metric) || !count(metric.tested) || !count(metric.correct) || !count(metric.selfRated) || metric.correct > metric.tested || metric.selfRated > metric.tested) return invalid()
+    }
+  }
   if (!isObject(vocabulary) || !count(vocabulary.uniqueWords) || !['complete', 'partial'].includes(String(vocabulary.detailCoverage)) || !Array.isArray(vocabulary.results) || vocabulary.results.length > 1000 || vocabulary.uniqueWords !== vocabulary.results.length) return invalid()
   const ids = new Set<string>()
   for (const word of vocabulary.results) {
@@ -81,7 +94,13 @@ export function parseDailyUpload(value: unknown): DailyUpload {
   // Rebuild the object to strip unexpected fields such as snapshots, tokens, and prompts.
   return {
     schemaVersion: 1, date: value.date, timeZone: value.timeZone,
-    preferences: { reliefMode: prefs.reliefMode, dailyTarget: prefs.dailyTarget },
+    preferences: { reliefMode: prefs.reliefMode, dailyTarget: prefs.dailyTarget, ...(prefs.strategy !== undefined ? { strategy: prefs.strategy as 'semantic' | 'legacy' } : {}), ...(prefs.timeBudgetMinutes !== undefined ? { timeBudgetMinutes: prefs.timeBudgetMinutes as number } : {}) },
+    ...(protocol ? { protocol: {
+      version: 1 as const, scope: 'cumulative' as const, activeMinutes: (protocol as DailyUpload['protocol'])!.activeMinutes,
+      delayed24h: metricCopy((protocol as DailyUpload['protocol'])!.delayed24h), delayed7d: metricCopy((protocol as DailyUpload['protocol'])!.delayed7d), delayed14d: metricCopy((protocol as DailyUpload['protocol'])!.delayed14d),
+      context: (protocol as DailyUpload['protocol'])!.context, reverse: (protocol as DailyUpload['protocol'])!.reverse,
+      ...((protocol as DailyUpload['protocol'])!.usage ? { usage: metricCopy((protocol as DailyUpload['protocol'])!.usage!) } : {}),
+    } } : {}),
     vocabulary: {
       uniqueWords: vocabulary.uniqueWords, detailCoverage: vocabulary.detailCoverage as 'complete' | 'partial',
       results: vocabulary.results.map(word => ({
@@ -151,8 +170,11 @@ export function analyzeDailyReports(input: DailyUpload[], sourceDate: string): D
   const focusWords = [...history].filter(([, item]) => item.unknownDays > 0)
     .sort((a, b) => b[1].forgotten - a[1].forgotten || b[1].unknownDays - a[1].unknownDays || a[0].localeCompare(b[0]))
     .slice(0, 10).map(([id, item]) => ({ id, word: item.word, unknownDays: item.unknownDays, reason: item.forgotten ? `有${item.forgotten}次前次自评会、跨天首答又不会` : `${item.unknownDays}个学习日的首答未通过` }))
+  const semantic = source.preferences.strategy === 'semantic'
+  if (semantic) reason = `按${source.preferences.timeBudgetMinutes ?? 10}分钟练习：先学准词义和搭配，再撤掉语境独立提取。对实际混淆做针对性纠正，按24小时、7天和14天的实测结果评估保持，未测部分保持未知。`
   return {
-    schemaVersion: 1, algorithmVersion: 'rules-v1', sourceDate, planDate: offsetDate(sourceDate, 1), timeZone: source.timeZone,
+    ...(semantic ? { strategyRecommendation: { mode: 'semantic' as const, minutes: source.preferences.timeBudgetMinutes ?? 10, actions: ['准确词义与典型搭配', '针对已发生的词义混淆进行辨别', '有反馈的无提示提取', '记录实际间隔后的首次回忆'], protocol: source.protocol } } : {}),
+    schemaVersion: 1, algorithmVersion: semantic ? 'semantic-v1' : 'rules-v1', sourceDate, planDate: offsetDate(sourceDate, 1), timeZone: source.timeZone,
     analyzedDays: reports.filter(report => report.vocabulary.uniqueWords > 0 || report.grammar.questions > 0).length, reviewWords, newWords, reason, evidence, focusWords, cardDrafts: [], draftStatus: 'disabled',
     measurement: '会／不会是自评，选择与组句是辨认类练习，输入类首答单列；同日重复不增加跨天证据，均不直接证明长期掌握。缺少的记录保持未知。',
   }
