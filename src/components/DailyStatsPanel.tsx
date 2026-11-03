@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { ArrowLeft, Download, Share2 } from 'lucide-react'
+import { ArrowLeft, BookOpen, Download, Share2 } from 'lucide-react'
 import { dailyReportFile, downloadDailyReport, type DailyReport } from '../lib/dailyReport'
 import type { ReactNode } from 'react'
 
-export function DailyStatsPanel({ report, ready, onBack, analysis }: { report: DailyReport; ready: boolean; onBack: () => void; analysis?: ReactNode }) {
+export function DailyStatsPanel({ report, ready, onBack, analysis, onReviewToday }: { report: DailyReport; ready: boolean; onBack: () => void; analysis?: ReactNode; onReviewToday?: () => void }) {
   const [message, setMessage] = useState('')
   const [sharing, setSharing] = useState(false)
   const words = report.vocabulary
@@ -27,6 +27,7 @@ export function DailyStatsPanel({ report, ready, onBack, analysis }: { report: D
   return <section className="mt-4 space-y-5" aria-label="当天学习统计">
     <div className="flex items-center gap-3"><button className="icon-button shrink-0" aria-label="返回首页" title="返回首页" onClick={onBack}><ArrowLeft size={20} /></button><div><h2 className="text-xl font-bold">当天学习统计</h2><p className="mt-1 text-sm text-stone-500">{report.date}</p></div></div>
     {analysis}
+    {onReviewToday && <button disabled={!ready} className="tap-button flex w-full items-center justify-center gap-2 bg-white" onClick={onReviewToday}><BookOpen size={20} />回顾今日单词</button>}
     <div className="flex gap-2">
       <button disabled={!ready || sharing} onClick={() => void share()} className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-lg bg-stone-950 px-4 py-3 font-semibold text-white disabled:opacity-50"><Share2 size={19} />{sharing ? '分享中…' : '分享当天报告'}</button>
       <button disabled={!ready} aria-label="下载当天报告" title="下载当天报告" className="icon-button shrink-0" onClick={() => { downloadDailyReport(report); setMessage('报告已下载。') }}><Download size={20} /></button>

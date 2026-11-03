@@ -5,6 +5,8 @@ import { extraReviewWords, reliefPlan, RELIEF_TARGET } from './lib/relief'
 import type { AppSettings, AppStats, GrammarProgress, Screen, SessionKind, VocabWord, WordProgress } from './types'
 import { GrammarPanel } from './components/GrammarPanel'
 import { DailyStatsPanel } from './components/DailyStatsPanel'
+import { TodayWordsPanel } from './components/TodayWordsPanel'
+import { todayWords } from './lib/todayWords'
 import { DailyAnalysisPanel } from './components/DailyAnalysisPanel'
 import { SemanticLearningPanel } from './components/SemanticLearningPanel'
 import { VocabularyLab } from './components/VocabularyLab'
@@ -740,10 +742,11 @@ function App() {
         </div>}
 
         {screen === 'grammar' && <GrammarPanel progress={grammarProgress} ready={grammarReady} onAnswer={answerGrammar} />}
+        {screen === 'today-words' && <TodayWordsPanel items={todayWords(words, progress, stats, protocol.events, clockNow)} onOpen={id => openWordDetail(id, 'today-words')} onBack={() => setScreen('home')} />}
         {screen === 'semantic' && <SemanticLearningPanel words={semanticWords} progress={progress} state={protocol} minutes={learningMinutes} onSave={saveProtocolEvents} onBack={() => setScreen('home')} />}
         {screen === 'experiment' && <VocabularyLab words={words} progress={progress} state={protocol} onSave={saveExperimentState} onBack={() => setScreen('home')} />}
         <ListeningPlayer words={availableWords} due={dailyPlan.dueReviewWords} weak={weakWords} learned={availableWords.filter(word => (progressMap.get(word.id)?.seen ?? 0) > 0)} visible={screen === 'listening'} />
-        {screen === 'daily' && <DailyStatsPanel report={buildDailyReport(words, progress, stats, grammarProgress, clockNow, protocol)} ready={grammarReady} onBack={() => setScreen('home')} analysis={<DailyAnalysisPanel semanticMode={semanticMode}
+        {screen === 'daily' && <DailyStatsPanel onReviewToday={() => { setClockNow(Date.now()); setScreen('today-words') }} report={buildDailyReport(words, progress, stats, grammarProgress, clockNow, protocol)} ready={grammarReady} onBack={() => setScreen('home')} analysis={<DailyAnalysisPanel semanticMode={semanticMode}
           date={todayKey(new Date(clockNow))} ready={grammarReady} configured={isCloudSyncConfigured()} signedIn={!!cloudUser}
           job={learning.jobs.find(job => job.report_date === todayKey(new Date(clockNow)))} previousJob={learning.jobs.find(job => job.status === 'completed')}
           cards={learning.cards} busy={learning.busy} message={learning.message}
@@ -791,6 +794,7 @@ function App() {
               {!semanticMode && !reliefActive && <SecondaryButton onClick={startQuizSession} icon={<BarChart3 size={20} />} label="单词回忆" />}
               <SecondaryButton disabled={!grammarReady} onClick={() => setScreen('experiment')} icon={<BarChart3 size={20} />} label="记忆方法实验与延迟复测" />
               <SecondaryButton onClick={() => setScreen('listening')} icon={<Headphones size={20} />} label="听词复习 · MP3" />
+              <SecondaryButton disabled={!grammarReady} onClick={() => { setClockNow(Date.now()); setFeedback(''); setFeedbackWordId(''); setScreen('today-words') }} icon={<BookOpen size={20} />} label="回顾今日单词" />
               <SecondaryButton onClick={() => { setClockNow(Date.now()); setFeedback(''); setFeedbackWordId(''); setScreen('daily') }} icon={<BarChart3 size={20} />} label="当天学习统计" />
               <SecondaryButton disabled={!grammarReady || learning.busy} onClick={uploadToday} icon={<Upload size={20} />} label={learning.busy ? '正在上传学习记录…' : '上传今日记录'} />
             </div>
