@@ -4,6 +4,8 @@ import { mergeGrammarProgress } from './grammar'
 import { seedWords } from '../data/seedWords'
 import { localDateKey } from './studyStats'
 import { emptyLearningState, mergeLearningStates, type LearningState } from './learningProtocol'
+import { emptyWriting, type WritingState } from '../ielts/types'
+import { mergeWriting } from '../ielts/engine'
 
 interface WordsDb extends DBSchema {
   words: {
@@ -16,7 +18,7 @@ interface WordsDb extends DBSchema {
   }
   meta: {
     key: string
-    value: AppSettings | AppStats | GrammarProgress[] | LearningState
+    value: AppSettings | AppStats | GrammarProgress[] | LearningState | WritingState
   }
 }
 
@@ -213,6 +215,22 @@ export async function saveGrammarProgress(items: GrammarProgress[]): Promise<Gra
 export async function getLearningProtocol(): Promise<LearningState> {
   const db = await dbPromise
   return mergeLearningStates(readBackup<LearningState>('yitian100:learning-protocol', emptyLearningState()), (await db.get('meta', 'learning-protocol')) as LearningState | undefined)
+}
+
+export async function getWritingState(): Promise<WritingState> {
+  const db = await dbPromise
+  return mergeWriting(readBackup<WritingState>('yitian100:writing', emptyWriting()), await db.get('meta', 'ielts-writing') as WritingState | undefined)
+}
+
+export async function saveWritingState(update: WritingState): Promise<WritingState> {
+  const db = await dbPromise
+  const tx = db.transaction('meta', 'readwrite')
+  const previous = await tx.store.get('ielts-writing') as WritingState | undefined
+  const merged = mergeWriting(readBackup<WritingState>('yitian100:writing', emptyWriting()), previous, update)
+  await tx.store.put(merged, 'ielts-writing')
+  await tx.done
+  writeBackup('yitian100:writing', merged)
+  return merged
 }
 
 // A scored recall and its ordinary progress either both commit or neither commits.

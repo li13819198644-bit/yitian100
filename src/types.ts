@@ -1,7 +1,7 @@
 export type Rating = 'known' | 'fuzzy' | 'unknown'
 export type ReviewMode = 'choice' | 'advanced'
 
-export type Screen = 'home' | 'learn' | 'quiz' | 'review' | 'weak' | 'settings' | 'import' | 'sync' | 'detail' | 'grammar' | 'daily' | 'listening' | 'semantic' | 'experiment' | 'today-words'
+export type Screen = 'home' | 'learn' | 'quiz' | 'review' | 'weak' | 'settings' | 'import' | 'sync' | 'detail' | 'grammar' | 'daily' | 'listening' | 'semantic' | 'experiment' | 'today-words' | 'ielts'
 export type SessionKind = 'learn' | 'review' | 'quiz' | 'weak'
 
 export interface VocabWord {
