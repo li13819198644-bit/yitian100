@@ -6,9 +6,11 @@ import { emptyWriting, type Attempt, type Question, type WritingState } from '..
 import { getWritingState, saveWritingState } from '../lib/db'
 import { newId } from '../lib/learningProtocol'
 import { localDateKey } from '../lib/studyStats'
+import { WritingReadingPanel } from './WritingReadingPanel'
 
-type View = 'home' | 'today' | 'grammar' | 'vocabulary' | 'independent' | 'paragraph' | 'task2' | 'review' | 'stats'
+type View = 'home' | 'today' | 'grammar' | 'vocabulary' | 'independent' | 'paragraph' | 'task2' | 'review' | 'stats' | 'reading'
 const sections = [
+  ['reading', '飞机阅读包', BookOpen],
   ['today', '今日训练', GraduationCap], ['grammar', '语法专项', BookOpen], ['vocabulary', '词汇搭配', ListChecks],
   ['independent', '独立造句', PenLine], ['paragraph', '段落写作', FilePenLine], ['task2', 'Task 2 写作', FilePenLine],
   ['review', '错题复习', RotateCcw], ['stats', '学习统计', ChartColumn],
@@ -75,6 +77,7 @@ export function IeltsWritingPanel({ onBack }: { onBack: () => void }) {
         </section>)}
       </>}
       {(view === 'paragraph' || view === 'task2') && <WritingDraft key={view} mode={view} value={state.drafts[view]?.text ?? ''} onChange={text => draft(view, text)} />}
+      {view === 'reading' && <WritingReadingPanel drafts={state.drafts} onSave={draft} />}
       {view === 'stats' && <WritingStats state={state} now={now} onExport={exportRecords} />}
     </>}
   </section>

@@ -63,3 +63,17 @@ it('restores a draft after leaving and reopening the writing workspace', async (
   expect(host.querySelector('textarea')!.value).toBe('Automation removes workers from hazardous tasks.')
   expect(stored.attempts).toHaveLength(0)
 })
+it('saves reading bookmarks without creating scored attempts', async () => {
+  const scroll = vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
+  try {
+    await click('飞机阅读包'); await click('01 · 被动语态')
+    expect(host.textContent).toContain('再长的句子，也别丢 be')
+    await click('标为已读，继续下一章')
+    expect(stored.drafts['reading:done:passive-chain'].text).toBe('done')
+    expect(stored.drafts['reading:last'].text).toBe('noun-meaning')
+    expect(stored.attempts).toHaveLength(0)
+    await act(async () => host.querySelector<HTMLButtonElement>('[aria-label="阅读目录"]')!.click())
+    await click('继续阅读第 2 章')
+    expect(host.textContent).toContain('工作量 ≠ 一项任务')
+  } finally { scroll.mockRestore() }
+})
