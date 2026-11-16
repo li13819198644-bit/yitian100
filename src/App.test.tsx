@@ -83,17 +83,20 @@ function expectHidden(word = fixture.words[0]) {
   expect(host.querySelector('[role=tablist]')).toBeNull()
 }
 describe('actual session navigation', () => {
-  it('makes semantic encoding and time-based practice the new default without a fixed old-word goal', async () => {
-    fixture.settings.learningStrategy = 'semantic'
-    await mount()
-    expect(host.textContent).toContain('≥7天独立回忆')
-    expect(host.textContent).not.toContain('每日建议 25 个旧词')
-    await click('精准学习 · 10分钟'); await click('开始练习')
-    expect(host.textContent).toContain('秘密释义一')
-    expect(host.querySelector('input:not([type=radio]),textarea')).toBeNull()
-    expect(fixture.saveProgress).not.toHaveBeenCalled()
-    expect(fixture.saveStats).not.toHaveBeenCalled()
-  })
+  for (const entry of ['学习', '复习', '弱词']) {
+    it(`keeps ${entry} on the reveal flow even with an old semantic setting`, async () => {
+      fixture.settings.learningStrategy = 'semantic'
+      await mount()
+      expect(host.textContent).not.toContain('精准学习')
+      expect(host.textContent).not.toContain('≥7天独立回忆')
+      expect(host.textContent).toContain('回顾今日单词')
+      expect(host.textContent).toContain('IELTS Writing 7.0')
+      await start(entry); expectHidden()
+      await click('alpha'); await click('不会')
+      expect(host.textContent).toContain('单词详情')
+      expect(fixture.saveProgress.mock.calls[0][0]).toMatchObject({ wordId: 'alpha', lastRating: 'unknown' })
+    })
+  }
   it('uploads today from the home button and fetches the completed server analysis', async () => {
     fixture.account = 'learner@example.com'
     const date = defaultStats().todayDate

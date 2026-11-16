@@ -9,11 +9,9 @@ import { TodayWordsPanel } from './components/TodayWordsPanel'
 import { IeltsWritingPanel } from './components/IeltsWritingPanel'
 import { todayWords } from './lib/todayWords'
 import { DailyAnalysisPanel } from './components/DailyAnalysisPanel'
-import { SemanticLearningPanel } from './components/SemanticLearningPanel'
 import { VocabularyLab } from './components/VocabularyLab'
-import { emptyLearningState, learningEvidenceSummary, newId, type LearningEvent, type LearningState } from './lib/learningProtocol'
+import { emptyLearningState, newId, type LearningEvent, type LearningState } from './lib/learningProtocol'
 import { scheduleSemanticRecall } from './lib/semanticScheduling'
-import { reservedExperimentWords } from './lib/vocabularyExperiment'
 import { applyPersonalCards, buildDailyUpload, planForDate } from './lib/dailyAnalysis'
 import { useDailyLearning } from './lib/useDailyLearning'
 import { WordRecallCard } from './components/WordRecallCard'
@@ -196,7 +194,6 @@ function App() {
   const [grammarProgress, setGrammarProgress] = useState<GrammarProgress[]>([])
   const [grammarReady, setGrammarReady] = useState(false)
   const [protocol, setProtocol] = useState<LearningState>(emptyLearningState)
-  const [semanticScope, setSemanticScope] = useState<'all' | 'review' | 'weak'>('all')
   const [settings, setSettings] = useState<AppSettings>(defaultSettings)
   const [stats, setStats] = useState<AppStats>(blankStats)
   const [activeIndex, setActiveIndex] = useState(0)
@@ -280,16 +277,7 @@ function App() {
   const wordMap = useMemo(() => new Map(words.map((item) => [item.id, item])), [words])
   const excludedWords = useMemo(() => words.filter(word => progressMap.get(word.id)?.excluded), [words, progressMap])
   const availableWords = useMemo(() => words.filter(word => !progressMap.get(word.id)?.excluded), [words, progressMap])
-  const semanticMode = settings.learningStrategy !== 'legacy'
-  const learningMinutes = Math.max(3, Math.min(30, settings.learningMinutes ?? 10))
-  const protocolSummary = learningEvidenceSummary(protocol.events, clockNow)
-  const inActiveExperiment = reservedExperimentWords(protocol)
-  const semanticWords = availableWords.filter(word => {
-    if (inActiveExperiment.has(word.id)) return false
-    const item = progressMap.get(word.id)
-    return semanticScope === 'all' || semanticScope === 'weak' && !!item && isWeak(item) || semanticScope === 'review' && !!item && item.seen > 0 && item.nextReviewAt <= clockNow
-  })
-  const personalPlan = !semanticMode && settings.dailyAnalysisEnabled !== false ? planForDate(learning.jobs, todayKey(new Date(clockNow)), Intl.DateTimeFormat().resolvedOptions().timeZone) : null
+  const personalPlan = settings.dailyAnalysisEnabled !== false ? planForDate(learning.jobs, todayKey(new Date(clockNow)), Intl.DateTimeFormat().resolvedOptions().timeZone) : null
   const reliefTarget = personalPlan?.reviewWords ?? RELIEF_TARGET
   const reliefOptions = { target: reliefTarget, focusIds: personalPlan?.focusWords.map(word => word.id), oldOnly: !!personalPlan }
   const todayNewWords = Object.values(stats.dailyHistory?.find(day => day.date === todayKey(new Date(clockNow)))?.wordDetails ?? {}).filter(word => word.newWord === true).length
@@ -377,7 +365,6 @@ function App() {
   }
 
   function startLearnSession(options: { limit?: number } = {}) {
-    if (semanticMode) { setSemanticScope('all'); setScreen('semantic'); return }
     if (reliefActive) { startReliefSession(); return }
     const target = Math.min(options.limit ?? settings.dailyTarget, personalNewRemaining ?? Infinity)
     if (target === 0) { setFeedback('今日建议新词量已完成，可以复习旧词。'); setFeedbackWordId(''); return }
@@ -397,7 +384,6 @@ function App() {
   }
 
   function startReviewSession(nextScreen: Screen = 'learn', limit?: number) {
-    if (semanticMode) { setSemanticScope('review'); setScreen('semantic'); return }
     if (guidedReview) { startReliefSession(); return }
     const nextWords = chooseReviewSession(words, progress, {
       baseNewWordsPerDay: settings.dailyTarget,
@@ -435,7 +421,6 @@ function App() {
   }
 
   function startWeakPracticeSession(nextScreen: Screen = 'learn', requestedLimit?: number) {
-    if (semanticMode) { setSemanticScope('weak'); setScreen('semantic'); return }
     if (reliefActive) { startExtraPractice(true); return }
     const limit = requestedLimit ?? (reliefActive ? 10 : 30)
     const nextWords = chooseWeakRotationSession(words, progress, limit)
@@ -745,10 +730,9 @@ function App() {
         {screen === 'grammar' && <GrammarPanel progress={grammarProgress} ready={grammarReady} onAnswer={answerGrammar} />}
         {screen === 'ielts' && <IeltsWritingPanel onBack={() => setScreen('home')} />}
         {screen === 'today-words' && <TodayWordsPanel items={todayWords(words, progress, stats, protocol.events, clockNow)} onOpen={id => openWordDetail(id, 'today-words')} onBack={() => setScreen('home')} />}
-        {screen === 'semantic' && <SemanticLearningPanel words={semanticWords} progress={progress} state={protocol} minutes={learningMinutes} onSave={saveProtocolEvents} onBack={() => setScreen('home')} />}
         {screen === 'experiment' && <VocabularyLab words={words} progress={progress} state={protocol} onSave={saveExperimentState} onBack={() => setScreen('home')} />}
         <ListeningPlayer words={availableWords} due={dailyPlan.dueReviewWords} weak={weakWords} learned={availableWords.filter(word => (progressMap.get(word.id)?.seen ?? 0) > 0)} visible={screen === 'listening'} />
-        {screen === 'daily' && <DailyStatsPanel onReviewToday={() => { setClockNow(Date.now()); setScreen('today-words') }} report={buildDailyReport(words, progress, stats, grammarProgress, clockNow, protocol)} ready={grammarReady} onBack={() => setScreen('home')} analysis={<DailyAnalysisPanel semanticMode={semanticMode}
+        {screen === 'daily' && <DailyStatsPanel onReviewToday={() => { setClockNow(Date.now()); setScreen('today-words') }} report={buildDailyReport(words, progress, stats, grammarProgress, clockNow, protocol)} ready={grammarReady} onBack={() => setScreen('home')} analysis={<DailyAnalysisPanel semanticMode={false}
           date={todayKey(new Date(clockNow))} ready={grammarReady} configured={isCloudSyncConfigured()} signedIn={!!cloudUser}
           job={learning.jobs.find(job => job.report_date === todayKey(new Date(clockNow)))} previousJob={learning.jobs.find(job => job.status === 'completed')}
           cards={learning.cards} busy={learning.busy} message={learning.message}
@@ -758,8 +742,6 @@ function App() {
 
         {screen === 'home' && (
           <section className="space-y-4">
-            {semanticMode && <div className="space-y-3 rounded-lg bg-white p-5 ring-1 ring-emerald-200"><h2 className="text-xl font-semibold">把词义学准，隔天仍能想起</h2><p className="text-sm leading-6">今天按 {learningMinutes} 分钟练习。已记录约 {protocolSummary.activeMinutes.toFixed(1)} 分钟，学习词数仅作记录。</p><div className="grid grid-cols-3 gap-2 text-sm">{([['≥24小时', protocolSummary.delayed24h], ['≥7天', protocolSummary.delayed7d], ['≥14天', protocolSummary.delayed14d]] as const).map(([label, value]) => <div key={label}><p>{label}独立回忆</p><strong>{value.tested ? `${value.correct}/${value.tested}` : '尚未测到'}</strong>{value.selfRated > 0 && <p className="text-xs text-stone-500">含自评{value.selfRated}次</p>}</div>)}</div><p className="text-xs text-stone-500">按距最近学习、核对或提取的实际间隔统计，阈值可重叠；实验按初学日期的检查点在实验页查看。</p></div>}
-            {!semanticMode && <>
             <div className="rounded-lg bg-white p-5 shadow-sm ring-1 ring-stone-200">
               <div className="flex items-end justify-between">
                 <div>
@@ -781,19 +763,17 @@ function App() {
               </div>
             )}
             {personalPlan && <p className="rounded-lg bg-white p-4 text-sm leading-6 ring-1 ring-stone-200">今日安排已按 {personalPlan.sourceDate} 的分析更新：{personalPlan.reviewWords}个旧词、{reliefActive ? 0 : Math.min(settings.dailyTarget, personalPlan.newWords)}个新词。{!reliefActive && personalPlan.reason}复习顺序兼顾近期到期词和反复不会的词。</p>}
-            </>}
-
             <div className="grid gap-3">
               <PrimaryButton
-                disabled={!grammarReady || !semanticMode && guidedReview && !reviewWords.length}
-                onClick={semanticMode ? () => startLearnSession() : guidedReview ? startReliefSession : dailyPlan.reviewDebt ? () => startReviewSession('learn') : recommendedNewCount ? () => startLearnSession() : () => startWeakPracticeSession('learn')}
+                disabled={!grammarReady || guidedReview && !reviewWords.length}
+                onClick={guidedReview ? startReliefSession : dailyPlan.reviewDebt ? () => startReviewSession('learn') : recommendedNewCount ? () => startLearnSession() : () => startWeakPracticeSession('learn')}
                 icon={<BookOpen size={20} />}
-                label={semanticMode ? `精准学习 · ${learningMinutes}分钟` : guidedReview ? relief.words.length ? `复习 ${relief.words.length} 个` : extraWords.length ? `自选加练 ${extraWords.length} 个旧词` : '暂无已学词' : dailyPlan.reviewDebt ? '先清复习' : recommendedNewCount ? '学习新词' : '修复弱词'}
+                label={guidedReview ? relief.words.length ? `复习 ${relief.words.length} 个` : extraWords.length ? `自选加练 ${extraWords.length} 个旧词` : '暂无已学词' : dailyPlan.reviewDebt ? '先清复习' : recommendedNewCount ? '学习新词' : '修复弱词'}
               />
-              {!semanticMode && !reliefActive && gentleNewWordCount > 0 && (
+              {!reliefActive && gentleNewWordCount > 0 && (
                 <SecondaryButton onClick={() => startLearnSession({ limit: gentleNewWordCount })} icon={<BookOpen size={20} />} label={`学 ${gentleNewWordCount} 个新词`} />
               )}
-              {!semanticMode && !reliefActive && <SecondaryButton onClick={startQuizSession} icon={<BarChart3 size={20} />} label="单词回忆" />}
+              {!reliefActive && <SecondaryButton onClick={startQuizSession} icon={<BarChart3 size={20} />} label="单词回忆" />}
               <SecondaryButton disabled={!grammarReady} onClick={() => setScreen('experiment')} icon={<BarChart3 size={20} />} label="记忆方法实验与延迟复测" />
               <SecondaryButton onClick={() => setScreen('listening')} icon={<Headphones size={20} />} label="听词复习 · MP3" />
               <SecondaryButton onClick={() => { setScreen('ielts'); setFeedback(''); setFeedbackWordId('') }} icon={<NotebookPen size={20} />} label="IELTS Writing 7.0" />
@@ -857,8 +837,6 @@ function App() {
         {screen === 'settings' && (
           <section className="space-y-4">
             <Panel title="设置">
-              <label className="mb-4 flex min-h-12 items-center justify-between gap-3"><span>精准语义与间隔提取策略</span><input type="checkbox" className="h-6 w-6" checked={semanticMode} onChange={async event => { const next: AppSettings = { ...settings, learningStrategy: event.target.checked ? 'semantic' : 'legacy' }; setSettings(next); await saveSettings(next); void syncCloudQuietly() }} /></label>
-              <label className="mb-4 block text-sm">每次练习时间：{learningMinutes}分钟<input className="mt-2 w-full" type="range" min="3" max="30" step="1" value={learningMinutes} onChange={async event => { const next = { ...settings, learningMinutes: Number(event.target.value) }; setSettings(next); await saveSettings(next); void syncCloudQuietly() }} /></label>
               <p className="text-sm font-medium text-stone-700">复习方式</p>
               <div className="mt-2">
                 <p className="text-sm text-stone-600">先看单词，点单词显示答案，再选会 / 不会。不会进入详情页。</p>
@@ -870,7 +848,7 @@ function App() {
                 </span>
                 <input className="h-6 w-6 shrink-0 accent-emerald-700" type="checkbox" checked={settings.autoPronounce} onChange={(event) => updateAutoPronounce(event.target.checked)} />
               </label>
-              {!semanticMode && <><label className="mt-5 block text-sm font-medium text-stone-700">每日新词目标</label>
+              <label className="mt-5 block text-sm font-medium text-stone-700">每日新词目标</label>
               <input className="mt-2 w-full accent-emerald-700" type="range" min="0" max="200" step="5" value={settings.dailyTarget} onChange={(event) => updateDailyTarget(Number(event.target.value))} />
               <label className="mt-4 flex items-center justify-between gap-3 text-sm"><span>按每日分析自动调整学习安排</span><input className="h-6 w-6 shrink-0 accent-emerald-700" type="checkbox" checked={settings.dailyAnalysisEnabled !== false} onChange={async event => { const next = { ...settings, dailyAnalysisEnabled: event.target.checked }; setSettings(next); await saveSettings(next); void syncCloudQuietly() }} /></label>
               <div className="mt-1 text-sm text-stone-500">{settings.dailyTarget} 新词 / 天 · 总容量 {settings.dailyCapacity} 张卡</div>
@@ -878,7 +856,6 @@ function App() {
                 <span className="font-medium text-stone-900">减负模式 · 每天建议 {reliefTarget} 个旧词</span>
                 <input className="h-6 w-6 accent-emerald-700" type="checkbox" checked={settings.reliefMode} onChange={(event) => updateReliefMode(event.target.checked)} />
               </label>
-              </>}
               <button className="mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-stone-900 px-4 font-medium text-white" onClick={() => setScreen('import')}>
                 <Upload size={18} /> 导入词库
               </button>

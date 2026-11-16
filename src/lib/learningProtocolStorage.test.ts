@@ -46,3 +46,12 @@ it('ordinary progress reset preserves independent experiments and grammar', asyn
   expect(await getGrammarProgress()).toHaveLength(1)
   expect(await getWords()).toHaveLength(605)
 })
+it('retires semantic preferences without removing stored learning evidence', async () => {
+  const record = event('discern')
+  await saveLearningProtocol({ ...emptyLearningState(), events: [record] })
+  const db = await openDB('yitian-100-words', 1)
+  await db.put('meta', { learningStrategy: 'semantic', dailyTarget: 15, reliefMode: false }, 'settings')
+  expect(await getSettings()).toMatchObject({ learningStrategy: 'legacy', dailyTarget: 15, reliefMode: false })
+  expect((await getLearningProtocol()).events).toEqual([record])
+  db.close()
+})

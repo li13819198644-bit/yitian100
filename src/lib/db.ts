@@ -54,7 +54,7 @@ function writeBackup<T>(key: string, value: T) {
 }
 
 export const defaultSettings: AppSettings = {
-  learningStrategy: 'semantic',
+  learningStrategy: 'legacy',
   learningMinutes: 10,
   dailyTarget: 100,
   dailyCapacity: 160,
@@ -68,6 +68,7 @@ function normalizeSettings(settings: Partial<AppSettings>): AppSettings {
   return {
     ...defaultSettings,
     ...settings,
+    learningStrategy: 'legacy',
     dailyCapacity: settings.dailyCapacity ?? Math.max(160, settings.dailyTarget ?? defaultSettings.dailyTarget),
     reviewMode: settings.reviewMode === 'advanced' ? 'advanced' : 'choice',
   }
