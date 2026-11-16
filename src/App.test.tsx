@@ -88,6 +88,7 @@ describe('actual session navigation', () => {
       fixture.settings.learningStrategy = 'semantic'
       await mount()
       expect(host.textContent).not.toContain('精准学习')
+      expect(host.textContent).not.toContain('记忆方法实验与延迟复测')
       expect(host.textContent).not.toContain('≥7天独立回忆')
       expect(host.textContent).toContain('回顾今日单词')
       expect(host.textContent).toContain('IELTS Writing 7.0')

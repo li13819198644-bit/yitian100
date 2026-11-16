@@ -9,7 +9,6 @@ import { TodayWordsPanel } from './components/TodayWordsPanel'
 import { IeltsWritingPanel } from './components/IeltsWritingPanel'
 import { todayWords } from './lib/todayWords'
 import { DailyAnalysisPanel } from './components/DailyAnalysisPanel'
-import { VocabularyLab } from './components/VocabularyLab'
 import { emptyLearningState, newId, type LearningEvent, type LearningState } from './lib/learningProtocol'
 import { scheduleSemanticRecall } from './lib/semanticScheduling'
 import { applyPersonalCards, buildDailyUpload, planForDate } from './lib/dailyAnalysis'
@@ -513,10 +512,6 @@ function App() {
     setClockNow(Date.now()); queueProtocolSync()
   }
 
-  async function saveExperimentState(state: LearningState) {
-    setProtocol(await saveLearningProtocol(state)); setClockNow(Date.now()); queueProtocolSync()
-  }
-
   async function importFile(file?: File) {
     if (!file) return
     try {
@@ -730,7 +725,6 @@ function App() {
         {screen === 'grammar' && <GrammarPanel progress={grammarProgress} ready={grammarReady} onAnswer={answerGrammar} />}
         {screen === 'ielts' && <IeltsWritingPanel onBack={() => setScreen('home')} />}
         {screen === 'today-words' && <TodayWordsPanel items={todayWords(words, progress, stats, protocol.events, clockNow)} onOpen={id => openWordDetail(id, 'today-words')} onBack={() => setScreen('home')} />}
-        {screen === 'experiment' && <VocabularyLab words={words} progress={progress} state={protocol} onSave={saveExperimentState} onBack={() => setScreen('home')} />}
         <ListeningPlayer words={availableWords} due={dailyPlan.dueReviewWords} weak={weakWords} learned={availableWords.filter(word => (progressMap.get(word.id)?.seen ?? 0) > 0)} visible={screen === 'listening'} />
         {screen === 'daily' && <DailyStatsPanel onReviewToday={() => { setClockNow(Date.now()); setScreen('today-words') }} report={buildDailyReport(words, progress, stats, grammarProgress, clockNow, protocol)} ready={grammarReady} onBack={() => setScreen('home')} analysis={<DailyAnalysisPanel semanticMode={false}
           date={todayKey(new Date(clockNow))} ready={grammarReady} configured={isCloudSyncConfigured()} signedIn={!!cloudUser}
@@ -774,7 +768,6 @@ function App() {
                 <SecondaryButton onClick={() => startLearnSession({ limit: gentleNewWordCount })} icon={<BookOpen size={20} />} label={`学 ${gentleNewWordCount} 个新词`} />
               )}
               {!reliefActive && <SecondaryButton onClick={startQuizSession} icon={<BarChart3 size={20} />} label="单词回忆" />}
-              <SecondaryButton disabled={!grammarReady} onClick={() => setScreen('experiment')} icon={<BarChart3 size={20} />} label="记忆方法实验与延迟复测" />
               <SecondaryButton onClick={() => setScreen('listening')} icon={<Headphones size={20} />} label="听词复习 · MP3" />
               <SecondaryButton onClick={() => { setScreen('ielts'); setFeedback(''); setFeedbackWordId('') }} icon={<NotebookPen size={20} />} label="IELTS Writing 7.0" />
               <SecondaryButton disabled={!grammarReady} onClick={() => { setClockNow(Date.now()); setFeedback(''); setFeedbackWordId(''); setScreen('today-words') }} icon={<BookOpen size={20} />} label="回顾今日单词" />

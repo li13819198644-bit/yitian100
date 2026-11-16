@@ -34,7 +34,6 @@ export function DailyStatsPanel({ report, ready, onBack, analysis, onReviewToday
     </div>
     {message && <p role="status" className="text-sm text-stone-600">{message}</p>}
     {!ready ? <p role="status">正在读取学习记录…</p> : <>
-      {report.protocol && <div className="space-y-2 rounded-lg bg-white p-4 ring-1 ring-stone-200"><h3 className="font-semibold">精准学习记录（累计指标）</h3>{([['约24小时', report.protocol.delayed24h], ['至少7天', report.protocol.delayed7d], ['至少14天', report.protocol.delayed14d]] as const).map(([label, metric]) => <p key={label} className="text-sm">{label}：{metric.tested ? `${metric.correct}/${metric.tested}，其中自评${metric.selfRated}次` : '尚未记录'}</p>)}<p className="text-sm">句中理解首答记录：{report.protocol.context}次；反向提取：{report.protocol.reverse}次；新语境表达自评：{report.protocol.usage ? `${report.protocol.usage.correct}/${report.protocol.usage.tested}` : '尚未记录'}。</p><p className="text-xs text-stone-500">累计记录快照；按距最近学习、核对或提取的实际间隔统计。实验检查点另按初学日期报告，期间练习需一起查看。</p></div>}
       <div className="border-y border-stone-200 py-4">
         <h3 className="mb-4 text-lg font-bold">单词</h3>
         <dl className="grid grid-cols-2 gap-x-4 gap-y-5">
